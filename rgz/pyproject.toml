@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rgzdr2"
+version = "0.0.0"
+dependencies = [
+]
+
+[project.optional-dependencies]
+cli = ["click"]

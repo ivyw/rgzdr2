@@ -1,0 +1,20 @@
+"""rgzdr2 is the second incarnation data reduction pipeline for Radio Galaxy Zoo."""
+
+bazel_dep(name = "rules_python", version = "1.4.0")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
+pip.parse(
+    hub_name = "pypi",
+    python_version = "3.13",
+    requirements_lock = "//rgz:requirements.txt",
+)
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+
+python.toolchain(
+    python_version = "3.13",
+)
+
+use_repo(pip, "pypi")
+use_repo(python, "python_3_13")

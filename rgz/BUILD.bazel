@@ -1,0 +1,25 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+compile_pip_requirements(
+    name = "requirements",
+    src = "pyproject.toml",
+    requirements_txt = "requirements.txt",
+    extra_args=["--extra=cli"]
+)
+
+
+py_library(
+    name = "rgz",
+    srcs = ["rgz.py"],
+    deps = [],
+)
+
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    deps = [
+        ":rgz",
+        "@pypi//click",
+    ],
+)
