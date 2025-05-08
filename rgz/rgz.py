@@ -19,6 +19,8 @@ import astropy.wcs
 import warnings
 import urllib3
 
+from rgz.subjects import Subject
+
 warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
 warnings.simplefilter("ignore", urllib3.connectionpool.InsecureRequestWarning)
 
@@ -29,47 +31,6 @@ from astroquery.image_cutouts.first import First
 
 from astropy.io import fits
 from astropy.wcs import WCS
-
-IR_MAX_PX = 424
-RADIO_MAX_PX = 132
-IM_WIDTH_ARCMIN = 3
-
-
-def get_bboxes(
-    subject: dict[str, ...],
-) -> tuple[tuple[float, float, float, float], ...]:
-    """Fetches the bboxes of a subject from RGZ, caching locally."""
-    fname = f'first/{subject["_id"]["$oid"]}.json'
-    try:
-        with open(fname) as f:
-            js = json.load(f)
-    except FileNotFoundError:
-        url = subject["location"]["contours"]
-        response = requests.get(url)
-        if not response.ok:
-            raise RuntimeError("Error:", response.status_code)
-        js = response.json()
-        assert abs(js["width"] - 132) <= 1
-        with open(fname, "w") as f:
-            json.dump(js, f)
-    bboxes = []
-    for contour in js["contours"]:
-        assert contour[0]["k"] == 0
-        bboxes.append(tuple([round(c, 1) for c in contour[0]["bbox"]]))
-    return tuple(bboxes)
-
-
-def download_first_image(raw_subject: dict[str, ...]) -> fits.HDUList:
-    """Downloads a FIRST image from the FIRST server."""
-    coord = raw_subject["coords"]
-    coord = skcoord.SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
-    fname = f'first/{raw_subject["_id"]["$oid"]}.fits'
-    try:
-        return fits.open(fname)
-    except FileNotFoundError:
-        im = First.get_images(coord, image_size=3 * u.arcmin)
-        im.writeto(fname)
-        return im
 
 
 def get_classifications(path="radio_classifications.json") -> dict[str, ...]:
@@ -97,14 +58,6 @@ class Classification:
     matches = attr.ib()
     username = attr.ib()
     notes = attr.ib()
-
-
-@attr.s
-class Subject:
-    id = attr.ib()
-    zid = attr.ib()
-    coords = attr.ib()
-    bboxes = attr.ib()
 
 
 def transform_coord_ir(
@@ -222,73 +175,6 @@ def plot_contours(
     for bbox in bboxes:
         x1, y1, x2, y2 = bbox.value
         ax.plot([x1, x2, x2, x1, x1], [y1, y1, y2, y2, y1], c="k", **bbox_plot_kwargs)
-
-
-def transform_coord_radio(
-    coord: tuple[int, int], raw_subject: dict[str, ...]
-) -> u.Quantity:
-    """Transforms a radio image pixel coordinate.
-
-    Note that this uses the WCS of the subject image, and can be slow!
-
-    TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
-    """
-    im = download_first_image(raw_subject)
-    header = im[0].header
-    # WCS.dropaxis doesn't seem to work on these images
-    # drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3
-    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
-        for i in [3, 4]:
-            del header[key + str(i)]
-    wcs = WCS(header)
-    # coord in 132x132 -> 100x100
-    coord = coord * 100 / 132
-    # flip y axis
-    c = wcs.all_pix2world([coord], 0)[0] * u.deg
-    return c
-
-
-def transform_bbox(bbox, raw_subject):
-    bbox_ = bbox
-    bbox = np.array(bbox)
-    bbox = np.concatenate(
-        [
-            transform_coord_radio(bbox[:2], raw_subject),
-            transform_coord_radio(bbox[2:], raw_subject),
-        ]
-    )
-    return bbox
-
-
-def get_first_from_bbox(bbox, raw_subject, verbose=False):
-    # TODO: might need to flip horizontally or even vertically...
-    bbox = transform_bbox(bbox, raw_subject)
-    # find the centre
-    centre = (bbox[::2].mean(), bbox[1::2].mean())
-    # and the width, height
-    width = abs(bbox[2] - bbox[0]).to(u.arcsec)
-    height = abs(bbox[3] - bbox[1]).to(u.arcsec)
-
-    # round widths and heights up to nearest arcsec plus two
-    width = np.ceil(width.to(u.arcsec)) + 2 * u.arcsec
-    height = np.ceil(height.to(u.arcsec)) + 2 * u.arcsec
-
-    if verbose:
-        print("get_first_from_bbox:", centre, width, height)
-    skc = skcoord.SkyCoord(
-        ra=centre[0].value,
-        dec=centre[1].value,
-        unit=(centre[0].unit, centre[0].unit),
-        frame="icrs",
-    )
-    # Now we can do a VizieR query.
-    q = Vizier.query_region(
-        skc, width=width, height=height, catalog=["VIII/92/first14"]
-    )
-    try:
-        return list(q[0]["FIRST"])
-    except IndexError:
-        return [f'NOFIRST_J{skc.to_string("hmsdms", sep="").replace(" ", "")}']
 
 
 def plot_raw_subject(raw_subject: dict[str, ...], scaling: int = 1):

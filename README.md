@@ -8,5 +8,21 @@ Purpose is to develop the DR2 pipeline that overcomes the limitations of the RGZ
 Install Bazel. Then:
 
 ```bash
-bazel run rgz:main
+bazel build rgz:main
+```
+
+This will build the RGZ binary. Then you can run it:
+
+```bash
+./bazel-build/rgz/main --help
+```
+
+## Developing
+
+### Dependency management
+
+Dependencies are listed in `pyproject.toml`. After updating them here, use `bazel` to update the corresponding requirements file:
+
+```bash
+bazel run rgz:requirements.update
 ```

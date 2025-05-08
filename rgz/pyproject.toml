@@ -6,6 +6,13 @@ build-backend = "hatchling.build"
 name = "rgzdr2"
 version = "0.0.0"
 dependencies = [
+    "attrs",
+    "requests",
+    "matplotlib",
+    "pandas",
+    "tqdm",
+    "astropy",
+    "astroquery",
 ]
 
 [project.optional-dependencies]

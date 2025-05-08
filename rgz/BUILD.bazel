@@ -11,8 +11,16 @@ compile_pip_requirements(
 
 py_library(
     name = "rgz",
-    srcs = ["rgz.py"],
-    deps = [],
+    srcs = ["rgz.py", "subjects.py"],
+    deps = [
+        "@pypi//attrs",
+        "@pypi//matplotlib",
+        "@pypi//pandas",
+        "@pypi//requests",
+        "@pypi//tqdm",
+        "@pypi//astropy",
+        "@pypi//astroquery",
+    ],
 )
 
 py_binary(
