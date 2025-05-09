@@ -14,7 +14,7 @@ bazel build rgz:main
 This will build the RGZ binary. Then you can run it:
 
 ```bash
-./bazel-build/rgz/main --help
+bazel-bin/rgz/main --help
 ```
 
 ## Running the pipeline
