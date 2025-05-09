@@ -1,16 +1,18 @@
 """Handles RGZ subjects."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Generator
-
+import warnings
 
 from astropy.coordinates import SkyCoord
+import astroquery
 from astroquery.image_cutouts.first import First
 from astropy.io import fits
 import astropy.units as u
 from astroquery.vizier import Vizier
-from astropy.wcs import WCS
+from astropy.wcs import WCS, FITSFixedWarning
 import attr
 import backoff
 import numpy as np
@@ -24,6 +26,8 @@ IM_WIDTH_ARCMIN = 3
 
 # Max number of retries for fetching data from the internet.
 MAX_TRIES = 5
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s
@@ -49,6 +53,7 @@ def download_first_image(raw_subject: dict[str, Any], cache: Path) -> fits.HDULi
     coord = raw_subject["coords"]
     coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
     fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
+
     try:
         return fits.open(fname)
     except FileNotFoundError:
@@ -75,7 +80,9 @@ def transform_coord_radio(
     for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
         for i in [3, 4]:
             del header[key + str(i)]
-    wcs = WCS(header)
+
+    with warnings.catch_warnings(action="ignore", category=FITSFixedWarning):
+        wcs = WCS(header)
     # coord in 132x132 -> 100x100
     coord = coord * 100 / 132
     # flip y axis
@@ -140,6 +147,8 @@ def get_bboxes(
         url = subject["location"]["contours"]
         response = requests.get(url)
         if not response.ok:
+            if response.status_code == 404:
+                raise FileNotFoundError(f"HTTP 404: {url}")
             raise RuntimeError("Error:", response.status_code)
         js = response.json()
         assert abs(js["width"] - 132) <= 1
@@ -184,7 +193,11 @@ def process(subjects_path: Path, cache: Path, output_path: Path) -> Generator[Su
     with open(subjects_path, encoding="utf-8") as f:
         # Each row is a JSON document.
         for row in tqdm(f, desc="Processing subjects...", total=n_subjects):
-            subjects.append(process_subject(json.loads(row), cache))
+            try:
+                subjects.append(process_subject(json.loads(row), cache))
+            except FileNotFoundError as e:
+                logger.warning(e)
+                continue
     json_subjects = []
     for subject in tqdm(subjects, desc="Serialising subjects..."):
         json_subjects.append(subject_to_json_serialisable(subject))

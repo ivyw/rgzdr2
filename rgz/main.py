@@ -1,10 +1,13 @@
 """Processes Radio Galaxy Zoo raw data."""
 
+import logging
 from pathlib import Path
 
 import click
 
 import rgz.subjects
+
+logger = logging.getLogger(__name__)
 
 
 @click.group()
@@ -37,4 +40,5 @@ def subjects(in_: Path, out: Path, cache: Path):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     cli()

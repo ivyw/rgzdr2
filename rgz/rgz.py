@@ -4,6 +4,7 @@ import collections
 import enum
 import itertools
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -31,6 +32,8 @@ from astroquery.image_cutouts.first import First
 
 from astropy.io import fits
 from astropy.wcs import WCS
+
+logger = logging.getLogger(__name__)
 
 
 def get_classifications(path="radio_classifications.json") -> dict[str, ...]:
