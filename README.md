@@ -17,6 +17,22 @@ This will build the RGZ binary. Then you can run it:
 ./bazel-build/rgz/main --help
 ```
 
+## Running the pipeline
+
+You need to have the RGZ data dumped as JSON: this is the only input. To save some time, you could use the cache folder from a previous run of the pipeline; it's deterministic wherever possible and the cache stores some of the slower data files.
+
+### Processing RGZ subjects
+
+```bash
+bazel-bin/rgz/main subjects --in=data/radio_subjects.json --out=data/radio_subjects_processed.json --cache=data/cache
+```
+
+This will:
+- download FIRST images from the FIRST server,
+- download FIRST catalogue data from Vizier,
+- download JSON contours from the Zooniverse server, and
+- use the combined information to build a reduced dataset of RGZ subjects.
+
 ## Developing
 
 ### Dependency management
@@ -26,3 +42,5 @@ Dependencies are listed in `pyproject.toml`. After updating them here, use `baze
 ```bash
 bazel run rgz:requirements.update
 ```
+
+...and add them as a dependency in the relevant BUILD rules.

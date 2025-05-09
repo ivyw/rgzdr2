@@ -20,6 +20,7 @@ py_library(
         "@pypi//tqdm",
         "@pypi//astropy",
         "@pypi//astroquery",
+        "@pypi//backoff",
     ],
 )
 

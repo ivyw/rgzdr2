@@ -12,6 +12,7 @@ import astropy.units as u
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 import attr
+import backoff
 import numpy as np
 import requests
 from tqdm import tqdm
@@ -20,6 +21,9 @@ from tqdm import tqdm
 IR_MAX_PX = 424
 RADIO_MAX_PX = 132
 IM_WIDTH_ARCMIN = 3
+
+# Max number of retries for fetching data from the internet.
+MAX_TRIES = 5
 
 
 @attr.s
@@ -30,21 +34,32 @@ class Subject:
     bboxes = attr.ib()
 
 
+@backoff.on_exception(
+    backoff.expo,
+    requests.exceptions.ConnectionError,
+    max_tries=MAX_TRIES,
+)
+def fetch_first(coord: SkyCoord, image_size: u.arcmin) -> fits.HDUList:
+    """Fetches a FIRST image from the FIRST server."""
+    return First.get_images(coord, image_size=image_size)
+
+
 def download_first_image(raw_subject: dict[str, Any], cache: Path) -> fits.HDUList:
-    """Downloads a FIRST image from the FIRST server."""
+    """Fetches a FIRST image from the FIRST server or cache."""
     coord = raw_subject["coords"]
     coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
     fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     try:
         return fits.open(fname)
     except FileNotFoundError:
-        im = First.get_images(coord, image_size=3 * u.arcmin)
+        im = fetch_first(coord, image_size=3 * u.arcmin)
         im.writeto(fname)
         return im
 
 
 def transform_coord_radio(
-    coord: tuple[int, int], raw_subject: dict[str, Any],
+    coord: tuple[int, int],
+    raw_subject: dict[str, Any],
     cache: Path,
 ) -> u.Quantity:
     """Transforms a radio image pixel coordinate.
@@ -102,6 +117,7 @@ def get_first_from_bbox(bbox, raw_subject, cache, verbose=False):
         frame="icrs",
     )
     # Now we can do a VizieR query.
+    # TODO: Manually cache this into the cache directory.
     q = Vizier.query_region(
         skc, width=width, height=height, catalog=["VIII/92/first14"]
     )
@@ -145,7 +161,9 @@ def subject_to_json_serialisable(subject: Subject) -> dict[str, Any]:
     }
 
 
-def process_subject(raw_subject: dict[str, Any], cache: Path, verbose: bool = False) -> Subject:
+def process_subject(
+    raw_subject: dict[str, Any], cache: Path, verbose: bool = False
+) -> Subject:
     sid = raw_subject["_id"]["$oid"]
     zid = raw_subject["zooniverse_id"]
     bboxes = get_bboxes(raw_subject, cache)
@@ -160,9 +178,12 @@ def process_subject(raw_subject: dict[str, Any], cache: Path, verbose: bool = Fa
 def process(subjects_path: Path, cache: Path, output_path: Path) -> Generator[Subject]:
     """Process subjects from raw to reduced JSON."""
     subjects = []
+    # Get subject count for progress bar.
+    with open(subjects_path, encoding="utf-8") as f:
+        n_subjects = len(f.readlines())
     with open(subjects_path, encoding="utf-8") as f:
         # Each row is a JSON document.
-        for row in tqdm(f, desc="Processing subjects..."):
+        for row in tqdm(f, desc="Processing subjects...", total=n_subjects):
             subjects.append(process_subject(json.loads(row), cache))
     json_subjects = []
     for subject in tqdm(subjects, desc="Serialising subjects..."):
