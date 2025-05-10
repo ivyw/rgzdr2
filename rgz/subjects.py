@@ -25,7 +25,7 @@ RADIO_MAX_PX = 132
 IM_WIDTH_ARCMIN = 3
 
 # Max number of retries for fetching data from the internet.
-MAX_TRIES = 5
+MAX_TRIES = 10
 
 logger = logging.getLogger(__name__)
 
