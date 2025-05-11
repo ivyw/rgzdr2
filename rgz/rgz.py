@@ -20,6 +20,7 @@ import astropy.wcs
 import warnings
 import urllib3
 
+import rgz.subjects
 from rgz.subjects import Subject
 
 warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
@@ -61,6 +62,18 @@ class Classification:
     matches = attr.ib()
     username = attr.ib()
     notes = attr.ib()
+
+
+def get_wcs(raw_subject):
+    im = rgz.subjects.download_first_image(raw_subject)
+    header = im[0].header
+    # WCS.dropaxis doesn't seem to work on these images
+    # drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3
+    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
+        for i in [3, 4]:
+            del header[key + str(i)]
+    wcs = WCS(header)
+    return wcs
 
 
 def transform_coord_ir(
@@ -143,7 +156,7 @@ def plot_contours(
     ax=None,
     bbox_plot_kwargs=None,
     px_coords=False,
-    px_scaling=100 / RADIO_MAX_PX,
+    px_scaling=100 / rgz.subjects.RADIO_MAX_PX,
 ):
     """Plots the contours of a raw subject."""
     if not ax:
@@ -166,27 +179,29 @@ def plot_contours(
         ys = [a["y"] for a in contour["arr"]]
         coords = np.stack([xs, ys]).T
         if not px_coords:
-            coords = [transform_coord_radio(c, raw_subject) for c in coords]
+            coords = [
+                rgz.subjects.transform_coord_radio(c, raw_subject) for c in coords
+            ]
             coords = [(a.value, b.value) for a, b in coords]
         else:
             coords = [(c[0] * px_scaling, 100 - c[1] * px_scaling) for c in coords]
         plt.plot(*zip(*coords))
     #     plt.xlim(plt.xlim()[::-1])
 
-    bboxes = get_bboxes(raw_subject)
-    bboxes = [transform_bbox(bbox, raw_subject) for bbox in bboxes]
+    bboxes = rgz.subjects.get_bboxes(raw_subject)
+    bboxes = [rgz.subjects.transform_bbox(bbox, raw_subject) for bbox in bboxes]
     for bbox in bboxes:
         x1, y1, x2, y2 = bbox.value
         ax.plot([x1, x2, x2, x1, x1], [y1, y1, y2, y2, y1], c="k", **bbox_plot_kwargs)
 
 
 def plot_raw_subject(raw_subject: dict[str, ...], scaling: int = 1):
-    f = download_first_image(raw_subject)
+    f = rgz.subjects.download_first_image(raw_subject)
     wcs = WCS(f[0].header)
     ax = plt.subplot(projection=wcs, slices=("x", "y", 0, 0))
     ax.imshow(f[0].data)
 
-    bboxes = get_bboxes(raw_subject)
+    bboxes = rgz.subjects.get_bboxes(raw_subject)
     for bbox in bboxes:
         bbox = np.array(bbox)
         bbox *= 100 / 132
@@ -196,7 +211,7 @@ def plot_raw_subject(raw_subject: dict[str, ...], scaling: int = 1):
         ax.plot([x1, x1, x2, x2, x1], [y2, y1, y1, y2, y2], c="white")
 
     # transformed bboxes
-    bboxes = [transform_bbox(bbox, raw_subject) for bbox in bboxes]
+    bboxes = [rgz.subjects.transform_bbox(bbox, raw_subject) for bbox in bboxes]
     for bbox in bboxes:
         c1 = skcoord.SkyCoord([bbox[:2]], frame="icrs", unit="deg")
         c2 = skcoord.SkyCoord([bbox[2:]], frame="icrs")
@@ -208,3 +223,23 @@ def plot_raw_subject(raw_subject: dict[str, ...], scaling: int = 1):
             c="cyan",
             transform=ax.get_transform("world"),
         )
+
+
+def classification_to_json_serialisable(classification):
+    return {
+        "id": classification.cid,
+        "zid": classification.zid,
+        "matches": [{"ir": ir, "radio": radio} for ir, radio in classification.matches],
+        "username": classification.username,
+        "notes": classification.notes,
+    }
+
+
+def deserialise_classification(classification):
+    return Classification(
+        cid=classification["id"],
+        zid=classification["zid"],
+        username=classification["username"],
+        notes=classification["notes"],
+        matches=[(m["ir"], m["radio"]) for m in classification["matches"]],
+    )

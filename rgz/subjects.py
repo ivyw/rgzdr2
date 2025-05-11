@@ -203,3 +203,12 @@ def process(subjects_path: Path, cache: Path, output_path: Path) -> Generator[Su
         json_subjects.append(subject_to_json_serialisable(subject))
     with open(output_path, "w") as f:
         json.dump(json_subjects, f)
+
+
+def deserialise_subject(subject):
+    return Subject(
+        subject["id"],
+        subject["zid"],
+        subject["coords"],
+        {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
+    )
