@@ -52,7 +52,7 @@ class Subject:
     id: str = attr.ib()
     zid: str = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    bboxes: Sequence[BBox] = attr.ib()
+    bboxes: dict[BBox, list[str]] = attr.ib()
 
 
 @backoff.on_exception(
