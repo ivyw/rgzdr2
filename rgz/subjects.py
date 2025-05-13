@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 type BBox = tuple[float, float, float, float]
 type JSON = dict[str, Any]
+type HDU = fits.hdu.base.ExtensionHDU
 
 
 @attr.s
@@ -89,7 +90,7 @@ def fetch_first_from_server_or_cache(
 
 
 def transform_coord_radio(
-    coord: tuple[int, int],
+    coord: npt.NDArray[np.float64],
     raw_subject: dict[str, Any],
     cache: Path,
 ) -> Quantity[u.deg, u.deg]:
@@ -100,7 +101,7 @@ def transform_coord_radio(
     TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
     im = fetch_first_from_server_or_cache(raw_subject, cache)
-    header = im[0].header
+    header = im[0].header  # type: ignore[reportAttributeAccessIssue]
     # WCS.dropaxis doesn't seem to work on these images.
     # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...
     for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
@@ -113,37 +114,35 @@ def transform_coord_radio(
     # Coord in 132x132 -> 100x100.
     coord = coord * 100 / 132
 
-    # Flip y axis.
-    c = wcs.all_pix2world([coord], 0)[0] * u.deg
-
-    return c
+    return wcs.all_pix2world([coord], 0)[0] * u.deg
 
 
-def transform_bbox(bbox: BBox, raw_subject: dict[str, Any], cache: Path) -> npt.NDArray:
+def transform_bbox_px_to_phys(
+    px_bbox: BBox, raw_subject: dict[str, Any], cache: Path
+) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
-    bbox = np.array(bbox)
-    bbox = np.concatenate(
+    phys_bbox = np.array(px_bbox)
+    return np.concatenate(
         [
-            transform_coord_radio(bbox[:2], raw_subject, cache),
-            transform_coord_radio(bbox[2:], raw_subject, cache),
+            transform_coord_radio(phys_bbox[:2], raw_subject, cache),
+            transform_coord_radio(phys_bbox[2:], raw_subject, cache),
         ]
     )
-    return bbox
 
 
 def get_first_from_bbox(
-    bbox: BBox,
+    px_bbox: BBox,
     raw_subject: dict[str, Any],
     cache: Path,
 ) -> list[str]:
     """Finds FIRST components within a bounding box."""
     # TODO: Might need to flip horizontally or even vertically...
-    bbox = transform_bbox(bbox, raw_subject, cache)
+    phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
     # Find the centre...
-    centre = (bbox[::2].mean(), bbox[1::2].mean())
+    centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
     # ...and the width and height.
-    width = abs(bbox[2] - bbox[0]).to(u.arcsec)
-    height = abs(bbox[3] - bbox[1]).to(u.arcsec)
+    width = abs(phys_bbox[2] - phys_bbox[0]).to(u.arcsec)
+    height = abs(phys_bbox[3] - phys_bbox[1]).to(u.arcsec)
 
     # Round widths and heights up to nearest arcsec plus two.
     width = np.ceil(width.to(u.arcsec)) + 2 * u.arcsec
@@ -158,13 +157,19 @@ def get_first_from_bbox(
     )
     # Now we can do a VizieR query.
     # TODO: Manually cache this into the cache directory.
-    q = Vizier.query_region(
+    q = Vizier.query_region(  # type: ignore[reportAttributeAccessIssue]
         skc, width=width, height=height, catalog=["VIII/92/first14"]
     )
     try:
         return list(q[0]["FIRST"])
     except IndexError:
-        return [f'NOFIRST_J{skc.to_string("hmsdms", sep="").replace(" ", "")}']
+        coord_str = skc.to_string("hmsdms", sep="")
+        if not isinstance(coord_str, str):
+            # SkyCoord.to_string is not guaranteed to return a string.
+            raise TypeError(
+                f"Expected str from SkyCoord.to_string; got {type(coord_str)}"
+            )
+        return [f'NOFIRST_J{coord_str.replace(" ", "")}']
 
 
 def get_bboxes(
