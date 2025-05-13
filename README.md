@@ -69,6 +69,9 @@ A reduced RGZ subject is a JSON object with the following schema:
             "items": {
                 "type": "object",
                 "properties": {
+                    "first": {
+                        "type": "string"
+                    },
                     "bbox": {
                         "type": "array",
                         "prefixItems": [
@@ -90,7 +93,7 @@ A reduced RGZ subject is a JSON object with the following schema:
                             }
                         ],
                         "items": false
-                    },
+                    }
                 }
             }
         }
