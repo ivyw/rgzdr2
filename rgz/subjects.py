@@ -4,14 +4,12 @@ from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 import warnings
 
 from astropy.coordinates import SkyCoord
-import astroquery
 from astroquery.image_cutouts.first import First
 from astropy.io import fits
-import astropy.units as u
 from astropy.units import Quantity
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS, FITSFixedWarning
@@ -21,6 +19,8 @@ import numpy as np
 import numpy.typing as npt
 import requests
 from tqdm import tqdm
+
+from rgz import units as u
 
 
 IR_MAX_PX = 424
@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 type BBox = tuple[float, float, float, float]
+type JSON = dict[str, Any]
 
 
 @attr.s
@@ -62,7 +63,12 @@ class Subject:
 )
 def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUList:
     """Downloads a FIRST image from the FIRST server."""
-    return First.get_images(coord, image_size=image_size)
+    ims = First.get_images(coord, image_size=image_size)
+    if isinstance(ims, fits.HDUList):
+        return ims
+    # Technically allowed by documentation, but I don't expect it to happen
+    # with the files we're opening (i.e. FIRST survey files).
+    raise TypeError(f"Expected HDUList; got {type(ims)}")
 
 
 def fetch_first_from_server_or_cache(
