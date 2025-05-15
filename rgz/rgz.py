@@ -8,7 +8,7 @@ import warnings
 
 from astropy.io import fits
 from astropy.wcs import WCS
-import astropy.coordinates as skcoord
+from astropy.coordinates import SkyCoord
 import astropy.wcs
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,6 +36,15 @@ def get_wcs(im: fits.HDUList, cache: Path) -> astropy.wcs.WCS:
         action="ignore", category=astropy.wcs.FITSFixedWarning
     ):
         return WCS(header)
+
+
+def coord_to_string(coord: SkyCoord) -> str:
+    """Converts a SkyCoord to a string."""
+    coord_str = coord.to_string("hmsdms", sep="")
+    if not isinstance(coord_str, str):
+        # SkyCoord.to_string is not guaranteed to return a string.
+        raise TypeError(f"Expected str from SkyCoord.to_string; got {type(coord_str)}")
+    return coord_str
 
 
 def plot_contours(

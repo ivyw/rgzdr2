@@ -150,12 +150,7 @@ def get_first_from_bbox(
     try:
         return list(q[0]["FIRST"])
     except IndexError:
-        coord_str = skc.to_string("hmsdms", sep="")
-        if not isinstance(coord_str, str):
-            # SkyCoord.to_string is not guaranteed to return a string.
-            raise TypeError(
-                f"Expected str from SkyCoord.to_string; got {type(coord_str)}"
-            )
+        coord_str = rgz.coord_to_string(skc)
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
 
 

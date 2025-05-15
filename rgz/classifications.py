@@ -50,7 +50,7 @@ class Classification:
     zid: str = attr.ib()
     matches: list[tuple[str, set[str]]] = attr.ib()
     username: str = attr.ib()
-    notes: str = attr.ib()
+    notes: list[str] = attr.ib()
 
 
 def transform_coord_ir(
@@ -88,7 +88,7 @@ def process_classification(
     if zid != subject.zid:
         raise ValueError("Mismatched subjects.")
     matches = []  # (wise, first)
-    notes = []
+    notes: list[str] = []
     for anno in raw_classification["annotations"]:
         if "radio" not in anno:
             continue
@@ -125,7 +125,8 @@ def process_classification(
                 try:
                     ir = q[0][0]["AllWISE"]
                 except IndexError:
-                    ir = f'NOMATCH_J{ir_coord.to_string("hmsdms", sep="").replace(" ", "")}'
+                    coord_str = rgz.coord_to_string(ir_coord)
+                    ir = f'NOMATCH_J{coord_str.replace(" ", "")}'
             else:
                 ir = ir_coord.to_string()
         matches.append((ir, [c for b in boxes for c in subject.bboxes[b]]))
@@ -133,7 +134,7 @@ def process_classification(
         cid=cid,
         zid=zid,
         matches=matches,
-        username=classification.get("user_name", "NO_USER_NAME"),
+        username=raw_classification.get("user_name", constants.NO_USER_NAME),
         notes=notes,
     )
 
@@ -142,7 +143,7 @@ def classification_to_json_serialisable(classification):
     return {
         "id": classification.cid,
         "zid": classification.zid,
-        "matches": [{"ir": ir, "radio": radio} for ir, radio in classification.matches],
+        "matches": [{"ir": ir, "radio": list(radio)} for ir, radio in classification.matches],
         "username": classification.username,
         "notes": classification.notes,
     }
@@ -154,5 +155,5 @@ def deserialise_classification(classification):
         zid=classification["zid"],
         username=classification["username"],
         notes=classification["notes"],
-        matches=[(m["ir"], m["radio"]) for m in classification["matches"]],
+        matches=[(m["ir"], set(m["radio"])) for m in classification["matches"]],
     )
