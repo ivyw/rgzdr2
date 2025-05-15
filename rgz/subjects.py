@@ -5,14 +5,12 @@ import json
 import logging
 from pathlib import Path
 from typing import Any
-import warnings
 
 from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
 from astropy.io import fits
 from astropy.units import Quantity
 from astroquery.vizier import Vizier
-from astropy.wcs import WCS, FITSFixedWarning
 import attr
 import backoff
 import numpy as np
@@ -20,12 +18,9 @@ import numpy.typing as npt
 import requests
 from tqdm import tqdm
 
+from rgz import constants
+from rgz import rgz
 from rgz import units as u
-
-
-IR_MAX_PX = 424
-RADIO_MAX_PX = 132
-IM_WIDTH_ARCMIN = 3
 
 # Max number of retries for fetching data from the internet.
 MAX_TRIES = 10
@@ -73,7 +68,7 @@ def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUL
 
 
 def fetch_first_from_server_or_cache(
-    raw_subject: dict[str, Any],
+    raw_subject: JSON,
     cache: Path,
 ) -> fits.HDUList:
     """Fetches a FIRST image from the FIRST server or cache."""
@@ -91,7 +86,7 @@ def fetch_first_from_server_or_cache(
 
 def transform_coord_radio(
     coord: npt.NDArray[np.float64],
-    raw_subject: dict[str, Any],
+    raw_subject: JSON,
     cache: Path,
 ) -> Quantity[u.deg, u.deg]:
     """Transforms a radio image pixel coordinate into RA/dec.
@@ -101,24 +96,16 @@ def transform_coord_radio(
     TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
     im = fetch_first_from_server_or_cache(raw_subject, cache)
-    header = im[0].header  # type: ignore[reportAttributeAccessIssue]
-    # WCS.dropaxis doesn't seem to work on these images.
-    # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...
-    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
-        for i in [3, 4]:
-            del header[key + str(i)]
-
-    with warnings.catch_warnings(action="ignore", category=FITSFixedWarning):
-        wcs = WCS(header)
+    wcs = rgz.get_wcs(im, cache)
 
     # Coord in 132x132 -> 100x100.
-    coord = coord * 100 / 132
+    coord = coord * 100 / constants.RADIO_MAX_PX
 
     return wcs.all_pix2world([coord], 0)[0] * u.deg
 
 
 def transform_bbox_px_to_phys(
-    px_bbox: BBox, raw_subject: dict[str, Any], cache: Path
+    px_bbox: BBox, raw_subject: JSON, cache: Path
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
     phys_bbox = np.array(px_bbox)
@@ -132,7 +119,7 @@ def transform_bbox_px_to_phys(
 
 def get_first_from_bbox(
     px_bbox: BBox,
-    raw_subject: dict[str, Any],
+    raw_subject: JSON,
     cache: Path,
 ) -> list[str]:
     """Finds FIRST components within a bounding box."""
@@ -173,16 +160,16 @@ def get_first_from_bbox(
 
 
 def get_bboxes(
-    subject: dict[str, Any],
+    raw_subject: JSON,
     cache: Path,
 ) -> Sequence[BBox]:
     """Fetches the bboxes of a subject from RGZ, caching locally."""
-    fname = cache / f'{subject["_id"]["$oid"]}.json'
+    fname = cache / f'{raw_subject["_id"]["$oid"]}.json'
     try:
         with open(fname) as f:
             js = json.load(f)
     except FileNotFoundError:
-        url = subject["location"]["contours"]
+        url = raw_subject["location"]["contours"]
         response = requests.get(url)
         if not response.ok:
             if response.status_code == 404:
@@ -199,7 +186,7 @@ def get_bboxes(
     return tuple(bboxes)
 
 
-def subject_to_json_serialisable(subject: Subject) -> dict[str, Any]:
+def subject_to_json_serialisable(subject: Subject) -> JSON:
     """Converts a Subject into a JSON-compatible dictionary."""
     return {
         "id": subject.id,
@@ -210,7 +197,7 @@ def subject_to_json_serialisable(subject: Subject) -> dict[str, Any]:
 
 
 def process_subject(
-    raw_subject: dict[str, Any],
+    raw_subject: JSON,
     cache: Path,
 ) -> Subject:
     """Reduces a JSON subject into a nice, value-added format."""

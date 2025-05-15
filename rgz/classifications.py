@@ -3,18 +3,26 @@
 from collections.abc import Generator
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 import attr
 import numpy as np
+import numpy.typing as npt
 from astropy.coordinates import SkyCoord
+import astropy.wcs
+from astroquery.vizier import Vizier
 
-import rgz.subjects
+from rgz import constants
+from rgz import rgz
+from rgz import subjects
+from rgz import units as u
 
 
 logger = logging.getLogger(__name__)
 
 type JSON = dict[str, Any]
+
 
 def get_classifications(path="radio_classifications.json") -> Generator[JSON]:
     """Yields classifications from RGZ."""
@@ -37,6 +45,7 @@ def get_classifications(path="radio_classifications.json") -> Generator[JSON]:
 @attr.s
 class Classification:
     """A single RGZ classification of a subject by a citizen scientist."""
+
     cid: str = attr.ib()
     zid: str = attr.ib()
     matches: list[tuple[str, set[str]]] = attr.ib()
@@ -44,45 +53,43 @@ class Classification:
     notes: str = attr.ib()
 
 
-def get_wcs(raw_subject):
-    im = rgz.subjects.download_first_image(raw_subject)
-    header = im[0].header
-    # WCS.dropaxis doesn't seem to work on these images
-    # drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3
-    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
-        for i in [3, 4]:
-            del header[key + str(i)]
-    wcs = WCS(header)
-    return wcs
-
-
 def transform_coord_ir(
-    coord: tuple[float, float], raw_subject: dict[str, ...] = None, wcs: ... = None
+    coord: npt.NDArray[np.float64],
+    raw_subject: JSON | None = None,
+    wcs: astropy.wcs.WCS | None = None,
+    cache: Path | None = None,
 ):
     if not raw_subject and not wcs:
         raise ValueError()
+    if raw_subject and not cache:
+        raise ValueError()
     if raw_subject:
+        assert cache
         assert not wcs
-        wcs = get_wcs(raw_subject)
+        im = subjects.fetch_first_from_server_or_cache(raw_subject, cache)
+        wcs = rgz.get_wcs(im, cache)
+    assert wcs
     # coord in 424x424 -> 424x424
-    coord = coord * 100 / 424
+    px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
     # flip y axis?
-    coord[1] = 100 - coord[1]
-    c = wcs.all_pix2world([coord], 0)[0] * u.deg
-    return c
+    px_coord[1] = 100 - px_coord[1]
+    return wcs.all_pix2world([px_coord], 0)[0] * u.deg
 
 
 def process_classification(
-    classification: dict[str, ...], subject: rgz.subjects.Subject, wcs: ..., defer_ir_lookup=False
+    raw_classification: JSON,
+    subject: subjects.Subject,
+    wcs: astropy.wcs.WCS,
+    defer_ir_lookup: bool = False,
 ) -> Classification:
     """Converts a raw classification into a Classification."""
-    cid = classification["_id"]["$oid"]
-    zid = classification["subjects"][0]["zooniverse_id"]
+    cid = raw_classification["_id"]["$oid"]
+    zid = raw_classification["subjects"][0]["zooniverse_id"]
     if zid != subject.zid:
         raise ValueError("Mismatched subjects.")
     matches = []  # (wise, first)
     notes = []
-    for anno in classification["annotations"]:
+    for anno in raw_classification["annotations"]:
         if "radio" not in anno:
             continue
         boxes = set()
@@ -104,7 +111,7 @@ def process_classification(
             ir_coord = anno["ir"]["0"]["x"], anno["ir"]["0"]["y"]
             ir_coord = np.array([float(i) for i in ir_coord])
             ir_coord = transform_coord_ir(ir_coord, wcs=wcs)
-            ir_coord = skcoord.SkyCoord(
+            ir_coord = SkyCoord(
                 ra=ir_coord[0].value,
                 dec=ir_coord[1].value,
                 unit=(ir_coord[0].unit, ir_coord[0].unit),
@@ -112,7 +119,7 @@ def process_classification(
             )
             if not defer_ir_lookup:
                 # query the IR
-                q = Vizier.query_region(
+                q = Vizier.query_region(  # type: ignore[reportAttributeAccessIssue]
                     ir_coord, radius=5 * u.arcsec, catalog=["II/328/allwise"]
                 )
                 try:

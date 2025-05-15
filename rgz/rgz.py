@@ -1,49 +1,52 @@
 """Utilities for interacting with RGZ raw data."""
 
-import collections
-import enum
-import itertools
 import json
 import logging
-import os
-import time
 from pathlib import Path
-
-import attr
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import requests
-from tqdm.auto import tqdm
-
-import astropy.wcs
+from typing import Any
 import warnings
-import urllib3
-
-import rgz.subjects
-from rgz.subjects import Subject
-
-warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
-warnings.simplefilter("ignore", urllib3.connectionpool.InsecureRequestWarning)
-
-from astroquery.vizier import Vizier
-import astropy.units as u
-import astropy.coordinates as skcoord
-from astroquery.image_cutouts.first import First
 
 from astropy.io import fits
 from astropy.wcs import WCS
+import astropy.coordinates as skcoord
+import astropy.wcs
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
+
+from rgz import constants
+
+# warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
+# warnings.simplefilter("ignore", urllib3.connectionpool.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
+type JSON = dict[str, Any]
+
+
+def get_wcs(im: fits.HDUList, cache: Path) -> astropy.wcs.WCS:
+    header = im[0].header  # type: ignore[reportAttributeAccessIssue]
+    # WCS.dropaxis doesn't seem to work on these images.
+    # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...
+    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
+        for i in [3, 4]:
+            del header[key + str(i)]
+
+    with warnings.catch_warnings(
+        action="ignore", category=astropy.wcs.FITSFixedWarning
+    ):
+        return WCS(header)
+
+
 def plot_contours(
-    raw_subject: dict[str, ...],
+    raw_subject: JSON,
     ax=None,
     bbox_plot_kwargs=None,
     px_coords=False,
-    px_scaling=100 / rgz.subjects.RADIO_MAX_PX,
+    px_scaling=100 / constants.RADIO_MAX_PX,
 ):
     """Plots the contours of a raw subject."""
+    # TODO: Fix imports.
     if not ax:
         ax = plt.gca()
     if not bbox_plot_kwargs:
@@ -81,6 +84,7 @@ def plot_contours(
 
 
 def plot_raw_subject(raw_subject: dict[str, ...], scaling: int = 1):
+    # TODO: Fix imports.
     f = rgz.subjects.download_first_image(raw_subject)
     wcs = WCS(f[0].header)
     ax = plt.subplot(projection=wcs, slices=("x", "y", 0, 0))

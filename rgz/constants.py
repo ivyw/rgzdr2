@@ -1,0 +1,5 @@
+"""Constants used by RGZ."""
+
+IR_MAX_PX = 424
+RADIO_MAX_PX = 132
+IM_WIDTH_ARCMIN = 3
