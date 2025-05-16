@@ -21,6 +21,7 @@ from rgz import units as u
 
 logger = logging.getLogger(__name__)
 
+type BBox = tuple[float, float, float, float]
 type JSON = dict[str, Any]
 
 
@@ -133,7 +134,7 @@ def process_classification(
     for anno in raw_classification["annotations"]:
         if "radio" not in anno:
             continue
-        boxes = set()
+        boxes: set[BBox] = set()
         if anno["radio"] == "No Contours":
             # ?????? ignore this
             continue
@@ -149,9 +150,9 @@ def process_classification(
         else:
             if len(anno["ir"]) != 1:
                 notes.append("MULTISOURCE")
-            ir_coord = anno["ir"]["0"]["x"], anno["ir"]["0"]["y"]
-            ir_coord = np.array([float(i) for i in ir_coord])
-            ir_coord = transform_coord_ir(ir_coord, wcs=wcs)
+            ir_coord = transform_coord_ir(np.array(
+                [float(anno["ir"]["0"]["x"]),
+                 float(anno["ir"]["0"]["y"])]), wcs=wcs)
             ir_coord = SkyCoord(
                 ra=ir_coord[0].value,
                 dec=ir_coord[1].value,
@@ -169,8 +170,8 @@ def process_classification(
                     coord_str = rgz.coord_to_string(ir_coord)
                     ir = f'NOMATCH_J{coord_str.replace(" ", "")}'
             else:
-                ir = ir_coord.to_string()
-        matches.append((ir, [c for b in boxes for c in subject.bboxes[b]]))
+                ir = rgz.coord_to_string(ir_coord)
+        matches.append((ir, {c for b in boxes for c in subject.bboxes[b]}))
     return Classification(
         cid=cid,
         zid=zid,
