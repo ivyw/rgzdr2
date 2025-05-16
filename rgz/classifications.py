@@ -180,7 +180,8 @@ def process_classification(
     )
 
 
-def classification_to_json_serialisable(classification):
+def classification_to_json_serialisable(classification: Classification) -> JSON:
+    """Convert a Classification into a JSON-serialisable dictionary."""
     return {
         "id": classification.cid,
         "zid": classification.zid,
@@ -192,7 +193,8 @@ def classification_to_json_serialisable(classification):
     }
 
 
-def deserialise_classification(classification):
+def deserialise_classification(classification: JSON) -> Classification:
+    """Read a Classification from a JSON dict."""
     return Classification(
         cid=classification["id"],
         zid=classification["zid"],
