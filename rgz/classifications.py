@@ -221,9 +221,7 @@ def process(
     raw_classifications = []
     with open(classifications_path, encoding="utf-8") as f:
         # Each row is a JSON document.
-        for row in tqdm(
-            f, desc="Reading classifications...", total=n_classifications
-        ):
+        for row in tqdm(f, desc="Reading classifications...", total=n_classifications):
             raw_classifications.append(json.loads(row))
 
     # Batch classifications by subject to minimise IO.

@@ -69,7 +69,7 @@ def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUL
 
 def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
     """Reads a FIRST image from the cache."""
-    fname = cache / f'{subject.id}.fits'
+    fname = cache / f"{subject.id}.fits"
     return fits.open(fname)
 
 
