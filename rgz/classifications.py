@@ -139,9 +139,11 @@ def process_classification(
             # ?????? ignore this
             continue
         for radio in anno["radio"].values():
-            box = tuple(
-                round(float(radio[corner]), 1)
-                for corner in ["xmax", "ymax", "xmin", "ymin"]
+            box = (
+                round(float(radio["xmax"]), 1),
+                round(float(radio["ymax"]), 1),
+                round(float(radio["xmin"]), 1),
+                round(float(radio["ymin"]), 1),
             )
             boxes.add(box)
 
@@ -153,14 +155,15 @@ def process_classification(
             ir_coord = transform_coord_ir(np.array(
                 [float(anno["ir"]["0"]["x"]),
                  float(anno["ir"]["0"]["y"])]), wcs=wcs)
+            ir_ra, ir_dec = ir_coord
             ir_coord = SkyCoord(
-                ra=ir_coord[0].value,
-                dec=ir_coord[1].value,
-                unit=(ir_coord[0].unit, ir_coord[0].unit),
+                ra=ir_ra.value,
+                dec=ir_dec.value,
+                unit=(ir_ra.unit, ir_dec.unit),
                 frame="icrs",
             )
             if not defer_ir_lookup:
-                # query the IR
+                # Query the IR in Vizier.
                 q = Vizier.query_region(  # type: ignore[reportAttributeAccessIssue]
                     ir_coord, radius=5 * u.arcsec, catalog=["II/328/allwise"]
                 )

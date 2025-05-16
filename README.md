@@ -77,19 +77,19 @@ A reduced RGZ subject is a JSON object with the following schema:
                         "prefixItems": [
                             {
                                 "type": "number",
-                                "description": "Minimum RA (px)."
-                            },
-                            {
-                                "type": "number",
-                                "description": "Minimum dec (px)."
-                            },
-                            {
-                                "type": "number",
                                 "description": "Maximum RA (px)."
                             },
                             {
                                 "type": "number",
                                 "description": "Maximum dec (px)."
+                            },
+                            {
+                                "type": "number",
+                                "description": "Minimum RA (px)."
+                            },
+                            {
+                                "type": "number",
+                                "description": "Minimum dec (px)."
                             }
                         ],
                         "items": false
