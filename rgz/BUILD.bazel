@@ -2,32 +2,37 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 compile_pip_requirements(
-    name="requirements",
-    src="pyproject.toml",
-    requirements_txt="requirements.txt",
-    extra_args=["--extra=cli"],
+    name = "requirements",
+    src = "pyproject.toml",
+    extra_args = ["--extra=cli"],
+    requirements_txt = "requirements.txt",
 )
 
-
 py_library(
-    name="rgz",
-    srcs=["rgz.py", "subjects.py"],
-    deps=[
+    name = "rgz",
+    srcs = [
+        "classifications.py",
+        "constants.py",
+        "rgz.py",
+        "subjects.py",
+        "units.py",
+    ],
+    deps = [
+        "@pypi//astropy",
+        "@pypi//astroquery",
         "@pypi//attrs",
+        "@pypi//backoff",
         "@pypi//matplotlib",
         "@pypi//pandas",
         "@pypi//requests",
         "@pypi//tqdm",
-        "@pypi//astropy",
-        "@pypi//astroquery",
-        "@pypi//backoff",
     ],
 )
 
 py_binary(
-    name="main",
-    srcs=["main.py"],
-    deps=[
+    name = "main",
+    srcs = ["main.py"],
+    deps = [
         ":rgz",
         "@pypi//click",
     ],

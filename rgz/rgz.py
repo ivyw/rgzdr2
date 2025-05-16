@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 type JSON = dict[str, Any]
 
 
-def get_wcs(im: fits.HDUList, cache: Path) -> astropy.wcs.WCS:
+def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
     header = im[0].header  # type: ignore[reportAttributeAccessIssue]
     # WCS.dropaxis doesn't seem to work on these images.
     # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...

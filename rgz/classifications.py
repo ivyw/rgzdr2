@@ -1,5 +1,6 @@
 """Handles RGZ classifications."""
 
+import collections
 from collections.abc import Generator
 import json
 import logging
@@ -12,6 +13,7 @@ import numpy.typing as npt
 from astropy.coordinates import SkyCoord
 import astropy.wcs
 from astroquery.vizier import Vizier
+from tqdm import tqdm
 
 from rgz import constants
 from rgz import rgz
@@ -152,9 +154,10 @@ def process_classification(
         else:
             if len(anno["ir"]) != 1:
                 notes.append("MULTISOURCE")
-            ir_coord = transform_coord_ir(np.array(
-                [float(anno["ir"]["0"]["x"]),
-                 float(anno["ir"]["0"]["y"])]), wcs=wcs)
+            ir_coord = transform_coord_ir(
+                np.array([float(anno["ir"]["0"]["x"]), float(anno["ir"]["0"]["y"])]),
+                wcs=wcs,
+            )
             ir_ra, ir_dec = ir_coord
             ir_coord = SkyCoord(
                 ra=ir_ra.value,
@@ -206,3 +209,48 @@ def deserialise_classification(classification: JSON) -> Classification:
         notes=classification["notes"],
         matches=[(m["ir"], set(m["radio"])) for m in classification["matches"]],
     )
+
+
+def process(
+    classifications_path: Path, subjects_path: Path, cache: Path, output_path: Path
+):
+    """Processes classifications from raw to reduced JSON."""
+    # Get classifications count for progress bar.
+    with open(classifications_path, encoding="utf-8") as f:
+        n_classifications = len(f.readlines())
+    raw_classifications = []
+    with open(classifications_path, encoding="utf-8") as f:
+        # Each row is a JSON document.
+        for row in tqdm(
+            f, desc="Reading classifications...", total=n_classifications
+        ):
+            raw_classifications.append(json.loads(row))
+
+    # Batch classifications by subject to minimise IO.
+    subject_to_classifications = collections.defaultdict(list)
+    for classification in raw_classifications:
+        sid = classification["subject_ids"][0]["$oid"]
+        subject_to_classifications[sid].append(classification)
+
+    # Load all reduced subjects.
+    with open(subjects_path, "r") as f:
+        subjects_ = [subjects.deserialise_subject(js) for js in json.load(f)]
+
+    classifications = []
+    bar = tqdm(total=n_classifications, desc="Processing classifications...")
+    for subject in subjects_:
+        raw_classifications_for_subject = subject_to_classifications[subject.id]
+        im = subjects.read_subject_image_from_file(subject, cache)
+        wcs = rgz.get_wcs(im)
+        for raw_classification in raw_classifications_for_subject:
+            classification = process_classification(
+                raw_classification, subject, wcs, defer_ir_lookup=True
+            )
+            classifications.append(classification)
+            bar.update(1)
+
+    json_classifications = []
+    for classification in tqdm(classifications, desc="Serialising subjects..."):
+        json_classifications.append(classification_to_json_serialisable(classification))
+    with open(output_path, "w") as f:
+        json.dump(json_classifications, f)

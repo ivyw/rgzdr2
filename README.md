@@ -1,9 +1,10 @@
 # rgzdr2
+
 [![Lint](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml/badge.svg)](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml)
 
 Code Repository for RGZ DR2 pipeline
 
-Purpose is to develop the DR2 pipeline that overcomes the limitations of the RGZ DR1 pipeline (https://github.com/willettk/rgz-analysis)
+Purpose is to develop the DR2 pipeline that overcomes the limitations of the RGZ DR1 pipeline (<https://github.com/willettk/rgz-analysis>)
 
 ## Getting started
 
@@ -30,12 +31,14 @@ bazel-bin/rgz/main subjects --in=data/radio_subjects.json --out=data/radio_subje
 ```
 
 This will:
+
 - download FIRST images from the FIRST server,
 - download FIRST catalogue data from Vizier,
 - download JSON contours from the Zooniverse server, and
 - use the combined information to build a reduced dataset of RGZ subjects.
 
 A reduced RGZ subject is a JSON object with the following schema:
+
 ```json
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -102,6 +105,7 @@ A reduced RGZ subject is a JSON object with the following schema:
 ```
 
 For example:
+
 ```JSON
 {
     "id": "52af7eb58c51f405a600001b",
@@ -118,6 +122,19 @@ For example:
     ]
 }
 ```
+
+### Processing the RGZ classifications
+
+```bash
+bazel-bin/rgz/main classifications --in=data/radio_classifications.json --out=data/radio_classifications_processed.json --cache=data/cache --subjects=data/radio_subjects_processed.json
+```
+
+This will:
+
+- use the downloaded FIRST images to figure out what radio components citizen scientists selected, and
+- use the combined information to build a reduced dataset of RGZ classifications.
+
+A reduced RGZ classification is a JSON object with the following schema: (TODO)
 
 ## Developing
 

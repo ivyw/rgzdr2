@@ -11,11 +11,11 @@ We can remove this code when the relevant issue is resolved:
 https://github.com/astropy/astropy/issues/15808
 """
 
-import astropy.units as u
+import astropy.units
 
 # Import all the units so we can use this module as a drop-in substitute.
 from astropy.units import *  # type: ignore[reportWildcardImportFromLibrary]
 
-deg = u.deg  # type: ignore
-arcmin = u.arcmin  # type: ignore
-arcsec = u.arcsec  # type: ignore
+deg = astropy.units.deg  # type: ignore
+arcmin = astropy.units.arcmin  # type: ignore
+arcsec = astropy.units.arcsec  # type: ignore

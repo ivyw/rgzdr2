@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 
+import rgz.classifications
 import rgz.subjects
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,11 @@ def subjects(in_: Path, out: Path, cache: Path):
     help="Contains one JSON classification per line, exported from RGZ.",
 )
 @click.option(
+    "--subjects",
+    type=click.Path(resolve_path=True, path_type=Path),
+    help="Reduced RGZ subjects JSON.",
+)
+@click.option(
     "--out",
     type=click.Path(resolve_path=True, path_type=Path),
     help="JSON file to write reduced classifications to.",
@@ -58,9 +64,9 @@ def subjects(in_: Path, out: Path, cache: Path):
     ),
     help="Where to download files to.",
 )
-def classifications(in_: Path, out: Path, cache: Path):
+def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
     """Processes RGZ classifications."""
-    rgz.classifications.process(in_, cache, out)
+    rgz.classifications.process(in_, subjects, cache, out)
 
 
 if __name__ == "__main__":

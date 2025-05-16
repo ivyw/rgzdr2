@@ -67,6 +67,12 @@ def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUL
     raise TypeError(f"Expected HDUList; got {type(ims)}")
 
 
+def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
+    """Reads a FIRST image from the cache."""
+    fname = cache / f'{subject.id}.fits'
+    return fits.open(fname)
+
+
 def fetch_first_from_server_or_cache(
     raw_subject: JSON,
     cache: Path,
@@ -96,7 +102,7 @@ def transform_coord_radio(
     TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
     im = fetch_first_from_server_or_cache(raw_subject, cache)
-    wcs = rgz.get_wcs(im, cache)
+    wcs = rgz.get_wcs(im)
 
     # Coord in 132x132 -> 100x100.
     coord = coord * 100 / constants.RADIO_MAX_PX
