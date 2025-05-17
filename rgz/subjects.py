@@ -154,7 +154,7 @@ def get_first_from_bbox(
         skc, width=width, height=height, catalog=["VIII/92/first14"]
     )
     try:
-        return list(q[0]["FIRST"])
+        return [f"FIRST_{name}" for name in q[0]["FIRST"]]
     except IndexError:
         coord_str = rgz.coord_to_string(skc)
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
