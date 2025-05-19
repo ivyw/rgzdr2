@@ -3,6 +3,7 @@
 [![Lint](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml/badge.svg)](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml)
 
 Code Repository for RGZ DR2 pipeline
+
 Figshare link to FIRST FITS/JSON repo: https://figshare.com/s/b4e28330635e7861c2b4?file=54481925
 
 Purpose is to develop the DR2 pipeline that overcomes the limitations of the RGZ DR1 pipeline (<https://github.com/willettk/rgz-analysis>)
