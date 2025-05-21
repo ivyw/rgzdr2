@@ -1,15 +1,47 @@
 """Tests for processing RGZ subjects."""
 
+import json
+import logging
+from pathlib import Path
+import tempfile
 import unittest
 
 import rgz.subjects
+
+# Path to test directory.
+_TEST_DIR = Path("rgz/testdata/")
+
+_TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
+
+# Path to test (raw) subjects JSON.
+_TEST_SUBJECTS_PATH = _TEST_DIR / "radio_subjects_test_subset.json"
+
+# Path to test (processed) subjects JSON.
+_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processed.json"
 
 
 class TestProcess(unittest.TestCase):
     """Tests for rgz.subjects.process."""
 
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory(delete=False)
+        self.temp_dir_path = Path(self.temp_dir.name)
+        print(self.temp_dir_path)
+
+    def tearDown(self):
+        # self.temp_dir.cleanup()
+        pass
+
     def test_regression(self):
         """Tests behaviour consistency in processing subjects."""
-        
-        
-        
+        output_path = self.temp_dir_path / "out.json"
+        rgz.subjects.process(_TEST_SUBJECTS_PATH, _TEST_CACHE_DATA_PATH, output_path)
+        with open(output_path) as f:
+            got = json.load(f)
+        with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
+            want = json.load(f)
+        self.assertEqual(want, got)
+
+
+if __name__ == "__main__":
+    unittest.main()
