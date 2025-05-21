@@ -22,6 +22,19 @@ This will build the RGZ binary. Then you can run it:
 bazel-bin/rgz/main --help
 ```
 
+## Data dependencies
+
+Most of the data will be downloaded automatically, but you can speed things up by providing them locally. The structure should be:
+
+- data/
+  - cache/
+    - 52af81027aa69f059a003a95.fits
+    - 52af81027aa69f059a003a95.json
+    - ...
+  - first-2014Dec17.tsv
+  - radio_subjects.json
+  - radio_classifications.json
+
 ## Running the pipeline
 
 You need to have the RGZ data dumped as JSON: this is the only input. To save some time, you could use the cache folder from a previous run of the pipeline; it's deterministic wherever possible and the cache stores some of the slower data files.
