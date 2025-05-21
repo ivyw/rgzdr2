@@ -8,7 +8,9 @@ from typing import Any
 
 from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
+import astropy.io.ascii
 from astropy.io import fits
+import astropy.table
 from astropy.units import Quantity
 from astroquery.vizier import Vizier
 import attr
@@ -24,6 +26,9 @@ from rgz import units as u
 
 # Max number of retries for fetching data from the internet.
 MAX_TRIES = 10
+
+# Filename of the FIRST catalogue.
+_FIRST_CATALOGUE_FILENAME = "first_2014Dec17.csv"
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +78,7 @@ def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
     return fits.open(fname)
 
 
-def fetch_first_from_server_or_cache(
+def fetch_first_image_from_server_or_cache(
     raw_subject: JSON,
     cache: Path,
 ) -> fits.HDUList:
@@ -90,6 +95,28 @@ def fetch_first_from_server_or_cache(
         return im
 
 
+def download_first_catalogue(cache: Path):
+    """Downloads the FIRST catalogue from Vizier."""
+    first = Vizier(row_limit=-1).get_catalogs(  # type: ignore[reportAttributeAccessIssue]
+        "VIII/92/first14"
+    )
+    first[0].write(cache / _FIRST_CATALOGUE_FILENAME, format="csv")
+
+
+def fetch_first_catalogue_from_server_or_cache(
+    cache: Path,
+) -> astropy.table.table.Table:
+    """Fetches the FIRST catalogue from Vizier or cache."""
+    try:
+        return astropy.io.ascii.read(
+            str(cache / _FIRST_CATALOGUE_FILENAME), guess=False, format="csv"
+        )  # type: ignore[reportReturnType]
+    except IOError:
+        logger.debug("Cache miss; downloading FIRST table from Vizier")
+        download_first_catalogue(cache)
+        return fetch_first_catalogue_from_server_or_cache(cache)
+
+
 def transform_coord_radio(
     coord: npt.NDArray[np.float64],
     raw_subject: JSON,
@@ -101,7 +128,7 @@ def transform_coord_radio(
 
     TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
-    with fetch_first_from_server_or_cache(raw_subject, cache) as im:
+    with fetch_first_image_from_server_or_cache(raw_subject, cache) as im:
         wcs = rgz.get_wcs(im)
 
     # Coord in 132x132 -> 100x100.

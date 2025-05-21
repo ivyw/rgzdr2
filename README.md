@@ -28,10 +28,10 @@ Most of the data will be downloaded automatically, but you can speed things up b
 
 - data/
   - cache/
+    - first_2014Dec17.csv
     - 52af81027aa69f059a003a95.fits
     - 52af81027aa69f059a003a95.json
     - ...
-  - first-2014Dec17.tsv
   - radio_subjects.json
   - radio_classifications.json
 
