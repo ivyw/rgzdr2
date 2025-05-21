@@ -1,5 +1,6 @@
 """rgzdr2 is the second incarnation data reduction pipeline for Radio Galaxy Zoo."""
 
+module(name = "rgz")
 bazel_dep(name = "rules_python", version = "1.4.0")
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")

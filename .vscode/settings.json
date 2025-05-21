@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./bazel-rgzdr2/external/rules_python+"
+    ]
+}

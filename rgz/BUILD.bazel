@@ -66,7 +66,11 @@ py_library(
 
 filegroup(
     name = "testdata",
-    srcs = glob(["testdata/*.json"]),
+    srcs = glob([
+        "testdata/*.json",
+        "testdata/first/*.json",
+        "testdata/first/*.fits",
+    ]),
 )
 
 py_test(
@@ -75,5 +79,6 @@ py_test(
     data = [":testdata"],
     deps = [
         ":subjects",
+        "@rules_python//python/runfiles",
     ],
 )

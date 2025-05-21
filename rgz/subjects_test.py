@@ -1,16 +1,19 @@
 """Tests for processing RGZ subjects."""
 
 import json
-import logging
+import os
 from pathlib import Path
 import tempfile
 import unittest
 
+from python.runfiles import Runfiles
+
 import rgz.subjects
 
 # Path to test directory.
-_TEST_DIR = Path("rgz/testdata/")
+_TEST_DIR = Path(os.path.dirname(__file__)) / "testdata/"
 
+# Path to "cache" data.
 _TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
 
 # Path to test (raw) subjects JSON.
@@ -29,8 +32,7 @@ class TestProcess(unittest.TestCase):
         print(self.temp_dir_path)
 
     def tearDown(self):
-        # self.temp_dir.cleanup()
-        pass
+        self.temp_dir.cleanup()
 
     def test_regression(self):
         """Tests behaviour consistency in processing subjects."""
