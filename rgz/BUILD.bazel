@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 compile_pip_requirements(
@@ -8,32 +8,72 @@ compile_pip_requirements(
     requirements_txt = "requirements.txt",
 )
 
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    deps = [
+        ":classifications",
+        ":rgz",
+        ":subjects",
+        "@pypi//click",
+    ],
+)
+
 py_library(
     name = "rgz",
     srcs = [
-        "classifications.py",
         "constants.py",
         "rgz.py",
-        "subjects.py",
         "units.py",
     ],
     deps = [
         "@pypi//astropy",
+        "@pypi//matplotlib",
+        "@pypi//requests",
+    ],
+)
+
+py_library(
+    name = "subjects",
+    srcs = [
+        "subjects.py",
+    ],
+    deps = [
+        ":rgz",
+        "@pypi//astropy",
         "@pypi//astroquery",
         "@pypi//attrs",
         "@pypi//backoff",
-        "@pypi//matplotlib",
-        "@pypi//pandas",
         "@pypi//requests",
         "@pypi//tqdm",
     ],
 )
 
-py_binary(
-    name = "main",
-    srcs = ["main.py"],
+py_library(
+    name = "classifications",
+    srcs = [
+        "classifications.py",
+    ],
     deps = [
         ":rgz",
-        "@pypi//click",
+        ":subjects",
+        "@pypi//astropy",
+        "@pypi//astroquery",
+        "@pypi//attrs",
+        "@pypi//tqdm",
+    ],
+)
+
+filegroup(
+    name = "testdata",
+    srcs = glob(["testdata/*.json"]),
+)
+
+py_test(
+    name = "subjects_test",
+    srcs = ["subjects_test.py"],
+    data = [":testdata"],
+    deps = [
+        ":subjects",
     ],
 )
