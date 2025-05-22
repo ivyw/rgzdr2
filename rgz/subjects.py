@@ -242,6 +242,8 @@ def process_subject(
 
 def process(subjects_path: Path, cache: Path, output_path: Path):
     """Processes subjects from raw to reduced JSON."""
+    first_catalogue = fetch_first_catalogue_from_server_or_cache(cache)
+    
     subjects = []
     # Get subject count for progress bar.
     with open(subjects_path, encoding="utf-8") as f:
