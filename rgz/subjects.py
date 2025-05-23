@@ -151,6 +151,29 @@ def transform_bbox_px_to_phys(
     )
 
 
+def find_points_in_box(
+    points: npt.NDArray,
+    lower_ra: float,
+    upper_ra: float,
+    lower_dec: float,
+    upper_dec: float,
+) -> list[int]:
+    """Finds points that are within a box."""
+    if upper_ra < lower_ra:
+        # Edge case at RA = 0.
+        # Left side:
+        return find_points_in_box(
+            points, lower_ra, 360.0, lower_dec, upper_dec
+        ) + find_points_in_box(points, 0, upper_ra, lower_dec, upper_dec)
+    mask = (
+        (points[:, 0] < upper_ra)
+        & (points[:, 0] > lower_ra)
+        & (points[:, 1] < upper_dec)
+        & (points[:, 1] > lower_dec)
+    )
+    return list(mask.nonzero()[0])
+
+
 def get_first_from_bbox(
     px_bbox: BBox,
     raw_subject: JSON,
@@ -178,18 +201,18 @@ def get_first_from_bbox(
         frame="icrs",
     )
 
-    # TODO: Handle the 0-360 edge case.
+    # TODO: Speed this up using some kind of tree.
     ra, dec = rgz.get_deg(skc)
     width_deg = width.to(u.deg).value
     height_deg = height.to(u.deg).value
-    mask = (
-        (first_tree[0][:, 0] < (ra + width_deg / 2))
-        & (first_tree[0][:, 0] > (ra - width_deg / 2))
-        & (first_tree[0][:, 1] < (dec + height_deg / 2))
-        & (first_tree[0][:, 1] > (dec - height_deg / 2))
+    upper_ra = ra + width_deg / 2
+    lower_ra = ra - width_deg / 2
+    upper_dec = dec + height_deg / 2
+    lower_dec = dec - height_deg / 2
+    matching_indices = find_points_in_box(
+        first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
     )
-    matching_indices = mask.nonzero()[0]
-    if matching_indices.sum() == 0:
+    if not matching_indices:
         coord_str = rgz.coord_to_string(skc)
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
 
