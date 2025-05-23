@@ -19,3 +19,4 @@ from astropy.units import *  # type: ignore[reportWildcardImportFromLibrary]
 deg = astropy.units.deg  # type: ignore
 arcmin = astropy.units.arcmin  # type: ignore
 arcsec = astropy.units.arcsec  # type: ignore
+hourangle = astropy.units.hourangle  # type: ignore

@@ -823,6 +823,18 @@ requests==2.32.3 \
     #   astroquery
     #   pyvo
     #   rgzdr2 (rgz/pyproject.toml)
+rtree==1.4.0 \
+    --hash=sha256:0133d9c54ab3ffe874ba6d411dbe0254765c5e68d92da5b91362c370f16fd997 \
+    --hash=sha256:20d5b3f9cf8bbbcc9fec42ab837c603c5dd86103ef29134300c8da2495c1248b \
+    --hash=sha256:27e4a6d617d63dcb82fcd4c2856134b8a3741bd1af3b1a0d98e886054f394da5 \
+    --hash=sha256:4d1bebc418101480aabf41767e772dd2155d3b27b1376cccbd93e4509485e091 \
+    --hash=sha256:5258e826064eab82439760201e9421ce6d4340789d6d080c1b49367ddd03f61f \
+    --hash=sha256:997f8c38d5dffa3949ea8adb4c8b291ea5cd4ef5ee69455d642dd171baf9991d \
+    --hash=sha256:9d97c7c5dcf25f6c0599c76d9933368c6a8d7238f2c1d00e76f1a69369ca82a0 \
+    --hash=sha256:a67bee1233370a4c72c0969a96d2a1df1ba404ddd9f146849c53ab420eab361b \
+    --hash=sha256:ba83efc7b7563905b1bfdfc14490c4bfb59e92e5e6156bdeb6ec5df5117252f4 \
+    --hash=sha256:d3b7bf1fe6463139377995ebe22a01a7005d134707f43672a3c09305e12f5f43
+    # via rgzdr2 (rgz/pyproject.toml)
 secretstorage==3.3.3 \
     --hash=sha256:2403533ef369eca6d2ba81718576c5e0f564d5cca1b58f73a8b23e7d4eeebd77 \
     --hash=sha256:f356e6628222568e3af06f2eba8df495efa13b3b63081dafd4f7d9a7b7bc9f99

@@ -1,5 +1,6 @@
 """Utilities for interacting with RGZ raw data."""
 
+from collections.abc import Iterator
 import json
 import logging
 from typing import Any
@@ -14,6 +15,7 @@ import numpy as np
 import requests
 
 from rgz import constants
+from rgz import units as u
 
 # warnings.simplefilter("ignore", astropy.wcs.FITSFixedWarning)
 # warnings.simplefilter("ignore", urllib3.connectionpool.InsecureRequestWarning)
@@ -21,6 +23,16 @@ from rgz import constants
 logger = logging.getLogger(__name__)
 
 type JSON = dict[str, Any]
+
+
+def safe_skycoord_iterable(coords: SkyCoord) -> Iterator[SkyCoord]:
+    """Type-safe tabular SkyCoord."""
+    return iter(coords)  # type: ignore[reportReturnType]
+
+
+def get_deg(coord: SkyCoord) -> tuple[np.float64, np.float64]:
+    """Gets the RA/dec of a SkyCoord in degrees."""
+    return coord.ra.deg, coord.dec.deg  # type: ignore[reportReturnType]
 
 
 def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:

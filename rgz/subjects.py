@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 type BBox = tuple[float, float, float, float]
 type JSON = dict[str, Any]
 type HDU = fits.hdu.base.ExtensionHDU
+type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
 
 
 @attr.s
@@ -154,6 +155,7 @@ def get_first_from_bbox(
     px_bbox: BBox,
     raw_subject: JSON,
     cache: Path,
+    first_tree: FIRSTTree,
 ) -> list[str]:
     """Finds FIRST components within a bounding box."""
     # TODO: Might need to flip horizontally or even vertically...
@@ -175,16 +177,26 @@ def get_first_from_bbox(
         unit=(centre[0].unit, centre[0].unit),
         frame="icrs",
     )
-    # Now we can do a VizieR query.
-    # TODO: Manually cache this into the cache directory.
-    q = Vizier.query_region(  # type: ignore[reportAttributeAccessIssue]
-        skc, width=width, height=height, catalog=["VIII/92/first14"]
+
+    # TODO: Handle the 0-360 edge case.
+    ra, dec = rgz.get_deg(skc)
+    width_deg = width.to(u.deg).value
+    height_deg = height.to(u.deg).value
+    mask = (
+        (first_tree[0][:, 0] < (ra + width_deg / 2))
+        & (first_tree[0][:, 0] > (ra - width_deg / 2))
+        & (first_tree[0][:, 1] < (dec + height_deg / 2))
+        & (first_tree[0][:, 1] > (dec - height_deg / 2))
     )
-    try:
-        return [f"FIRST_{name}" for name in q[0]["FIRST"]]
-    except IndexError:
+    matching_indices = mask.nonzero()[0]
+    if matching_indices.sum() == 0:
         coord_str = rgz.coord_to_string(skc)
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
+
+    names = []
+    for index in matching_indices:
+        names.append("FIRST_" + first_tree[1][index])
+    return names
 
 
 def get_bboxes(
@@ -227,6 +239,7 @@ def subject_to_json_serialisable(subject: Subject) -> JSON:
 def process_subject(
     raw_subject: JSON,
     cache: Path,
+    first_tree: FIRSTTree,
 ) -> Subject:
     """Reduces a JSON subject into a nice, value-added format."""
     sid = raw_subject["_id"]["$oid"]
@@ -234,16 +247,29 @@ def process_subject(
     bboxes = get_bboxes(raw_subject, cache)
     bbox_to_firsts = {}
     for bbox in bboxes:
-        firsts = get_first_from_bbox(bbox, raw_subject, cache)
+        firsts = get_first_from_bbox(bbox, raw_subject, cache, first_tree)
         bbox_to_firsts[bbox] = firsts
     s = Subject(id=sid, zid=zid, coords=raw_subject["coords"], bboxes=bbox_to_firsts)
     return s
 
 
+def build_first_tree(first_catalogue: astropy.table.table.Table) -> FIRSTTree:
+    """Build a spatial index for FIRST component centres."""
+    # TODO: Store these coords in the actual table so we don't have to parse it each time.
+    skycoords = SkyCoord(
+        ra=first_catalogue["RAJ2000"],
+        dec=first_catalogue["DEJ2000"],
+        unit=(u.hourangle, u.deg),
+    )
+    coords = np.stack([skycoords.ra.deg, skycoords.dec.deg]).T  # type: ignore
+    return (coords, list(first_catalogue["FIRST"]))  # type: ignore
+
+
 def process(subjects_path: Path, cache: Path, output_path: Path):
     """Processes subjects from raw to reduced JSON."""
     first_catalogue = fetch_first_catalogue_from_server_or_cache(cache)
-    
+    first_tree = build_first_tree(first_catalogue)
+
     subjects = []
     # Get subject count for progress bar.
     with open(subjects_path, encoding="utf-8") as f:
@@ -252,7 +278,7 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
         # Each row is a JSON document.
         for row in tqdm(f, desc="Processing subjects...", total=n_subjects):
             try:
-                subjects.append(process_subject(json.loads(row), cache))
+                subjects.append(process_subject(json.loads(row), cache, first_tree))
             except FileNotFoundError as e:
                 logger.warning(e)
                 continue
