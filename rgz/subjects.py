@@ -196,7 +196,7 @@ def get_first_from_bbox(
     names = []
     for index in matching_indices:
         names.append("FIRST_" + first_tree[1][index])
-    return names
+    return sorted(names)
 
 
 def get_bboxes(
