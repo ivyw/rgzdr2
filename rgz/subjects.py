@@ -101,6 +101,15 @@ def download_first_catalogue(cache: Path):
     first = Vizier(row_limit=-1).get_catalogs(  # type: ignore[reportAttributeAccessIssue]
         "VIII/92/first14"
     )
+    skc = SkyCoord(
+        ra=first[0]["RAJ2000"],
+        dec=first[0]["DEJ2000"],
+        unit=(u.hourangle, u.deg),
+    )
+    ra = skc.ra.deg  # type: ignore[reportOptionalMemberAccess]
+    dec = skc.dec.deg  # type: ignore[reportOptionalMemberAccess]
+    first[0]["RA_DEG"] = ra
+    first[0]["DE_DEG"] = dec
     first[0].write(cache / _FIRST_CATALOGUE_FILENAME, format="csv")
 
 
@@ -278,13 +287,7 @@ def process_subject(
 
 def build_first_tree(first_catalogue: astropy.table.table.Table) -> FIRSTTree:
     """Build a spatial index for FIRST component centres."""
-    # TODO: Store these coords in the actual table so we don't have to parse it each time.
-    skycoords = SkyCoord(
-        ra=first_catalogue["RAJ2000"],
-        dec=first_catalogue["DEJ2000"],
-        unit=(u.hourangle, u.deg),
-    )
-    coords = np.stack([skycoords.ra.deg, skycoords.dec.deg]).T  # type: ignore
+    coords = np.stack([first_catalogue["RA_DEG"], first_catalogue["DE_DEG"]]).T  # type: ignore
     return (coords, list(first_catalogue["FIRST"]))  # type: ignore
 
 

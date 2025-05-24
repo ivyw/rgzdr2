@@ -79,6 +79,7 @@ py_test(
     data = [":testdata"],
     deps = [
         ":subjects",
+        "@pypi//line_profiler",
         "@rules_python//python/runfiles",
     ],
 )

@@ -14,7 +14,9 @@ dependencies = [
     "astropy",
     "astroquery",
     "backoff",
+    "line_profiler",
 ]
 
 [project.optional-dependencies]
 cli = ["click"]
+test = ["line_profiler"]
