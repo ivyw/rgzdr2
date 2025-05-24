@@ -190,6 +190,7 @@ def get_first_from_bbox(
     first_tree: FIRSTTree,
 ) -> list[str]:
     """Finds FIRST components within a bounding box."""
+    # TODO: Also use the contours to ensure that they really are within the boxes.
     # TODO: Might need to flip horizontally or even vertically...
     phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
     # Find the centre...
