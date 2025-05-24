@@ -27,6 +27,7 @@ _TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processe
 profiler = line_profiler.LineProfiler()
 profiler.enable_by_count()
 
+
 class TestProcess(unittest.TestCase):
     """Tests for rgz.subjects.process."""
 
@@ -44,7 +45,7 @@ class TestProcess(unittest.TestCase):
         self.temp_dir.cleanup()
 
     @classmethod
-    def tearDownClass(cls):  
+    def tearDownClass(cls):
         profiler.print_stats()
         profiler.dump_stats("/tmp/lprof")
 
