@@ -99,8 +99,8 @@ def transform_coord_ir(
     if raw_subject:
         assert cache
         assert not wcs
-        im = subjects.fetch_first_from_server_or_cache(raw_subject, cache)
-        wcs = rgz.get_wcs(im, cache)
+        im = subjects.fetch_first_image_from_server_or_cache(raw_subject, cache)
+        wcs = rgz.get_wcs(im)
     assert wcs
     # Coord in 424x424 -> 100x100
     px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
