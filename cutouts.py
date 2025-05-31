@@ -17,16 +17,19 @@ def get_allwise_cutout(coords: SkyCoord,
                        band: str = "W1",
                        save_fits: bool = False,
                        cutout_fname: Path = None,
-                       ) -> fits.HDUList:
-    """Downloads a FITS cutout from AllWISE. 
+                       ) -> fits.HDUList | None:
+    """Returns a FITS HDUList of an AllWISE cutout, optionally saving it to file. 
 
     This function extracts a cutout image from AllWISE via the NASA/IPAC 
     Infrared Science Archive (IRSA). This is a two-step process: first, a
     Simple Image Access Query is used to identify the list of AllWISE images 
     containing the requested coordinates. The image from which to extract the 
-    cutout is taken as the first image in the list in the requested band 
+    cutout is taken as the first image in the list in the requested WISE band 
     that is also of "science" quality. Then, a cutout from the image is 
-    extracted by constructing a query using the corresponding access URL.
+    extracted by constructing a query using the corresponding access URL. 
+    If the cutout exists, this function returns an astropy FITS Header Data 
+    Unit List (HDUList) containing the FITS header and the image; otherwise it 
+    returns None.
 
     INPUTS
     ---------------------------------------------------------------------------
@@ -43,16 +46,19 @@ def get_allwise_cutout(coords: SkyCoord,
         If True, saves the downloaded cutout to path specified by cutout_fname.
         Otherwise, the FITS file is saved to a temporary file. 
     
-    cutout_fname    Path
-        If save_fits is True, specifies the path where the image is saved. 
-        If unspecified, the file is saved to 
+    cutout_fname    Path (default: None)
+        If save_fits is True, specifies the path where the image is saved; this
+        argument is ignored otherwise.
+        If save_fits is True and cutout_fname is unspecified, the file is 
+        saved to 
             f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits"
         where ra_deg and dec_deg are the RA and dec respectively.
     
     RETURNS
     ---------------------------------------------------------------------------
-    hdulist     astropy.io.fits.HDUList
-        HDUList object containing the FITS image and header.    
+    If a valid cutout is found, returns an astropy.io.fits.HDUList containing
+    the FITS header (the zeroth extension) and the image (the first extension).
+    If no valid cutout is found, returns None.  
     
     REFERENCES 
     ---------------------------------------------------------------------------
@@ -80,8 +86,7 @@ def get_allwise_cutout(coords: SkyCoord,
             cutout_fname = cutout_fname.with_suffix(".fits")
 
     # Get list of AllWISE images containing the target RA/Dec, save to a temporary file 
-    # TODO do we want CALIB=2 here?
-    imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&CALIB=2&RESPONSEFORMAT=FITS"
+    imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
     try:
         with urllib.request.urlopen(imglist_url) as response:
             with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
@@ -155,4 +160,3 @@ if __name__ == "__main__":
     wcs = WCS(hdulist[0].header)
     fig, ax = plt.subplots(subplot_kw=dict(projection=wcs))
     ax.imshow(np.log10(im))
-
