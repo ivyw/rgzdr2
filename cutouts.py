@@ -61,9 +61,6 @@ def get_allwise_cutout(coords: SkyCoord,
         https://irsa.ipac.caltech.edu/ibe/sia.html 
         https://irsa.ipac.caltech.edu/ibe/cutouts.html 
     """
-
-    # TODO input ra/deg in SkyCoord
-
     # Input validation
     if size_arcmin < 0:
         raise ValueError(f"Cutout size size_arcmin {size_arcmin} < 0!")
@@ -84,7 +81,7 @@ def get_allwise_cutout(coords: SkyCoord,
 
     # Get list of AllWISE images containing the target RA/Dec, save to a temporary file 
     # TODO do we want CALIB=2 here?
-    imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
+    imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&CALIB=2&RESPONSEFORMAT=FITS"
     try:
         with urllib.request.urlopen(imglist_url) as response:
             with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
