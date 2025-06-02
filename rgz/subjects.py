@@ -33,7 +33,7 @@ _FIRST_CATALOGUE_FILENAME = "first_2014Dec17.csv"
 logger = logging.getLogger(__name__)
 
 
-type BBox = tuple[float, float, float, float]
+type BBox = tuple[float, float, float, float]  # xmin, ymin, xmax, ymax
 type JSON = dict[str, Any]
 type HDU = fits.hdu.base.ExtensionHDU
 type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
@@ -151,7 +151,10 @@ def transform_bbox_px_to_phys(
     px_bbox: BBox, raw_subject: JSON, cache: Path
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
-    phys_bbox = np.array(px_bbox)
+    xmin, ymin, xmax, ymax = px_bbox
+    # Flip vertically.
+    phys_bbox = np.array([xmin, constants.RADIO_MAX_PX - ymax,
+                          xmax, constants.RADIO_MAX_PX - ymin])
     return np.concatenate(
         [
             transform_coord_radio(phys_bbox[:2], raw_subject, cache),
