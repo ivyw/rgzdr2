@@ -1,0 +1,10 @@
+load("//notebooks:jupyter.bzl", "jupyter_server")
+
+jupyter_server(
+    name = "jupyter_server",
+    deps = [
+        "//rgz:rgz",
+        "//rgz:classifications",
+        "//rgz:subjects",
+    ],
+)

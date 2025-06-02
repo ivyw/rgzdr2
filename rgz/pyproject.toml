@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "rgzdr2"
 version = "0.0.0"
+# TODO: Fix development dependencies as optional.
 dependencies = [
     "attrs",
     "requests",
@@ -15,8 +16,16 @@ dependencies = [
     "astroquery",
     "backoff",
     "line_profiler",
+    "jupyter",
+    "jupyterlab",
+    "notebook",
+    "jupyterlab-code-formatter",
+    "black",
 ]
 
 [project.optional-dependencies]
 cli = ["click"]
 test = ["line_profiler"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["rgz/"]

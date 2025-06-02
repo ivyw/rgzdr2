@@ -1,6 +1,8 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
+package(default_visibility = ["//notebooks:__pkg__"])
+
 compile_pip_requirements(
     name = "requirements",
     src = "pyproject.toml",

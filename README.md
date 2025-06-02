@@ -170,3 +170,11 @@ Run tests with Bazel:
 ```bash
 bazel test rgz:all
 ```
+
+### Notebooks
+
+To run notebooks, use the `jupyter_server` target from the root directory:
+
+```bash
+bazel run notebooks:jupyter_server
+```
