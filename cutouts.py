@@ -20,7 +20,7 @@ def get_allwise_cutout(coords: SkyCoord,
                        size: u.Quantity[u.arcmin] = 3 * u.arcmin,
                        band: str = "W1",
                        save_fits: bool = False,
-                       cutout_fname: Path = None,
+                       cutout_path: Path = None,
                        ) -> fits.HDUList | None:
     """Returns a FITS HDUList of an AllWISE cutout, optionally saving it to file. 
 
@@ -47,13 +47,13 @@ def get_allwise_cutout(coords: SkyCoord,
         AllWISE band. Default: W1.
     
     save_fits       bool (default: False)
-        If True, saves the downloaded cutout to path specified by cutout_fname.
+        If True, saves the downloaded cutout to path specified by cutout_path.
         Otherwise, the FITS file is saved to a temporary file. 
     
-    cutout_fname    Path (default: None)
+    cutout_path    Path (default: None)
         If save_fits is True, specifies the path where the image is saved; this
         argument is ignored otherwise.
-        If save_fits is True and cutout_fname is unspecified, the file is 
+        If save_fits is True and cutout_path is unspecified, the file is 
         saved to 
             f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits"
         where ra_deg and dec_deg are the RA and dec respectively.
@@ -82,13 +82,13 @@ def get_allwise_cutout(coords: SkyCoord,
     # If no filename is supplied, save cutout to allwise_<band>_<ra_deg>_<dec_deg>.fits
     ra_deg = coords.ra.value
     dec_deg = coords.dec.value
-    if cutout_fname is None:
-        cutout_fname = Path(f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits")
+    if cutout_path is None:
+        cutout_path = Path(f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits")
     else:
         if save_fits == False:
-            logger.warning("You have specified a cutout_fname but I am not saving the result to file!")
-        if cutout_fname.suffix == "":
-            cutout_fname = cutout_fname.with_suffix(".fits")
+            logger.warning("You have specified a cutout_path but I am not saving the result to file!")
+        if cutout_path.suffix == "":
+            cutout_path = cutout_path.with_suffix(".fits")
 
     # Get list of AllWISE images containing the target RA/Dec, save to a temporary file 
     imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
@@ -122,8 +122,8 @@ def get_allwise_cutout(coords: SkyCoord,
     cutout_url = f"{access_url}?{query_str}"
     try:
         if save_fits:
-            urllib.request.urlretrieve(cutout_url, cutout_fname)
-            hdulist = fits.open(cutout_fname)
+            urllib.request.urlretrieve(cutout_url, cutout_path)
+            hdulist = fits.open(cutout_path)
         else:
             with urllib.request.urlopen(cutout_url) as response:
                 with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
@@ -156,12 +156,12 @@ if __name__ == "__main__":
     ax.imshow(np.log10(im))
 
     # Saving to FITS file 
-    cutout_fname = Path("cutouts/NGC3997.fits")
+    cutout_path = Path("cutouts/NGC3997.fits")
     coords = SkyCoord(ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000")
     hdulist = get_allwise_cutout(coords=coords,
                                  size=10 * u.arcmin,
                                  save_fits=True, 
-                                 cutout_fname=cutout_fname)
+                                 cutout_path=cutout_path)
     im = hdulist[0].data 
     wcs = WCS(hdulist[0].header)
     fig, ax = plt.subplots(subplot_kw=dict(projection=wcs))
