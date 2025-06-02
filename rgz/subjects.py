@@ -153,8 +153,9 @@ def transform_bbox_px_to_phys(
     """Transforms a bbox from pixel coordinates to RA/dec."""
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
-    phys_bbox = np.array([xmin, constants.RADIO_MAX_PX - ymax,
-                          xmax, constants.RADIO_MAX_PX - ymin])
+    phys_bbox = np.array(
+        [xmin, constants.RADIO_MAX_PX - ymax, xmax, constants.RADIO_MAX_PX - ymin]
+    )
     return np.concatenate(
         [
             transform_coord_radio(phys_bbox[:2], raw_subject, cache),
@@ -194,7 +195,6 @@ def get_first_from_bbox(
 ) -> list[str]:
     """Finds FIRST components within a bounding box."""
     # TODO: Also use the contours to ensure that they really are within the boxes.
-    # TODO: Might need to flip horizontally or even vertically...
     phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
     # Find the centre...
     centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
