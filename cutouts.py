@@ -1,19 +1,23 @@
+import logging
+from pathlib import Path 
+import shutil
+import tempfile
+import urllib
 import urllib.error
+
+import pandas as pd
+
+from astropy import units as u
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
-import logging
-from pathlib import Path 
-import pandas as pd
-import tempfile
-import urllib
-import shutil
-import sys 
+
+from IPython.core.debugger import set_trace
 
 logger = logging.getLogger(__name__)
 
 def get_allwise_cutout(coords: SkyCoord,
-                       size_arcmin: float = 3,
+                       size: u.Quantity[u.arcmin] = 3 * u.arcmin,
                        band: str = "W1",
                        save_fits: bool = False,
                        cutout_fname: Path = None,
@@ -36,7 +40,7 @@ def get_allwise_cutout(coords: SkyCoord,
     coords          astropy.Skycoord
         Requested cutout coordinates. 
     
-    size_arcmin     float 
+    size     float 
         Requested cutout size in arcminutes. 
     
     band            str (default: "W1")
@@ -68,8 +72,9 @@ def get_allwise_cutout(coords: SkyCoord,
         https://irsa.ipac.caltech.edu/ibe/cutouts.html 
     """
     # Input validation
+    size_arcmin = size.to(u.arcmin).value
     if size_arcmin < 0:
-        raise ValueError(f"Cutout size size_arcmin {size_arcmin} < 0!")
+        raise ValueError(f"Cutout size {size_arcmin} < 0!")
     valid_bands = ["W1", "W2", "W3", "W4"]
     if band not in valid_bands:
         raise ValueError(f"Band {band} is not a valid WISE band - valid values are {','.join(valid_bands)}")
@@ -112,7 +117,8 @@ def get_allwise_cutout(coords: SkyCoord,
     access_url = df.loc[cond, "access_url"].values[0].rstrip()
 
     # Construct the cutout URL & download 
-    query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg&size={size_arcmin:d}arcmin"
+    # set_trace()
+    query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg&size={size_arcmin:5f}arcmin"
     cutout_url = f"{access_url}?{query_str}"
     try:
         if save_fits:
@@ -143,7 +149,7 @@ if __name__ == "__main__":
     fname = Path("cutouts/ngc1068.fits")
     coords = SkyCoord(ra="02:42:40.71", dec="-00:00:47.86", unit=(u.hourangle, u.deg), equinox="J2000")
     hdulist = get_allwise_cutout(coords=coords,
-                                 size_arcmin=10)
+                                 size=3.5 * u.arcmin)
     im = hdulist[0].data 
     wcs = WCS(hdulist[0].header)
     fig, ax = plt.subplots(subplot_kw=dict(projection=wcs))
@@ -153,7 +159,7 @@ if __name__ == "__main__":
     cutout_fname = Path("cutouts/NGC3997.fits")
     coords = SkyCoord(ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000")
     hdulist = get_allwise_cutout(coords=coords,
-                                 size_arcmin=10,
+                                 size=10 * u.arcmin,
                                  save_fits=True, 
                                  cutout_fname=cutout_fname)
     im = hdulist[0].data 
