@@ -151,6 +151,12 @@ This will:
 
 A reduced RGZ classification is a JSON object with the following schema: (TODO)
 
+Once the classifications are processed, perform the host lookup. This is separate because it is slow, and we may want to make this asynchronous in future. This will edit the JSON to include AllWISE sources.
+
+```bash
+bazel-bin/rgz/main host-lookup --classifications=data/radio_classifications_processed.json
+```
+
 ## Developing
 
 ### Dependency management
