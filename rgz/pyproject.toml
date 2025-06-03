@@ -22,6 +22,7 @@ dependencies = [
     "jupyterlab-code-formatter",
     "black",
     "ipympl",
+    "scipy",  # Needed for astropy.
 ]
 
 [project.optional-dependencies]

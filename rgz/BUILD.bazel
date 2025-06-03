@@ -62,6 +62,7 @@ py_library(
         "@pypi//astropy",
         "@pypi//astroquery",
         "@pypi//attrs",
+        "@pypi//scipy",
         "@pypi//tqdm",
     ],
 )

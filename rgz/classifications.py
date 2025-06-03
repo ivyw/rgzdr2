@@ -11,8 +11,11 @@ import attr
 import numpy as np
 import numpy.typing as npt
 from astropy.coordinates import SkyCoord
+import astropy.io.votable
+import astropy.table
 import astropy.wcs
 from astroquery.vizier import Vizier
+import pyvo
 from tqdm import tqdm
 
 from rgz import constants
@@ -252,3 +255,74 @@ def process(
         json_classifications.append(classification_to_json_serialisable(classification))
     with open(output_path, "w") as f:
         json.dump(json_classifications, f)
+
+
+def host_lookup(
+    classifications_path: Path,
+    radius: u.Quantity[u.deg] = constants.DEFAULT_IR_SEARCH_RADIUS,
+):
+    """Looks up missing host galaxy locations."""
+    with open(classifications_path) as f:
+        classifications = [deserialise_classification(c) for c in json.load(f)]
+
+    coordinates_to_lookup = set()
+    for c in tqdm(classifications, desc="Processing classifications..."):
+        for ir, _ in c.matches:
+            if ir == "NOSOURCE":
+                continue
+
+            coordinates_to_lookup.add(ir)
+
+    sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))
+
+    coordinate_table = astropy.table.Table(
+        {
+            "ra": sc.ra.deg,  # type: ignore[reportOptionalMemberAccess]
+            "dec": sc.dec.deg,  # type: ignore[reportOptionalMemberAccess]
+        }
+    )
+
+    # Batch query IRSA.
+    irsa = pyvo.dal.TAPService("https://irsa.ipac.caltech.edu/TAP")
+    wise = constants.ALLWISE_SOURCE_CATALOGUE
+    r = radius.to(u.deg).value
+    query = f"""
+        SELECT w.designation, w.ra, w.dec FROM {wise} as w
+        WHERE CONTAINS(POINT(ra, dec), CIRCLE(TAP_UPLOAD.my_table.ra, TAP_UPLOAD.my_table.dec, {r})) = 1
+        """
+    logger.info('Querying IRSA...')
+    q = irsa.run_async(
+        query,
+        maxrec=len(coordinates_to_lookup) + 1,
+        delete=True,
+        uploads={
+            "my_table": coordinate_table,
+        },
+    )
+    if q.query_status != "OK":
+        raise NotImplementedError(f"Unimplemented query status: {q.query_status}")
+
+    results = astropy.table.unique(q.to_table())
+    sc = SkyCoord(ra=results["ra"], dec=results["dec"])
+
+    # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
+    # multiple values at once.
+    for c in tqdm(classifications, desc="Reprocessing classifications..."):
+        new_matches = []
+        for ir, radio in c.matches:
+            if ir == "NOSOURCE":
+                new_matches.append((ir, radio))
+                continue
+
+            ir_sc = SkyCoord(ir, unit=("hourangle", "deg"))
+            idx, dist, _ = ir_sc.match_to_catalog_sky(sc)
+            if dist > radius:
+                new_matches.append((ir, radio))
+                continue
+
+            designation = results["designation"][idx]
+            new_matches.append((designation, radio))
+        c.matches = new_matches
+
+    with open(classifications_path, "w") as f:
+        json.dump([classification_to_json_serialisable(c) for c in classifications], f)

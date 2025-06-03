@@ -69,6 +69,17 @@ def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
     rgz.classifications.process(in_, subjects, cache, out)
 
 
+@cli.command()
+@click.option(
+    '--classifications',
+    type=click.Path(resolve_path=True, path_type=Path),
+    help="JSON file with the reduced RGZ classifications. Will be overwritten."
+)
+def host_lookup(classifications: Path):
+    """Looks up missing host galaxy locations."""
+    rgz.classifications.host_lookup(classifications)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     cli()
