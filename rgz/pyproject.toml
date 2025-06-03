@@ -21,6 +21,7 @@ dependencies = [
     "notebook",
     "jupyterlab-code-formatter",
     "black",
+    "ipympl",
 ]
 
 [project.optional-dependencies]

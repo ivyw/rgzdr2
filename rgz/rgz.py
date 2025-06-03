@@ -51,7 +51,7 @@ def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
 
 def coord_to_string(coord: SkyCoord) -> str:
     """Converts a SkyCoord to a string."""
-    coord_str = coord.to_string("hmsdms", sep="")
+    coord_str = coord.to_string("hmsdms", sep=" ")
     if not isinstance(coord_str, str):
         # SkyCoord.to_string is not guaranteed to return a string.
         raise TypeError(f"Expected str from SkyCoord.to_string; got {type(coord_str)}")

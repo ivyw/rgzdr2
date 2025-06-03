@@ -7,5 +7,13 @@ def jupyter_server(name, deps = []):
         srcs = ["//notebooks:jupyter.py"],
         args = ["$(rlocationpaths @pypi//jupyterlab)"],
         main = "//notebooks:jupyter.py",
-        deps = deps + [requirement("notebook"), "@pypi//jupyterlab", "@rules_python//python/runfiles", requirement("jupyterlab-code-formatter")],
+        deps = deps + [
+            requirement("notebook"),
+            "@pypi//jupyterlab",
+            "@rules_python//python/runfiles",
+            requirement("jupyterlab-code-formatter"),
+            requirement("IPython"),
+            requirement("ipympl"),
+            requirement("ipywidgets"),
+        ],
     )

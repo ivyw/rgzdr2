@@ -550,11 +550,16 @@ ipykernel==6.29.5 \
     #   jupyter
     #   jupyter-console
     #   jupyterlab
+ipympl==0.9.7 \
+    --hash=sha256:3698ee7eaa0b047a7603517d7aa1b71b32118a5f51754cab45ec5d994f67208f \
+    --hash=sha256:3e505a56b6e9a7bfc4d40c1a861a0547adb16820eb67ec79131335dd0a5084f0
+    # via rgzdr2 (rgz/pyproject.toml)
 ipython==9.3.0 \
     --hash=sha256:1a0b6dd9221a1f5dddf725b57ac0cb6fddc7b5f470576231ae9162b9b3455a04 \
     --hash=sha256:79eb896f9f23f50ad16c3bc205f686f6e030ad246cc309c6279a242b14afe9d8
     # via
     #   ipykernel
+    #   ipympl
     #   ipywidgets
     #   jupyter-console
 ipython-pygments-lexers==1.1.1 \
@@ -564,7 +569,9 @@ ipython-pygments-lexers==1.1.1 \
 ipywidgets==8.1.7 \
     --hash=sha256:15f1ac050b9ccbefd45dccfbb2ef6bed0029d8278682d569d71b8dd96bee0376 \
     --hash=sha256:764f2602d25471c213919b8a1997df04bef869251db4ca8efba1b76b1bd9f7bb
-    # via jupyter
+    # via
+    #   ipympl
+    #   jupyter
 isoduration==20.11.0 \
     --hash=sha256:ac2f9015137935279eac671f94f89eb00584f940f5dc49462a0c4ee692ba1bd9 \
     --hash=sha256:b2904c2a4228c3d44f409c8ae8e2370eb21a26f7ac2ec5446df141dde3452042
@@ -929,7 +936,9 @@ matplotlib==3.10.1 \
     --hash=sha256:e8d2d0e3881b129268585bf4765ad3ee73a4591d77b9a18c214ac7e3a79fb2ba \
     --hash=sha256:e9b4bb156abb8fa5e5b2b460196f7db7264fc6d62678c03457979e7d5254b7be \
     --hash=sha256:ff2ae14910be903f4a24afdbb6d7d3a6c44da210fc7d42790b87aeac92238a16
-    # via rgzdr2 (rgz/pyproject.toml)
+    # via
+    #   ipympl
+    #   rgzdr2 (rgz/pyproject.toml)
 matplotlib-inline==0.1.7 \
     --hash=sha256:8423b23ec666be3d16e16b60bdd8ac4e86e840ebd1dd11a30b9f117f2fa0ab90 \
     --hash=sha256:df192d39a4ff8f21b1895d72e6a13f5fcc5099f00fa84384e0ea28c2cc0653ca
@@ -1043,6 +1052,7 @@ numpy==2.2.5 \
     #   astropy
     #   astroquery
     #   contourpy
+    #   ipympl
     #   matplotlib
     #   pandas
     #   pyerfa
@@ -1206,7 +1216,9 @@ pillow==11.2.1 \
     --hash=sha256:f91ebf30830a48c825590aede79376cb40f110b387c17ee9bd59932c961044f9 \
     --hash=sha256:fdec757fea0b793056419bca3e9932eb2b0ceec90ef4813ea4c1e072c389eb28 \
     --hash=sha256:fe15238d3798788d00716637b3d4e7bb6bde18b26e5d08335a96e88564a36b6b
-    # via matplotlib
+    # via
+    #   ipympl
+    #   matplotlib
 platformdirs==4.3.8 \
     --hash=sha256:3d512d96e16bcb959a814c9f348431070822a6496326a4be0911c40b5a74c2bc \
     --hash=sha256:ff7059bb7eb1179e2685604f4aaf157cfd9535242bd23742eadc3c13542139b4
@@ -1665,6 +1677,7 @@ traitlets==5.14.3 \
     # via
     #   comm
     #   ipykernel
+    #   ipympl
     #   ipython
     #   ipywidgets
     #   jupyter-client
