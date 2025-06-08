@@ -1,11 +1,14 @@
+from io import BytesIO
 import logging
 from pathlib import Path 
 import shutil
 import tempfile
+from typing import Literal
 import urllib
 import urllib.error
 
 import pandas as pd
+import requests
 
 from astropy import units as u
 from astropy.io import fits
@@ -16,9 +19,19 @@ from IPython.core.debugger import set_trace
 
 logger = logging.getLogger(__name__)
 
+
+class CutoutNotFoundError(Exception):
+    """Custom error class for when no valid cutouts can be found."""
+    pass 
+
+
+class CutoutDownloadFailError(Exception):
+    """Custom error class for when a cutout download fails."""
+
+
 def get_allwise_cutout(coords: SkyCoord,
                        size: u.Quantity[u.arcmin] = 3 * u.arcmin,
-                       band: str = "W1",
+                       band: Literal["W1", "W2", "W3", "W4"] = "W1",
                        save_fits: bool = False,
                        cutout_path: Path = None,
                        ) -> fits.HDUList | None:
@@ -77,7 +90,7 @@ def get_allwise_cutout(coords: SkyCoord,
         raise ValueError(f"Cutout size {size_arcmin} < 0!")
     valid_bands = ["W1", "W2", "W3", "W4"]
     if band not in valid_bands:
-        raise ValueError(f"Band {band} is not a valid WISE band - valid values are {','.join(valid_bands)}")
+        raise ValueError(f"Band {band} is not a valid WISE band - valid values are {', '.join(valid_bands)}")
 
     # If no filename is supplied, save cutout to allwise_<band>_<ra_deg>_<dec_deg>.fits
     ra_deg = coords.ra.value
@@ -87,21 +100,26 @@ def get_allwise_cutout(coords: SkyCoord,
     else:
         if save_fits == False:
             logger.warning("You have specified a cutout_path but I am not saving the result to file!")
-        if cutout_path.suffix == "":
+        if not cutout_path.suffix:
             cutout_path = cutout_path.with_suffix(".fits")
 
     # Get list of AllWISE images containing the target RA/Dec, save to a temporary file 
-    imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
+    imglist_url = "https://irsa.ipac.caltech.edu/SIA"
+    url_params = {
+        "COLLECTION": "wise_allwise",
+        "POS": f"circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01",
+        "RESPONSEFORMAT": "FITS",
+    }
     try:
-        with urllib.request.urlopen(imglist_url) as response:
-            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                shutil.copyfileobj(response, tmp_file)
-    except urllib.error.URLError as e:
-        msg = f"Simple Image Access Query failed with message {e.message}!"
-        logger.warning(msg)
-        return
+        # TODO get params working
+        # r = requests.get(imglist_url, params=url_params)
+        imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
+        r = requests.get(imglist_url)
+        print(r.url)
+    except ConnectionError as e:
+        raise CutoutNotFoundError(f"Simple Image Access Query failed with message {e.message}!")
 
-    t = fits.open(tmp_file.name)
+    t = fits.open(BytesIO(r.content))
     tab = t[1].data 
     df = Table(tab).to_pandas()
 
@@ -109,60 +127,23 @@ def get_allwise_cutout(coords: SkyCoord,
     cond = df["energy_bandpassname"] == band
     cond &= df["dataproduct_subtype"].str.rstrip() == "science"
     if df.loc[cond].shape[0] == 0:
-        msg = f"AllWISE cutout query for RA = {ra_deg:.4f}, dec = {dec_deg:.4f}, band = {band} returned no valid images!"
-        logger.warning(msg)
-        return 
+        # TODO how to test this?
+        raise CutoutNotFoundError(f"No valid AllWISE cutouts could be found for inputs RA = {ra_deg:.4f}, dec = {dec_deg:.4f}, band = {band}")
 
     # Get the access URL for the image. If there are multiple then just take the first one 
     access_url = df.loc[cond, "access_url"].values[0].rstrip()
 
     # Construct the cutout URL & download 
-    # set_trace()
     query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg&size={size_arcmin:5f}arcmin"
     cutout_url = f"{access_url}?{query_str}"
     try:
-        if save_fits:
-            urllib.request.urlretrieve(cutout_url, cutout_path)
-            hdulist = fits.open(cutout_path)
-        else:
-            with urllib.request.urlopen(cutout_url) as response:
-                with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
-                    shutil.copyfileobj(response, tmp_file)
-                    hdulist = fits.open(tmp_file.name)
-    except urllib.error.URLError as e:
-        msg = f"Cutout download failed with message {e.message}!"
-        logger.warning(msg)
+        hdulist = fits.open(cutout_url)
+    except Exception as e:
+        raise CutoutDownloadFailError(f"Cutout download failed with message {e.message}!")
+
+    # Save to file if requested
+    if save_fits:
+        hdulist.writeto(cutout_path, overwrite=True)
 
     return hdulist
 
-
-if __name__ == "__main__":
-
-    import numpy as np
-    import astropy.units as u
-    from astropy.wcs import WCS
-    import matplotlib.pyplot as plt 
-    
-    plt.ion()
-    plt.close("all")
-
-    fname = Path("cutouts/ngc1068.fits")
-    coords = SkyCoord(ra="02:42:40.71", dec="-00:00:47.86", unit=(u.hourangle, u.deg), equinox="J2000")
-    hdulist = get_allwise_cutout(coords=coords,
-                                 size=3.5 * u.arcmin)
-    im = hdulist[0].data 
-    wcs = WCS(hdulist[0].header)
-    fig, ax = plt.subplots(subplot_kw=dict(projection=wcs))
-    ax.imshow(np.log10(im))
-
-    # Saving to FITS file 
-    cutout_path = Path("cutouts/NGC3997.fits")
-    coords = SkyCoord(ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000")
-    hdulist = get_allwise_cutout(coords=coords,
-                                 size=10 * u.arcmin,
-                                 save_fits=True, 
-                                 cutout_path=cutout_path)
-    im = hdulist[0].data 
-    wcs = WCS(hdulist[0].header)
-    fig, ax = plt.subplots(subplot_kw=dict(projection=wcs))
-    ax.imshow(np.log10(im))
