@@ -21,7 +21,7 @@ def test_get_cutout():
 
 def test_save_cutout():
     # Test that cutout is not saved if save_fits is True
-    cutout_path = Path("cutouts/NGC3997.fits")
+    cutout_path = Path("NGC3997.fits")
     coords = SkyCoord(
         ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000"
     )
@@ -47,7 +47,7 @@ def test_save_cutout_default_fname():
 
 def test_not_save_cutout():
     # Test that cutout is not saved if save_fits is False
-    cutout_path = Path("cutouts/NGC3997.fits")
+    cutout_path = Path("NGC3997.fits")
     Path.unlink(cutout_path, missing_ok=True)
     coords = SkyCoord(
         ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000"
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     # Plot the AllWISE cutout for NGC1068
-    fname = Path("cutouts/ngc1068.fits")
+    fname = Path("ngc1068.fits")
     coords = SkyCoord(
         ra="02:42:40.71", dec="-00:00:47.86", unit=(u.hourangle, u.deg), equinox="J2000"
     )
