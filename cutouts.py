@@ -19,6 +19,10 @@ from IPython.core.debugger import set_trace
 
 logger = logging.getLogger(__name__)
 
+class SIAQueryFailrError(Exception):
+    """Custom error class for when a Simple Image Access Query fails."""
+    pass 
+
 
 class CutoutNotFoundError(Exception):
     """Custom error class for when no valid cutouts can be found."""
@@ -27,6 +31,8 @@ class CutoutNotFoundError(Exception):
 
 class CutoutDownloadFailError(Exception):
     """Custom error class for when a cutout download fails."""
+    pass 
+
 
 
 def get_allwise_cutout(coords: SkyCoord,
@@ -48,34 +54,29 @@ def get_allwise_cutout(coords: SkyCoord,
     Unit List (HDUList) containing the FITS header and the image; otherwise it 
     returns None.
 
-    INPUTS
-    ---------------------------------------------------------------------------
-    coords          astropy.Skycoord
-        Requested cutout coordinates. 
+    Args:
+        coords: Requested cutout coordinates. 
+        size: Requested cutout size in arcminutes. 
+        band: AllWISE band. Default: W1.
+        save_fits: If True, saves the downloaded cutout to path specified by 
+            cutout_path. Otherwise, the FITS file is saved to a temporary file. 
+        cutout_path: If save_fits is True, specifies the path where the image 
+            is saved; this argument is ignored otherwise. If save_fits is True 
+            and cutout_path is unspecified, the file is saved to 
+                f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits"
+            where ra_deg and dec_deg are the RA and dec respectively.
     
-    size     float 
-        Requested cutout size in arcminutes. 
-    
-    band            str (default: "W1")
-        AllWISE band. Default: W1.
-    
-    save_fits       bool (default: False)
-        If True, saves the downloaded cutout to path specified by cutout_path.
-        Otherwise, the FITS file is saved to a temporary file. 
-    
-    cutout_path    Path (default: None)
-        If save_fits is True, specifies the path where the image is saved; this
-        argument is ignored otherwise.
-        If save_fits is True and cutout_path is unspecified, the file is 
-        saved to 
-            f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits"
-        where ra_deg and dec_deg are the RA and dec respectively.
-    
-    RETURNS
-    ---------------------------------------------------------------------------
-    If a valid cutout is found, returns an astropy.io.fits.HDUList containing
-    the FITS header (the zeroth extension) and the image (the first extension).
-    If no valid cutout is found, returns None.  
+    Returns:
+        If a valid cutout is found, returns an astropy.io.fits.HDUList 
+        containing the FITS header (the zeroth extension) and the image (the
+        first extension). 
+
+    Raises:
+        SIAQueryFailrError: the Simple Image Access Query failed.   
+        CutoutNotFoundError: no AllWISE cutout could be found for the input 
+            combination of coordinates and band.
+        CutoutDownloadFailError: an error occurred during the download of the 
+            FITS file.
     
     REFERENCES 
     ---------------------------------------------------------------------------
@@ -104,21 +105,12 @@ def get_allwise_cutout(coords: SkyCoord,
             cutout_path = cutout_path.with_suffix(".fits")
 
     # Get list of AllWISE images containing the target RA/Dec, save to a temporary file 
-    imglist_url = "https://irsa.ipac.caltech.edu/SIA"
-    url_params = {
-        "COLLECTION": "wise_allwise",
-        "POS": f"circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01",
-        "RESPONSEFORMAT": "FITS",
-    }
     try:
-        # TODO get params working
-        # r = requests.get(imglist_url, params=url_params)
+        # NOTE: passing a separate URL params dict to requests.get doesn't work because of the plus signs
         imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
         r = requests.get(imglist_url)
-        print(r.url)
     except ConnectionError as e:
-        raise CutoutNotFoundError(f"Simple Image Access Query failed with message {e.message}!")
-
+        raise SIAQueryFailrError(f"Simple Image Access Query failed with message {e.message}!")
     t = fits.open(BytesIO(r.content))
     tab = t[1].data 
     df = Table(tab).to_pandas()
