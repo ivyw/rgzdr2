@@ -71,9 +71,9 @@ def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
 
 @cli.command()
 @click.option(
-    '--classifications',
+    "--classifications",
     type=click.Path(resolve_path=True, path_type=Path),
-    help="JSON file with the reduced RGZ classifications. Will be overwritten."
+    help="JSON file with the reduced RGZ classifications. Will be overwritten.",
 )
 def host_lookup(classifications: Path):
     """Looks up missing host galaxy locations."""

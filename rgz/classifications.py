@@ -290,7 +290,7 @@ def host_lookup(
         SELECT w.designation, w.ra, w.dec FROM {wise} as w
         WHERE CONTAINS(POINT(ra, dec), CIRCLE(TAP_UPLOAD.my_table.ra, TAP_UPLOAD.my_table.dec, {r})) = 1
         """
-    logger.info('Querying IRSA...')
+    logger.info("Querying IRSA...")
     q = irsa.run_async(
         query,
         maxrec=len(coordinates_to_lookup) + 1,
