@@ -1,9 +1,8 @@
-import numpy as np
-import os
 from pathlib import Path
 
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import numpy as np
 
 from cutouts import (
     get_allwise_cutout,
