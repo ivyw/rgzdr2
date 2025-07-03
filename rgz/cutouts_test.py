@@ -4,9 +4,7 @@ import unittest
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-
-# TODO importing this from rgz causes a circular import error 
-import cutouts
+from rgz import cutouts
 
 
 class TestCutouts(unittest.TestCase):
