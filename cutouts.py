@@ -16,33 +16,23 @@ logger = logging.getLogger(__name__)
 
 
 class SIAQueryFailError(Exception):
-    """Custom error class for when a Simple Image Access Query fails."""
-
-    pass
+    """Raised when a Simple Image Access Query fails."""
 
 
 class CutoutNotFoundError(Exception):
-    """Custom error class for when no valid cutouts can be found."""
-
-    pass
+    """Raised when no valid cutouts can be found."""
 
 
 class CutoutDownloadFailError(Exception):
-    """Custom error class for when a cutout download fails."""
-
-    pass
+    """Raised when a cutout download fails."""
 
 
-class NegativeImageSizeError(Exception):
-    """Custom error class for when the requested cutout size is negative."""
-
-    pass
+class NegativeImageSizeError(ValueError):
+    """Raised when the requested cutout size is negative."""
 
 
-class InvalidWISEBandError(Exception):
-    """Custom error class for when the requested band is invalid."""
-
-    pass
+class InvalidWISEBandError(ValueError):
+    """Raised when the requested band is invalid."""
 
 
 def get_allwise_cutout(
