@@ -19,7 +19,7 @@ def test_get_cutout():
 
 
 def test_save_cutout():
-    # Test that cutout is not saved if save_fits is True
+    # Test that cutout is saved if save_fits is True
     cutout_path = Path("NGC3997.fits")
     coords = SkyCoord(
         ra="11:57:47.0", dec="+25:16:14.00", unit=(u.hourangle, u.deg), equinox="J2000"
