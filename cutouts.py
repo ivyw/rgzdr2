@@ -10,8 +10,6 @@ from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 
-from IPython.core.debugger import set_trace
-
 logger = logging.getLogger(__name__)
 
 
