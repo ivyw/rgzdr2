@@ -1,13 +1,8 @@
 from io import BytesIO
 import logging
 from pathlib import Path
-import shutil
-import tempfile
 from typing import Literal
-import urllib
-import urllib.error
 
-import pandas as pd
 import requests
 
 from astropy import units as u
