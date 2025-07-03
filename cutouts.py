@@ -52,8 +52,8 @@ def get_allwise_cutout(
     that is also of "science" quality. Then, a cutout from the image is
     extracted by constructing a query using the corresponding access URL.
     If the cutout exists, this function returns an astropy FITS Header Data
-    Unit List (HDUList) containing the FITS header and the image; otherwise it
-    returns None.
+    Unit List (HDUList) containing the FITS header and the image; otherwise an 
+    exception is raised.
     References:
         https://wise2.ipac.caltech.edu/docs/release/allwise/
         https://irsa.ipac.caltech.edu/ibe/docs/wise/allwise/p3am_cdd/
@@ -117,7 +117,7 @@ def get_allwise_cutout(
     except ConnectionError as e:
         raise SIAQueryFailError(
             f"Simple Image Access Query failed with message {e.message}!"
-        )
+        ) from e
     t = fits.open(BytesIO(r.content))
     tab = t[1].data
     df = Table(tab).to_pandas()
@@ -141,7 +141,7 @@ def get_allwise_cutout(
     except Exception as e:
         raise CutoutDownloadFailError(
             f"Cutout download failed with message {e.message}!"
-        )
+        ) from e
 
     # Save to file if requested
     if save_fits:
