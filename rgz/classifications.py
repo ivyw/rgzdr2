@@ -86,7 +86,7 @@ class Classification:
     # processing.
     notes: list[str] = attr.ib()
     # IR cross-match -> radio names.
-    ir_matches: list[tuple[str, set[str]]] = attr.ib(default=None)
+    ir_matches: list[tuple[str, set[str]]] = attr.ib(default=attr.Factory(list))
 
 
 def transform_coord_ir(
@@ -198,7 +198,8 @@ def classification_to_json_serialisable(classification: Classification) -> JSON:
         "id": classification.cid,
         "zid": classification.zid,
         "coord_matches": [
-            {"ir": ir, "radio": list(radio)} for ir, radio in classification.coord_matches
+            {"ir": ir, "radio": list(radio)}
+            for ir, radio in classification.coord_matches
         ],
         "username": classification.username or constants.ANONYMOUS_NAME,
         "notes": classification.notes,
@@ -215,7 +216,9 @@ def deserialise_classification(classification: JSON) -> Classification:
         zid=classification["zid"],
         username=classification["username"] or None,
         notes=classification["notes"],
-        coord_matches=[(m["ir"], set(m["radio"])) for m in classification["coord_matches"]],
+        coord_matches=[
+            (m["ir"], set(m["radio"])) for m in classification["coord_matches"]
+        ],
         ir_matches=[(m["ir"], set(m["radio"])) for m in classification["ir_matches"]],
     )
 
@@ -251,7 +254,9 @@ def process(
         wcs = rgz.get_wcs(im)
         for raw_classification in raw_classifications_for_subject:
             classification = process_classification(
-                raw_classification, subject, wcs,
+                raw_classification,
+                subject,
+                wcs,
             )
             classifications.append(classification)
             bar.update(1)
@@ -268,9 +273,9 @@ def host_lookup(
     radius: u.Quantity[u.deg] = constants.DEFAULT_IR_SEARCH_RADIUS,
 ):
     """Looks up missing host galaxy locations.
-    
+
     Populates the ir_matches field.
-    
+
     Args:
         classifications_path: Path to classifications JSON.
         radius: IR search radius.
