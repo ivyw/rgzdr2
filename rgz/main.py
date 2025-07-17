@@ -73,11 +73,19 @@ def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
 @click.option(
     "--classifications",
     type=click.Path(resolve_path=True, path_type=Path),
-    help="JSON file with the reduced RGZ classifications. Will be overwritten.",
+    help="JSON file with the reduced RGZ classifications.",
 )
-def host_lookup(classifications: Path):
+@click.option(
+    "--out",
+    type=click.Path(resolve_path=True, path_type=Path),
+    help=(
+        "JSON file to output the reduced RGZ classifications alongside "
+        "the looked-up hosts."
+    ),
+)
+def host_lookup(classifications: Path, out: Path):
     """Looks up missing host galaxy locations."""
-    rgz.classifications.host_lookup(classifications)
+    rgz.classifications.host_lookup(classifications, out)
 
 
 if __name__ == "__main__":
