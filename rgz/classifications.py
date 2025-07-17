@@ -68,11 +68,25 @@ class Classification:
             during reduction.
     """
 
+    # Pipeline modifications are add-only, i.e. if we modify the
+    # data through the pipeline, we will never remove or edit an
+    # element. This means we can use any of our utility code on
+    # partial runs.
+
+    # Classification ID from RGZ MongoDB.
     cid: str = attr.ib()
+    # Zooniverse ID.
     zid: str = attr.ib()
-    matches: list[tuple[str, set[str]]] = attr.ib()
+    # IR coordinate -> radio names. We use str as the key to avoid
+    # floating point mismatch in keys.
+    coord_matches: list[tuple[str, set[str]]] = attr.ib()
+    # Contributor of the classification.
     username: str | None = attr.ib()
+    # Additional notes about this classification accumulated during
+    # processing.
     notes: list[str] = attr.ib()
+    # IR cross-match -> radio names.
+    ir_matches: list[tuple[str, set[str]]] = attr.ib(default=None)
 
 
 def transform_coord_ir(
@@ -116,7 +130,6 @@ def process_classification(
     raw_classification: JSON,
     subject: subjects.Subject,
     wcs: astropy.wcs.WCS,
-    defer_ir_lookup: bool = True,
 ) -> Classification:
     """Reduces a JSON classification into a nice, value-added format.
 
@@ -124,8 +137,6 @@ def process_classification(
         raw_classification: JSON classification.
         subject: Subject being classified.
         wcs: WCS of the subject image.
-        defer_ir_lookup: Whether to defer the IR lookup for later, or
-            perform the lookup in Vizier now (slow!).
 
     Returns:
         Reduced classification.
@@ -168,25 +179,16 @@ def process_classification(
                 unit=(ir_ra.unit, ir_dec.unit),
                 frame="icrs",
             )
-            if not defer_ir_lookup:
-                # Query the IR in Vizier.
-                q = Vizier.query_region(  # type: ignore[reportAttributeAccessIssue]
-                    ir_coord, radius=5 * u.arcsec, catalog=["II/328/allwise"]
-                )
-                try:
-                    ir = q[0][0]["AllWISE"]
-                except IndexError:
-                    coord_str = rgz.coord_to_string(ir_coord)
-                    ir = f'NOMATCH_J{coord_str.replace(" ", "")}'
-            else:
-                ir = rgz.coord_to_string(ir_coord)
+            ir = rgz.coord_to_string(ir_coord)
         matches.append((ir, {c for b in boxes for c in subject.bboxes[b]}))
     return Classification(
         cid=cid,
         zid=zid,
-        matches=matches,
+        coord_matches=matches,
         username=raw_classification.get("user_name", None),
         notes=notes,
+        # We'll set IR matches later, in a deferred lookup. That way we can
+        # easily do the lookup as a batch e.g. with CDS xmatch.
     )
 
 
@@ -195,11 +197,14 @@ def classification_to_json_serialisable(classification: Classification) -> JSON:
     return {
         "id": classification.cid,
         "zid": classification.zid,
-        "matches": [
-            {"ir": ir, "radio": list(radio)} for ir, radio in classification.matches
+        "coord_matches": [
+            {"ir": ir, "radio": list(radio)} for ir, radio in classification.coord_matches
         ],
         "username": classification.username or constants.ANONYMOUS_NAME,
         "notes": classification.notes,
+        "ir_matches": [
+            {"ir": ir, "radio": list(radio)} for ir, radio in classification.ir_matches
+        ],
     }
 
 
@@ -210,7 +215,8 @@ def deserialise_classification(classification: JSON) -> Classification:
         zid=classification["zid"],
         username=classification["username"] or None,
         notes=classification["notes"],
-        matches=[(m["ir"], set(m["radio"])) for m in classification["matches"]],
+        coord_matches=[(m["ir"], set(m["radio"])) for m in classification["coord_matches"]],
+        ir_matches=[(m["ir"], set(m["radio"])) for m in classification["ir_matches"]],
     )
 
 
@@ -245,7 +251,7 @@ def process(
         wcs = rgz.get_wcs(im)
         for raw_classification in raw_classifications_for_subject:
             classification = process_classification(
-                raw_classification, subject, wcs, defer_ir_lookup=True
+                raw_classification, subject, wcs,
             )
             classifications.append(classification)
             bar.update(1)
@@ -261,13 +267,20 @@ def host_lookup(
     classifications_path: Path,
     radius: u.Quantity[u.deg] = constants.DEFAULT_IR_SEARCH_RADIUS,
 ):
-    """Looks up missing host galaxy locations."""
+    """Looks up missing host galaxy locations.
+    
+    Populates the ir_matches field.
+    
+    Args:
+        classifications_path: Path to classifications JSON.
+        radius: IR search radius.
+    """
     with open(classifications_path) as f:
         classifications = [deserialise_classification(c) for c in json.load(f)]
 
     coordinates_to_lookup = set()
     for c in tqdm(classifications, desc="Processing classifications..."):
-        for ir, _ in c.matches:
+        for ir, _ in c.coord_matches:
             if ir == "NOSOURCE":
                 continue
 
@@ -308,21 +321,21 @@ def host_lookup(
     # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
     # multiple values at once.
     for c in tqdm(classifications, desc="Reprocessing classifications..."):
-        new_matches = []
-        for ir, radio in c.matches:
+        ir_matches = []
+        for ir, radio in c.coord_matches:
             if ir == "NOSOURCE":
-                new_matches.append((ir, radio))
+                ir_matches.append((ir, radio))
                 continue
 
             ir_sc = SkyCoord(ir, unit=("hourangle", "deg"))
             idx, dist, _ = ir_sc.match_to_catalog_sky(sc)
             if dist > radius:
-                new_matches.append((ir, radio))
+                ir_matches.append((ir, radio))
                 continue
 
             designation = results["designation"][idx]
-            new_matches.append((designation, radio))
-        c.matches = new_matches
+            ir_matches.append((designation, radio))
+        c.ir_matches = ir_matches
 
     with open(classifications_path, "w") as f:
         json.dump([classification_to_json_serialisable(c) for c in classifications], f)
