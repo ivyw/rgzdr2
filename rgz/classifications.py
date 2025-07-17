@@ -270,6 +270,7 @@ def process(
 
 def host_lookup(
     classifications_path: Path,
+    output_path: Path,
     radius: u.Quantity[u.deg] = constants.DEFAULT_IR_SEARCH_RADIUS,
 ):
     """Looks up missing host galaxy locations.
@@ -278,6 +279,7 @@ def host_lookup(
 
     Args:
         classifications_path: Path to classifications JSON.
+        output_path: Path to output JSON.
         radius: IR search radius.
     """
     with open(classifications_path) as f:
@@ -342,5 +344,5 @@ def host_lookup(
             ir_matches.append((designation, radio))
         c.ir_matches = ir_matches
 
-    with open(classifications_path, "w") as f:
+    with open(output_path, "w") as f:
         json.dump([classification_to_json_serialisable(c) for c in classifications], f)
