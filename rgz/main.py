@@ -79,8 +79,8 @@ def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
     "--out",
     type=click.Path(resolve_path=True, path_type=Path),
     help=(
-        "JSON file to output the reduced RGZ classifications alongside "
-        "the looked-up hosts."
+        "JSON file to output the reduced RGZ classifications "
+        "alongside the AllWISE catalogue cross-identifications."
     ),
 )
 def host_lookup(classifications: Path, out: Path):
