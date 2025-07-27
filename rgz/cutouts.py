@@ -37,15 +37,15 @@ class InvalidWISEBandError(ValueError):
 
 
 def get_allwise_image_list(
-     ra_deg: float,
-     dec_deg: float,
-     band: Literal["W1", "W2", "W3", "W4"],
+    ra_deg: float,
+    dec_deg: float,
+    band: Literal["W1", "W2", "W3", "W4"],
 ) -> pd.DataFrame:
     """Returns a Pandas DataFrame containing a list of AllWISE images containing the specified coordinates.
 
-    This function uses a Simple Image Access Query to obtain a list of 
-    "science"-quality AllWISE images in the selected band containing the 
-    specified coordinates within a 0.01 degree radius. 
+    This function uses a Simple Image Access Query to obtain a list of
+    "science"-quality AllWISE images in the selected band containing the
+    specified coordinates within a 0.01 degree radius.
 
     References:
         https://wise2.ipac.caltech.edu/docs/release/allwise/
@@ -56,7 +56,7 @@ def get_allwise_image_list(
     Args:
         ra_deg: right ascension in degrees.
         dec_deg: declination in degrees.
-        band: AllWISE band. 
+        band: AllWISE band.
 
     Returns:
         a Pandas DataFrame containing valid AllWISE image metadata.
@@ -96,12 +96,12 @@ def get_allwise_cutout(
     This function extracts a cutout image from AllWISE via the NASA/IPAC
     Infrared Science Archive (IRSA). This is a two-step process: first, a
     Simple Image Access Query is used to identify the list of AllWISE images
-    containing the requested coordinates (see get_allwise_image_list()).  
-    The image from which to extract the cutout is taken as the first image in 
-    the list in the requested WISE band that is also of "science" quality. 
-    Then, a cutout from the image is extracted by constructing a query using 
-    the corresponding access URL. If the cutout exists, this function returns 
-    an astropy FITS Header Data Unit List (HDUList) containing the FITS header 
+    containing the requested coordinates (see get_allwise_image_list()).
+    The image from which to extract the cutout is taken as the first image in
+    the list in the requested WISE band that is also of "science" quality.
+    Then, a cutout from the image is extracted by constructing a query using
+    the corresponding access URL. If the cutout exists, this function returns
+    an astropy FITS Header Data Unit List (HDUList) containing the FITS header
     and the image; otherwise an exception is raised.
 
     References:
