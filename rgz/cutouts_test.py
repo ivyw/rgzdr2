@@ -1,14 +1,17 @@
+from unittest.mock import patch
 from pathlib import Path
 import unittest
 
 from astropy.coordinates import SkyCoord
 import astropy.units as u
+import pandas as pd
 
 from rgz import cutouts
 
 
 class TestCutouts(unittest.TestCase):
     """Tests for rgz.cutouts."""
+    
 
     def test_get_cutout(self):
         """Test that cutouts.get_allwise_cutout successfully returns a HDUList."""
@@ -82,6 +85,21 @@ class TestCutouts(unittest.TestCase):
     def test_invalid_band(self):
         """Tests that passing an invalid band raises cutouts.InvalidWISEBandError."""
         self.assertRaises(cutouts.InvalidWISEBandError, self.invalid_band)
+
+
+    def invalid_coords(self):
+        """Runs cutouts.get_allwise_cutout such that the specific RA/Dec result in no valid AllWISE images."""
+        coords = SkyCoord(
+                        ra="00:00:00", dec="00:00:00.0", unit=(u.hourangle, u.deg), equinox="J2000"
+                    )
+        hdulist = cutouts.get_allwise_cutout(coords=coords, size=3.5 * u.arcmin)
+
+
+    @patch('rgz.cutouts.get_allwise_image_list')
+    def test_invalid_coords(self, test_patch):
+        """Tests that passing an RA/Dec that returns no valid AllWISE images raises cutouts.CutoutNotFoundError."""
+        test_patch.return_value = pd.DataFrame()
+        self.assertRaises(cutouts.CutoutNotFoundError, self.invalid_coords)
 
 
 if __name__ == "__main__":
