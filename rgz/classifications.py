@@ -11,7 +11,6 @@ import attr
 import numpy as np
 import numpy.typing as npt
 from astropy.coordinates import SkyCoord
-import astropy.io.votable
 import astropy.table
 import astropy.wcs
 from astroquery.vizier import Vizier
@@ -24,13 +23,15 @@ from rgz import subjects
 from rgz import units as u
 
 
+# Indent of output JSON files.
+_JSON_INDENT = 2
+
 logger = logging.getLogger(__name__)
 
-type BBox = tuple[float, float, float, float]
-type JSON = dict[str, Any]
+type ALLWISEID = str
 
 
-def get_classifications(path: Path) -> Generator[JSON]:
+def get_classifications(path: Path) -> Generator[rgz.JSON]:
     """Yields classifications from RGZ.
 
     Args:
@@ -76,22 +77,24 @@ class Classification:
     # Classification ID from RGZ MongoDB.
     cid: str = attr.ib()
     # Zooniverse ID.
-    zid: str = attr.ib()
+    zid: subjects.ZooniverseID = attr.ib()
     # IR coordinate -> radio names. We use str as the key to avoid
     # floating point mismatch in keys.
-    coord_matches: list[tuple[str, set[str]]] = attr.ib()
+    coord_matches: list[tuple[rgz.HMSDMS, set[subjects.FIRSTID]]] = attr.ib()
     # Contributor of the classification.
     username: str | None = attr.ib()
     # Additional notes about this classification accumulated during
     # processing.
     notes: list[str] = attr.ib()
     # IR cross-match -> radio names.
-    ir_matches: list[tuple[str, set[str]]] = attr.ib(default=attr.Factory(list))
+    ir_matches: list[tuple[ALLWISEID, set[subjects.FIRSTID]]] = attr.ib(
+        default=attr.Factory(list)
+    )
 
 
 def transform_coord_ir(
     coord: npt.NDArray[np.float64],
-    raw_subject: JSON | None = None,
+    raw_subject: rgz.JSON | None = None,
     cache: Path | None = None,
     wcs: astropy.wcs.WCS | None = None,
 ) -> u.Quantity[u.deg, u.deg]:
@@ -127,7 +130,7 @@ def transform_coord_ir(
 
 
 def process_classification(
-    raw_classification: JSON,
+    raw_classification: rgz.JSON,
     subject: subjects.Subject,
     wcs: astropy.wcs.WCS,
 ) -> Classification:
@@ -150,7 +153,7 @@ def process_classification(
     for anno in raw_classification["annotations"]:
         if "radio" not in anno:
             continue
-        boxes: set[BBox] = set()
+        boxes: set[subjects.BBox] = set()
         if anno["radio"] == "No Contours":
             # ?????? ignore this
             continue
@@ -192,7 +195,7 @@ def process_classification(
     )
 
 
-def classification_to_json_serialisable(classification: Classification) -> JSON:
+def classification_to_json_serialisable(classification: Classification) -> rgz.JSON:
     """Convert a Classification into a JSON-serialisable dictionary."""
     return {
         "id": classification.cid,
@@ -209,7 +212,7 @@ def classification_to_json_serialisable(classification: Classification) -> JSON:
     }
 
 
-def deserialise_classification(classification: JSON) -> Classification:
+def deserialise_classification(classification: rgz.JSON) -> Classification:
     """Read a Classification from a JSON dict."""
     return Classification(
         cid=classification["id"],
@@ -265,7 +268,7 @@ def process(
     for classification in tqdm(classifications, desc="Serialising subjects..."):
         json_classifications.append(classification_to_json_serialisable(classification))
     with open(output_path, "w") as f:
-        json.dump(json_classifications, f)
+        json.dump(json_classifications, f, indent=_JSON_INDENT)
 
 
 def host_lookup(
@@ -345,4 +348,8 @@ def host_lookup(
         c.ir_matches = ir_matches
 
     with open(output_path, "w") as f:
-        json.dump([classification_to_json_serialisable(c) for c in classifications], f)
+        json.dump(
+            [classification_to_json_serialisable(c) for c in classifications],
+            f,
+            indent=_JSON_INDENT,
+        )
