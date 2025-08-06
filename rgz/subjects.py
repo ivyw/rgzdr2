@@ -24,6 +24,10 @@ from rgz import constants
 from rgz import rgz
 from rgz import units as u
 
+
+# Indent of output JSON files.
+_JSON_INDENT = 2
+
 # Max number of retries for fetching data from the internet.
 MAX_TRIES = 10
 
@@ -34,9 +38,10 @@ logger = logging.getLogger(__name__)
 
 
 type BBox = tuple[float, float, float, float]  # xmin, ymin, xmax, ymax
-type JSON = dict[str, Any]
 type HDU = fits.hdu.base.ExtensionHDU
 type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
+type ZooniverseID = str
+type FIRSTID = str
 
 
 @attr.s
@@ -53,9 +58,9 @@ class Subject:
     """
 
     id: str = attr.ib()
-    zid: str = attr.ib()
+    zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    bboxes: dict[BBox, list[str]] = attr.ib()
+    bboxes: dict[BBox, list[FIRSTID]] = attr.ib()
 
 
 @backoff.on_exception(
@@ -80,7 +85,7 @@ def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
 
 
 def fetch_first_image_from_server_or_cache(
-    raw_subject: JSON,
+    raw_subject: rgz.JSON,
     cache: Path,
 ) -> fits.HDUList:
     """Fetches a FIRST image from the FIRST server or cache."""
@@ -129,7 +134,7 @@ def fetch_first_catalogue_from_server_or_cache(
 
 def transform_coord_radio(
     coord: npt.NDArray[np.float64],
-    raw_subject: JSON,
+    raw_subject: rgz.JSON,
     cache: Path,
 ) -> Quantity[u.deg, u.deg]:
     """Transforms a radio image pixel coordinate into RA/dec.
@@ -148,7 +153,7 @@ def transform_coord_radio(
 
 
 def transform_bbox_px_to_phys(
-    px_bbox: BBox, raw_subject: JSON, cache: Path
+    px_bbox: BBox, raw_subject: rgz.JSON, cache: Path
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
     xmin, ymin, xmax, ymax = px_bbox
@@ -189,10 +194,10 @@ def find_points_in_box(
 
 def get_first_from_bbox(
     px_bbox: BBox,
-    raw_subject: JSON,
+    raw_subject: rgz.JSON,
     cache: Path,
     first_tree: FIRSTTree,
-) -> list[str]:
+) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
     # TODO: Also use the contours to ensure that they really are within the boxes.
     phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
@@ -236,7 +241,7 @@ def get_first_from_bbox(
 
 
 def get_bboxes(
-    raw_subject: JSON,
+    raw_subject: rgz.JSON,
     cache: Path,
 ) -> Sequence[BBox]:
     """Fetches the bboxes of a subject from RGZ, caching locally."""
@@ -254,6 +259,8 @@ def get_bboxes(
         js = response.json()
         assert abs(js["width"] - 132) <= 1
         with open(fname, "w") as f:
+            # Don't indent here to keep the filesize down.
+            # These don't need to be human-readable.
             json.dump(js, f)
     bboxes = []
     for contour in js["contours"]:
@@ -262,7 +269,7 @@ def get_bboxes(
     return tuple(bboxes)
 
 
-def subject_to_json_serialisable(subject: Subject) -> JSON:
+def subject_to_json_serialisable(subject: Subject) -> rgz.JSON:
     """Converts a Subject into a JSON-compatible dictionary."""
     return {
         "id": subject.id,
@@ -273,7 +280,7 @@ def subject_to_json_serialisable(subject: Subject) -> JSON:
 
 
 def process_subject(
-    raw_subject: JSON,
+    raw_subject: rgz.JSON,
     cache: Path,
     first_tree: FIRSTTree,
 ) -> Subject:
@@ -316,10 +323,10 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
     for subject in tqdm(subjects, desc="Serialising subjects..."):
         json_subjects.append(subject_to_json_serialisable(subject))
     with open(output_path, "w") as f:
-        json.dump(json_subjects, f)
+        json.dump(json_subjects, f, indent=_JSON_INDENT)
 
 
-def deserialise_subject(subject: dict[str, Any]) -> Subject:
+def deserialise_subject(subject: rgz.JSON) -> Subject:
     """Reads a Subject from JSON."""
     return Subject(
         subject["id"],
