@@ -15,6 +15,7 @@ py_binary(
     srcs = ["main.py"],
     deps = [
         ":classifications",
+        ":consensus",
         ":rgz",
         ":subjects",
         "@pypi//click",
@@ -55,6 +56,22 @@ py_library(
     name = "classifications",
     srcs = [
         "classifications.py",
+    ],
+    deps = [
+        ":rgz",
+        ":subjects",
+        "@pypi//astropy",
+        "@pypi//astroquery",
+        "@pypi//attrs",
+        "@pypi//scipy",
+        "@pypi//tqdm",
+    ],
+)
+
+py_library(
+    name = "consensus",
+    srcs = [
+        "consensus.py",
     ],
     deps = [
         ":rgz",
