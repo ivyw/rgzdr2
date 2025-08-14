@@ -151,11 +151,19 @@ This will:
 
 A reduced RGZ classification is a JSON object with the following schema: (TODO)
 
-Once the classifications are processed, perform the host lookup. This is separate because it is slow, and we may want to make this asynchronous in future. This will edit the JSON to include AllWISE sources.
+Once the classifications are processed, perform the host lookup. This is separate because it is slow, and we may want to make this asynchronous in future. This will include AllWISE cross-matches.
 
 ```bash
-bazel-bin/rgz/main host-lookup --classifications=data/radio_classifications_processed.json
+bazel-bin/rgz/main host-lookup --classifications=data/radio_classifications_processed.json --out=data/radio_classifications_matched.json
 ```
+
+### Aggregate classifications into a consensus
+
+```bash
+bazel-bin/rgz/main aggregate --subjects=data/radio_subjects_processed.json --classifications=data/radio_classifications_matched.json --out=data/radio_consensus.json
+```
+
+This will, for each subject, decide on a consensus between all classifications for that subject. It does not account for duplicates or overlaps.
 
 ## Developing
 

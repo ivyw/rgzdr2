@@ -6,6 +6,7 @@ from pathlib import Path
 import click
 
 import rgz.classifications
+import rgz.consensus
 import rgz.subjects
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,27 @@ def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
 def host_lookup(classifications: Path, out: Path):
     """Looks up missing host galaxy locations."""
     rgz.classifications.host_lookup(classifications, out)
+
+
+@cli.command()
+@click.option(
+    "--subjects",
+    type=click.Path(resolve_path=True, path_type=Path),
+    help="JSON file with the reduced RGZ subjects.",
+)
+@click.option(
+    "--classifications",
+    type=click.Path(resolve_path=True, path_type=Path),
+    help="JSON file with the reduced, cross-matched RGZ classifications.",
+)
+@click.option(
+    "--out",
+    type=click.Path(resolve_path=True, path_type=Path),
+    help=("JSON file to output the aggregated RGZ classifications."),
+)
+def aggregate(subjects: Path, classifications: Path, out: Path):
+    """Aggregates classifications into a consensus for each subject."""
+    rgz.consensus.aggregate(subjects, classifications, out)
 
 
 if __name__ == "__main__":
