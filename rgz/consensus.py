@@ -21,12 +21,12 @@ class ConsensusSource:
         zid: Zooniverse ID of the subject containing this source.
         components: FIRST components of the source.
         host_name: Name of the AllWISE host if it exists.
-        radio_agreement: Number of citizen scientists who agreed
+        n_radio_agreement: Number of citizen scientists who agreed
             with the radio component combination.
-        ir_agreement: Number of citizen scientists who agreed that
+        n_ir_agreement: Number of citizen scientists who agreed that
             the IR host was an IR host of any radio source. You might
-            want to use joint_agreement instead of this.
-        joint_agreement: Number of citizen scientists who agreed with
+            want to use n_joint_agreement instead of this.
+        n_joint_agreement: Number of citizen scientists who agreed with
             the IR host galaxy _and_ the radio component combination.
         votes: Number of citizen scientists who voted on this subject.
     """
@@ -34,9 +34,9 @@ class ConsensusSource:
     zid: subjects.ZooniverseID = attr.ib()
     components: set[subjects.FIRSTID] = attr.ib()
     host_name: classifications.ALLWISEID | None = attr.ib()
-    radio_agreement: int = attr.ib()
-    ir_agreement: int = attr.ib()
-    joint_agreement: int = attr.ib()
+    n_radio_agreement: int = attr.ib()
+    n_ir_agreement: int = attr.ib()
+    n_joint_agreement: int = attr.ib()
     votes: int = attr.ib()
 
     @classmethod
@@ -46,9 +46,9 @@ class ConsensusSource:
             zid=obj["zid"],
             components=set(obj["components"]),
             host_name=obj["host_name"],
-            radio_agreement=obj["radio_agreement"],
-            ir_agreement=obj["ir_agreement"],
-            joint_agreement=obj["joint_agreement"],
+            n_radio_agreement=obj["n_radio_agreement"],
+            n_ir_agreement=obj["n_ir_agreement"],
+            n_joint_agreement=obj["n_joint_agreement"],
             votes=obj["votes"],
         )
 
@@ -58,9 +58,9 @@ class ConsensusSource:
             "zid": self.zid,
             "components": sorted(self.components),
             "host_name": self.host_name,
-            "radio_agreement": self.radio_agreement,
-            "ir_agreement": self.ir_agreement,
-            "joint_agreement": self.joint_agreement,
+            "n_radio_agreement": self.n_radio_agreement,
+            "n_ir_agreement": self.n_ir_agreement,
+            "n_joint_agreement": self.n_joint_agreement,
             "votes": self.votes,
         }
 
