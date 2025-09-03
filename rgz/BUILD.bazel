@@ -61,7 +61,7 @@ py_library(
         ":rgz",
         "@pypi//astropy",
         "@pypi//pandas",
-    ]
+    ],
 )
 
 py_library(
@@ -121,6 +121,17 @@ py_test(
     srcs = ["cutouts_test.py"],
     deps = [
         ":cutouts",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "classifications_test",
+    srcs = ["classifications_test.py"],
+    data = [":testdata"],
+    deps = [
+        ":classifications",
+        "@pypi//line_profiler",
         "@rules_python//python/runfiles",
     ],
 )

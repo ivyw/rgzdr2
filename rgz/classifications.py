@@ -5,7 +5,7 @@ from collections.abc import Generator
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import attr
 import numpy as np
@@ -90,6 +90,48 @@ class Classification:
     ir_matches: list[tuple[ALLWISEID, set[subjects.FIRSTID]]] = attr.ib(
         default=attr.Factory(list)
     )
+
+    def to_json(self) -> rgz.JSON:
+        """Converts a Classification into a JSON-serialisable dictionary."""
+
+        # Sort sets being converted into lists - the order doesn't matter
+        # but it should be consistent when serialising.
+        def dict_key(d):
+            return (d["ir"], d["radio"])
+
+        return {
+            "id": self.cid,
+            "zid": self.zid,
+            "coord_matches": sorted(
+                [
+                    {"ir": ir, "radio": sorted(radio)}
+                    for ir, radio in self.coord_matches
+                ],
+                key=dict_key,
+            ),
+            "username": self.username or constants.ANONYMOUS_NAME,
+            "notes": self.notes,
+            "ir_matches": sorted(
+                [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
+                key=dict_key,
+            ),
+        }
+
+    @classmethod
+    def from_json(cls, classification: rgz.JSON) -> Self:
+        """Reads a Classification from a JSON dict."""
+        return cls(
+            cid=classification["id"],
+            zid=classification["zid"],
+            username=classification["username"] or None,
+            notes=classification["notes"],
+            coord_matches=[
+                (m["ir"], set(m["radio"])) for m in classification["coord_matches"]
+            ],
+            ir_matches=[
+                (m["ir"], set(m["radio"])) for m in classification["ir_matches"]
+            ],
+        )
 
 
 def transform_coord_ir(
@@ -195,37 +237,6 @@ def process_classification(
     )
 
 
-def classification_to_json_serialisable(classification: Classification) -> rgz.JSON:
-    """Convert a Classification into a JSON-serialisable dictionary."""
-    return {
-        "id": classification.cid,
-        "zid": classification.zid,
-        "coord_matches": [
-            {"ir": ir, "radio": list(radio)}
-            for ir, radio in classification.coord_matches
-        ],
-        "username": classification.username or constants.ANONYMOUS_NAME,
-        "notes": classification.notes,
-        "ir_matches": [
-            {"ir": ir, "radio": list(radio)} for ir, radio in classification.ir_matches
-        ],
-    }
-
-
-def deserialise_classification(classification: rgz.JSON) -> Classification:
-    """Read a Classification from a JSON dict."""
-    return Classification(
-        cid=classification["id"],
-        zid=classification["zid"],
-        username=classification["username"] or None,
-        notes=classification["notes"],
-        coord_matches=[
-            (m["ir"], set(m["radio"])) for m in classification["coord_matches"]
-        ],
-        ir_matches=[(m["ir"], set(m["radio"])) for m in classification["ir_matches"]],
-    )
-
-
 def process(
     classifications_path: Path, subjects_path: Path, cache: Path, output_path: Path
 ):
@@ -266,7 +277,7 @@ def process(
 
     json_classifications = []
     for classification in tqdm(classifications, desc="Serialising subjects..."):
-        json_classifications.append(classification_to_json_serialisable(classification))
+        json_classifications.append(classification.to_json())
     with open(output_path, "w") as f:
         json.dump(json_classifications, f, indent=_JSON_INDENT)
 
@@ -286,7 +297,7 @@ def host_lookup(
         radius: IR search radius.
     """
     with open(classifications_path) as f:
-        classifications = [deserialise_classification(c) for c in json.load(f)]
+        classifications = [Classification.from_json(c) for c in json.load(f)]
 
     coordinates_to_lookup = set()
     for c in tqdm(classifications, desc="Processing classifications..."):
@@ -349,7 +360,7 @@ def host_lookup(
 
     with open(output_path, "w") as f:
         json.dump(
-            [classification_to_json_serialisable(c) for c in classifications],
+            [c.to_json() for c in classifications],
             f,
             indent=_JSON_INDENT,
         )
