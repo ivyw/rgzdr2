@@ -2,9 +2,9 @@
 
 # Generates golden test data for RGZ regression tests.
 bazel-bin/rgz/main subjects \
-    --in=data/radio_subjects_test_subset.json \
-    --out=data/radio_subjects_test_subset_processed.json \
-    --cache=data/cache
+    --in=rgz/testdata/radio_subjects_test_subset.json \
+    --out=rgz/testdata/radio_subjects_test_subset_processed.json \
+    --cache=rgz/testdata/first
 bazel-bin/rgz/main classifications \
     --in=rgz/testdata/radio_classifications_test_subset.json \
     --out=rgz/testdata/radio_classifications_test_subset_processed.json \
