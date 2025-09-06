@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
@@ -61,6 +61,25 @@ class Subject:
     zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
     bboxes: dict[BBox, list[FIRSTID]] = attr.ib()
+
+    def to_json(self) -> rgz.JSON:
+        """Converts a Subject into a JSON-compatible dictionary."""
+        return {
+            "id": self.id,
+            "zid": self.zid,
+            "coords": self.coords,
+            "bboxes": [{"bbox": list(k), "first": v} for k, v in self.bboxes.items()],
+        }
+
+    @classmethod
+    def from_json(cls, subject: rgz.JSON) -> Self:
+        """Reads a Subject from JSON."""
+        return cls(
+            subject["id"],
+            subject["zid"],
+            subject["coords"],
+            {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
+        )
 
 
 @backoff.on_exception(
@@ -269,16 +288,6 @@ def get_bboxes(
     return tuple(bboxes)
 
 
-def subject_to_json_serialisable(subject: Subject) -> rgz.JSON:
-    """Converts a Subject into a JSON-compatible dictionary."""
-    return {
-        "id": subject.id,
-        "zid": subject.zid,
-        "coords": subject.coords,
-        "bboxes": [{"bbox": list(k), "first": v} for k, v in subject.bboxes.items()],
-    }
-
-
 def process_subject(
     raw_subject: rgz.JSON,
     cache: Path,
@@ -324,13 +333,3 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
         json_subjects.append(subject_to_json_serialisable(subject))
     with open(output_path, "w") as f:
         json.dump(json_subjects, f, indent=_JSON_INDENT)
-
-
-def deserialise_subject(subject: rgz.JSON) -> Subject:
-    """Reads a Subject from JSON."""
-    return Subject(
-        subject["id"],
-        subject["zid"],
-        subject["coords"],
-        {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
-    )

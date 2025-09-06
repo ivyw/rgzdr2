@@ -1,5 +1,7 @@
 """Aggregates classifications."""
 
+import collections
+import json
 import logging
 from pathlib import Path
 from typing import Self
@@ -11,6 +13,8 @@ from rgz import rgz
 from rgz import subjects
 
 logger = logging.getLogger(__name__)
+
+_JSON_INDENT = 2
 
 
 @attr.s
@@ -65,6 +69,55 @@ class ConsensusSource:
         }
 
 
+def aggregate_subject(
+    subject: subjects.Subject, classifications: list[classifications.Classification]
+) -> list[ConsensusSource]:
+    """Aggregates classifications into consensus sources for a single subject."""
+    # Represent each combination of radio objects by something deterministic and hashable.
+    identifiers = [
+        tuple(sorted(tuple(sorted(radios)) for ir, radios in cl.ir_matches))
+        for cl in classifications
+    ]
+
+    # What's the most common combination (consensus)?
+    counter = collections.Counter(identifiers)
+    ((consensus_radio, consensus_radio_count),) = counter.most_common(1)
+    consensus_radio_pc = consensus_radio_count / len(identifiers)
+
+    # Amongst people who chose this, what IR was most common?
+    first_to_ir_options = {firsts: [] for firsts in consensus_radio}
+    for ident, cl in zip(identifiers, classifications):
+        if ident == consensus_radio:
+            for ir, radios in cl.ir_matches:
+                first_to_ir_options[tuple(sorted(radios))].append(ir)
+
+    # How many people thought _each_ IR object was a host, regardless
+    # of their choice of radio?
+    n_ir_votes = collections.Counter()
+    for classification in classifications:
+        for ir, _ in classification.ir_matches:
+            n_ir_votes[ir] += 1
+
+    matches = []
+    for first, irs in first_to_ir_options.items():
+        ((consensus_ir, consensus_ir_count),) = collections.Counter(
+            first_to_ir_options[first]
+        ).most_common(1)
+        matches.append(
+            ConsensusSource(
+                zid=classifications[0].zid,
+                components=set(first),
+                host_name=consensus_ir,
+                n_joint_agreement=consensus_ir_count,
+                n_ir_agreement=n_ir_votes[consensus_ir],
+                n_radio_agreement=consensus_radio_count,
+                votes=len(classifications),
+            )
+        )
+
+    return matches
+
+
 def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -> None:
     """Aggregates classifications into a consensus for each subject.
 
@@ -73,4 +126,25 @@ def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -
         classifications_path: Path to reduced, cross-matched subjects JSON.
         out_path: Path to output the consensus JSON.
     """
-    raise NotImplementedError()
+    with open(subjects_path) as f:
+        all_subjects = [subjects.Subject.from_json(j) for j in json.load(f)]
+
+    with open(classifications_path) as f:
+        all_classifications = [
+            classifications.Classification.from_json(j) for j in json.load(f)
+        ]
+
+    zid_to_subject = {s.zid: s for s in all_subjects}
+
+    zid_to_classifications = collections.defaultdict(list)
+    for classification in all_classifications:
+        zid_to_classifications[classification.zid].append(classification)
+
+    consensuses = []
+    for zid, zid_classifications in zid_to_classifications.items():
+        subject = zid_to_subject[zid]
+        consensuses.extend(aggregate_subject(subject, zid_classifications))
+
+    # TODO: Sort the output for reproducibility.
+    with open(out_path, "w") as f:
+        json.dump([c.to_json() for c in consensuses], f, indent=_JSON_INDENT)
