@@ -20,8 +20,7 @@ _TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
 _TEST_SUBJECTS_PATH = _TEST_DIR / "radio_subjects_test_subset.json"
 
 # Path to test (processed) subjects JSON.
-_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / \
-    "radio_subjects_test_subset_processed.json"
+_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processed.json"
 
 
 class TestProcess(unittest.TestCase):
@@ -37,8 +36,7 @@ class TestProcess(unittest.TestCase):
     def test_regression(self):
         """Tests behaviour consistency in processing subjects."""
         output_path = self.temp_dir_path / "out.json"
-        rgz.subjects.process(_TEST_SUBJECTS_PATH,
-                             _TEST_CACHE_DATA_PATH, output_path)
+        rgz.subjects.process(_TEST_SUBJECTS_PATH, _TEST_CACHE_DATA_PATH, output_path)
         with open(output_path) as f:
             got = json.load(f)
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
