@@ -4,13 +4,12 @@ import numpy as np
 from pathlib import Path
 from typing import Literal
 
-import requests
-
 from astropy import units as u
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy.table import Table
 import pandas as pd
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,8 @@ def get_allwise_image_list(
     dec_deg: float,
     band: Literal["W1", "W2", "W3", "W4"],
 ) -> pd.DataFrame:
-    """Returns a Pandas DataFrame containing a list of AllWISE images containing the specified coordinates.
+    """Returns a Pandas DataFrame containing a list of AllWISE images containing 
+    the specified coordinates.
 
     This function uses a Simple Image Access Query to obtain a list of
     "science"-quality AllWISE images in the selected band containing the
@@ -64,9 +64,12 @@ def get_allwise_image_list(
     Raises:
         SIAQueryFailError: the Simple Image Access Query failed.
     """
+    # NOTE: passing a separate URL params dict to requests.get doesn't work 
+    # because of the plus signs
+    imglist_url = ("https://irsa.ipac.caltech.edu/SIA?"
+                    "COLLECTION=wise_allwise&POS=circle+"
+                    f"{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS")
     try:
-        # NOTE: passing a separate URL params dict to requests.get doesn't work because of the plus signs
-        imglist_url = f"https://irsa.ipac.caltech.edu/SIA?COLLECTION=wise_allwise&POS=circle+{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS"
         r = requests.get(imglist_url)
     except ConnectionError as e:
         raise SIAQueryFailError(
@@ -142,18 +145,21 @@ def get_allwise_cutout(
     valid_bands = ["W1", "W2", "W3", "W4"]
     if band not in valid_bands:
         raise InvalidWISEBandError(
-            f"Band {band} is not a valid WISE band - valid values are {', '.join(valid_bands)}"
+            f"Band {band} is not a valid WISE band - "
+            f"valid values are {', '.join(valid_bands)}"
         )
 
-    # If no filename is supplied, save cutout to allwise_<band>_<ra_deg>_<dec_deg>.fits
+    # If no filename is supplied, save cutout to 
+    # allwise_<band>_<ra_deg>_<dec_deg>.fits
     ra_deg = coords.ra.value
     dec_deg = coords.dec.value
     if cutout_path is None:
         cutout_path = Path(f"allwise_{band:s}_{ra_deg:.4f}_{dec_deg:.4f}.fits")
     else:
-        if save_fits == False:
+        if not save_fits:
             logger.warning(
-                "You have specified a cutout_path but I am not saving the result to file!"
+                "You have specified a cutout_path but I am not saving the "
+                "result to file!"
             )
         if not cutout_path.suffix:
             cutout_path = cutout_path.with_suffix(".fits")
@@ -162,14 +168,17 @@ def get_allwise_cutout(
     df_valid = get_allwise_image_list(ra_deg=ra_deg, dec_deg=dec_deg, band=band)
     if df_valid.shape[0] == 0:
         raise CutoutNotFoundError(
-            f"No valid AllWISE cutouts could be found for inputs RA = {ra_deg:.4f}, dec = {dec_deg:.4f}, band = {band}"
+            f"No valid AllWISE cutouts could be found for inputs "
+            f"RA = {ra_deg:.4f}, dec = {dec_deg:.4f}, band = {band}"
         )
 
-    # Get the access URL for the image. If there are multiple then just take the first one
+    # Get the access URL for the image. If there are multiple then just take 
+    # the first one
     access_url = df_valid["access_url"].values[0].rstrip()
 
     # Construct the cutout URL & download
-    query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg&size={size_arcmin:5f}arcmin"
+    query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg" +\
+                f"&size={size_arcmin:5f}arcmin"
     cutout_url = f"{access_url}?{query_str}"
     try:
         hdulist = fits.open(cutout_url)
@@ -192,7 +201,10 @@ if __name__ == "__main__":
 
     # Plot the AllWISE cutout for NGC1068
     coords = SkyCoord(
-        ra="02:42:40.71", dec="-00:00:47.86", unit=(u.hourangle, u.deg), equinox="J2000"
+        ra="02:42:40.71", 
+        dec="-00:00:47.86", 
+        unit=(u.hourangle, u.deg), 
+        equinox="J2000"
     )
     hdulist = get_allwise_cutout(coords=coords, size=3.5 * u.arcmin)
     im = hdulist[0].data
