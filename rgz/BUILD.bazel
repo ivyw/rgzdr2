@@ -102,6 +102,7 @@ filegroup(
         "testdata/*.json",
         "testdata/first/*.json",
         "testdata/first/*.fits",
+        "testdata/first/*.csv",
     ]),
 )
 

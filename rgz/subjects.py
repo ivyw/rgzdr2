@@ -126,8 +126,8 @@ def fetch_first_catalogue_from_server_or_cache(
         return astropy.io.ascii.read(
             str(cache / _FIRST_CATALOGUE_FILENAME), guess=False, format="csv"
         )  # type: ignore[reportReturnType]
-    except IOError:
-        logger.debug("Cache miss; downloading FIRST table from Vizier")
+    except IOError as e:
+        logger.info("Cache miss; downloading FIRST table from Vizier")
         download_first_catalogue(cache)
         return fetch_first_catalogue_from_server_or_cache(cache)
 
