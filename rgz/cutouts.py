@@ -36,8 +36,8 @@ class InvalidWISEBandError(ValueError):
 
 
 def get_allwise_image_list(
-    ra_deg: float,
-    dec_deg: float,
+    ra: u.Quantity[u.deg],
+    dec: u.Quantity[u.deg],
     band: Literal["W1", "W2", "W3", "W4"],
 ) -> pd.DataFrame:
     """Returns a Pandas DataFrame containing a list of AllWISE images containing 
@@ -66,6 +66,8 @@ def get_allwise_image_list(
     """
     # NOTE: passing a separate URL params dict to requests.get doesn't work 
     # because of the plus signs
+    ra_deg = ra.to(u.deg).value
+    dec_deg = dec.to(u.deg).value
     imglist_url = ("https://irsa.ipac.caltech.edu/SIA?"
                     "COLLECTION=wise_allwise&POS=circle+"
                     f"{ra_deg:.5f}+{dec_deg:.5f}+0.01&RESPONSEFORMAT=FITS")
@@ -75,9 +77,7 @@ def get_allwise_image_list(
         raise SIAQueryFailError(
             f"Simple Image Access Query failed with message {e.message}!"
         ) from e
-    t = fits.open(BytesIO(r.content))
-    tab = t[1].data
-    df = Table(tab).to_pandas()
+    df = Table(fits.open(BytesIO(r.content))[1].data).to_pandas()
 
     # Filter by band and science readiness
     cond = df["energy_bandpassname"] == band
@@ -165,7 +165,9 @@ def get_allwise_cutout(
             cutout_path = cutout_path.with_suffix(".fits")
 
     # Get list of AllWISE images containing the target RA/Dec
-    df_valid = get_allwise_image_list(ra_deg=ra_deg, dec_deg=dec_deg, band=band)
+    df_valid = get_allwise_image_list(ra=coords.ra, 
+                                      dec=coords.dec,
+                                      band=band)
     if df_valid.shape[0] == 0:
         raise CutoutNotFoundError(
             f"No valid AllWISE cutouts could be found for inputs "
