@@ -53,6 +53,18 @@ py_library(
 )
 
 py_library(
+    name = "cutouts",
+    srcs = [
+        "cutouts.py",
+    ],
+    deps = [
+        ":rgz",
+        "@pypi//astropy",
+        "@pypi//pandas",
+    ]
+)
+
+py_library(
     name = "classifications",
     srcs = [
         "classifications.py",
@@ -100,6 +112,15 @@ py_test(
     deps = [
         ":subjects",
         "@pypi//line_profiler",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "cutouts_test",
+    srcs = ["cutouts_test.py"],
+    deps = [
+        ":cutouts",
         "@rules_python//python/runfiles",
     ],
 )
