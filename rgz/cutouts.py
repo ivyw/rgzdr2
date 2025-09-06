@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from pathlib import Path
 from typing import Literal
+import urllib.parse
 
 from astropy import units as u
 from astropy.io import fits
@@ -179,9 +180,11 @@ def get_allwise_cutout(
     access_url = df_valid["access_url"].values[0].rstrip()
 
     # Construct the cutout URL & download
-    query_str = f"center={ra_deg:.5f},{dec_deg:.5f}deg" +\
-                f"&size={size_arcmin:5f}arcmin"
-    cutout_url = f"{access_url}?{query_str}"
+    url_params= urllib.parse.urlencode({
+        "center": f"{ra_deg:.5f},{dec_deg:.5f}deg",
+        "size": f"{size_arcmin:5f}arcmin",
+    }, safe=",")
+    cutout_url = f"{access_url}?{url_params}"
     try:
         hdulist = fits.open(cutout_url)
     except Exception as e:
