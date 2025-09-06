@@ -1,5 +1,6 @@
 from unittest.mock import patch
 from pathlib import Path
+import tempfile
 import unittest
 
 from astropy.coordinates import SkyCoord
@@ -11,6 +12,8 @@ from rgz import cutouts
 
 class TestCutouts(unittest.TestCase):
     """Tests for rgz.cutouts."""
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
 
     def test_get_cutout(self):
         """Test that cutouts.get_allwise_cutout successfully returns a HDUList."""
@@ -25,7 +28,7 @@ class TestCutouts(unittest.TestCase):
 
     def test_save_cutout(self):
         """Test that cutout is saved if save_fits is True."""
-        cutout_path = Path("NGC3997.fits")
+        cutout_path = Path(self.tempdir.name) / "NGC3997.fits"
         coords = SkyCoord(
             ra="11:57:47.0",
             dec="+25:16:14.00",
@@ -36,7 +39,6 @@ class TestCutouts(unittest.TestCase):
             coords=coords, size=10 * u.arcmin, save_fits=True, cutout_path=cutout_path
         )
         self.assertTrue(cutout_path.exists())
-        Path.unlink(cutout_path)
 
     def test_save_cutout_default_fname(self):
         """Test that cutout is saved if save_fits is True and no filename specified."""
@@ -57,7 +59,7 @@ class TestCutouts(unittest.TestCase):
 
     def test_not_save_cutout(self):
         """Test that cutout is not saved if save_fits is False."""
-        cutout_path = Path("NGC3997.fits")
+        cutout_path = Path(self.tempdir.name) / "NGC3997.fits"
         Path.unlink(cutout_path, missing_ok=True)
         coords = SkyCoord(
             ra="11:57:47.0",
@@ -106,6 +108,10 @@ class TestCutouts(unittest.TestCase):
         """Tests that passing an RA/Dec that returns no valid AllWISE images raises cutouts.CutoutNotFoundError."""
         test_patch.return_value = pd.DataFrame()
         self.assertRaises(cutouts.CutoutNotFoundError, self.invalid_coords)
+
+    def tearDown(self) -> None:
+        self.tempdir.cleanup()
+        return super().tearDown()
 
 
 if __name__ == "__main__":
