@@ -7,7 +7,6 @@ import tempfile
 import unittest
 
 from python.runfiles import Runfiles
-import line_profiler
 
 import rgz.subjects
 
@@ -21,21 +20,12 @@ _TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
 _TEST_SUBJECTS_PATH = _TEST_DIR / "radio_subjects_test_subset.json"
 
 # Path to test (processed) subjects JSON.
-_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processed.json"
-
-
-profiler = line_profiler.LineProfiler()
-profiler.enable_by_count()
+_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / \
+    "radio_subjects_test_subset_processed.json"
 
 
 class TestProcess(unittest.TestCase):
     """Tests for rgz.subjects.process."""
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        profiler.add_module(rgz.subjects)
-        profiler.add_function(cls.test_regression)
 
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -44,15 +34,11 @@ class TestProcess(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    @classmethod
-    def tearDownClass(cls):
-        profiler.print_stats()
-        profiler.dump_stats("/tmp/lprof")
-
     def test_regression(self):
         """Tests behaviour consistency in processing subjects."""
         output_path = self.temp_dir_path / "out.json"
-        rgz.subjects.process(_TEST_SUBJECTS_PATH, _TEST_CACHE_DATA_PATH, output_path)
+        rgz.subjects.process(_TEST_SUBJECTS_PATH,
+                             _TEST_CACHE_DATA_PATH, output_path)
         with open(output_path) as f:
             got = json.load(f)
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
