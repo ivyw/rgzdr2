@@ -33,7 +33,7 @@ def get_contours(
         with open(fname, "w") as f:
             json.dump(response, f)
     contours = response["contours"]
-    coords_list = []  # TODO this fn was copied + pasted from elsewhere & has a bug where it only returns the first contour 
+    coords_list = []
     for contour in contours:
         contour = contour[0]
         xs = [a["x"] for a in contour["arr"]]
