@@ -92,7 +92,13 @@ class Classification:
     )
 
     def to_json(self) -> rgz.JSON:
-        """Converts a Classification into a JSON-serialisable dictionary."""
+        """Converts a Classification into a JSON-serialisable dictionary.
+
+        Unset usernames are replaced by empty string.
+
+        Returns:
+            Dict representation of the classification, ready to be serialised to JSON.
+        """
 
         # Sort sets being converted into lists - the order doesn't matter
         # but it should be consistent when serialising.
@@ -109,7 +115,7 @@ class Classification:
                 ],
                 key=dict_key,
             ),
-            "username": self.username or constants.ANONYMOUS_NAME,
+            "username": self.username or "",
             "notes": self.notes,
             "ir_matches": sorted(
                 [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
@@ -119,7 +125,14 @@ class Classification:
 
     @classmethod
     def from_json(cls, classification: rgz.JSON) -> Self:
-        """Reads a Classification from a JSON dict."""
+        """Reads a Classification from a JSON dict.
+
+        Args:
+            classification: Classification dict to deserialise.
+
+        Returns:
+            Classification.
+        """
         return cls(
             cid=classification["id"],
             zid=classification["zid"],

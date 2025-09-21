@@ -1,5 +1,6 @@
 """Tests for processing RGZ classifications."""
 
+import inspect
 import json
 import os
 from pathlib import Path
@@ -10,22 +11,29 @@ from python.runfiles import Runfiles
 
 import rgz.classifications
 
-# Path to test directory.
-_TEST_DIR = Path(os.path.dirname(__file__)) / "testdata/"
+# "Cache" data filename.
+_TEST_CACHE_DATA_FILENAME = "first"
 
-# Path to "cache" data.
-_TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
+# Test (processed) subjects JSON filename.
+_TEST_SUBJECTS_PROCESSED_FILENAME = "radio_subjects_test_subset_processed.json"
 
-# Path to test (processed) subjects JSON.
-_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processed.json"
+# Test (raw) classifications JSON filename.
+_TEST_CLASSIFICATIONS_FILENAME = "radio_classifications_test_subset.json"
 
-# Path to test (raw) classifications JSON.
-_TEST_CLASSIFICATIONS_PATH = _TEST_DIR / "radio_classifications_test_subset.json"
-
-# Path to test (processed) classifications JSON.
-_TEST_CLASSIFICATIONS_PROCESSED_PATH = (
-    _TEST_DIR / "radio_classifications_test_subset_processed.json"
+# Test (processed) classifications JSON filename.
+_TEST_CLASSIFICATIONS_PROCESSED_FILENAME = (
+    "radio_classifications_test_subset_processed.json"
 )
+
+
+def get_test_data_dir() -> Path:
+    """Gets the directory that test data is held in."""
+    current_frame = inspect.currentframe()
+    if current_frame is not None:
+        current_file_path = inspect.getfile(current_frame)
+    else:
+        current_file_path = __file__
+    return Path(os.path.dirname(current_file_path)) / "testdata"
 
 
 class TestProcess(unittest.TestCase):
@@ -34,6 +42,7 @@ class TestProcess(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = Path(self.temp_dir.name)
+        self.test_data_path = get_test_data_dir()
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -42,14 +51,14 @@ class TestProcess(unittest.TestCase):
         """Tests behaviour consistency in processing classifications."""
         output_path = self.temp_dir_path / "out.json"
         rgz.classifications.process(
-            _TEST_CLASSIFICATIONS_PATH,
-            _TEST_SUBJECTS_PROCESSED_PATH,
-            _TEST_CACHE_DATA_PATH,
+            self.test_data_path / _TEST_CLASSIFICATIONS_FILENAME,
+            self.test_data_path / _TEST_SUBJECTS_PROCESSED_FILENAME,
+            self.test_data_path / _TEST_CACHE_DATA_FILENAME,
             output_path,
         )
         with open(output_path) as f:
             got = json.load(f)
-        with open(_TEST_CLASSIFICATIONS_PROCESSED_PATH) as f:
+        with open(self.test_data_path / _TEST_CLASSIFICATIONS_PROCESSED_FILENAME) as f:
             want = json.load(f)
         self.assertEqual(want, got)
 
