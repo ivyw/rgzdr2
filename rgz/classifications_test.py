@@ -89,7 +89,54 @@ class TestRadioCombination(unittest.TestCase):
         radio_combination = rgz.classifications.RadioSourceCombination(input_sources)
         got = radio_combination.sources()
         want = frozenset(
-            {frozenset({"abc"}), frozenset({"def", "ghi"}), frozenset({"jkl", "hij"})}
+            {
+                rgz.classifications.RadioSource({"abc"}),
+                rgz.classifications.RadioSource({"def", "ghi"}),
+                rgz.classifications.RadioSource({"jkl", "hij"}),
+            }
+        )
+        self.assertEqual(got, want)
+
+
+class TestRadioSource(unittest.TestCase):
+    """Tests for rgz.consensus.RadioSource."""
+
+    def test_invariant(self):
+        """Same radio sources produce same RadioSource."""
+        ordered_radio_sources = [
+            ["abc"],
+            ["def", "ghi"],
+            ["jkl", "hij", "hij"],
+            ["ghi", "def"],
+            ["hij", "jkl", "hij"],
+            [],
+        ]
+        want = [
+            frozenset({"abc"}),
+            frozenset({"def", "ghi"}),
+            frozenset({"jkl", "hij"}),
+            frozenset({"def", "ghi"}),
+            frozenset({"jkl", "hij"}),
+            frozenset(),
+        ]
+
+        for input, want_ in zip(ordered_radio_sources, want):
+            self.assertEqual(
+                want_,
+                rgz.classifications.RadioSource(input).components(),
+            )
+
+    def test_sources(self):
+        """Returns correct sources."""
+        input_sources = [["abc"], ["def", "ghi"], ["jkl", "hij", "hij"]]
+        radio_combination = rgz.classifications.RadioSourceCombination(input_sources)
+        got = radio_combination.sources()
+        want = frozenset(
+            {
+                rgz.classifications.RadioSource({"abc"}),
+                rgz.classifications.RadioSource({"def", "ghi"}),
+                rgz.classifications.RadioSource({"jkl", "hij"}),
+            }
         )
         self.assertEqual(got, want)
 
