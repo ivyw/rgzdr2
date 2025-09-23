@@ -1,19 +1,19 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
-package(default_visibility=["//notebooks:__pkg__"])
+package(default_visibility = ["//notebooks:__pkg__"])
 
 compile_pip_requirements(
-    name="requirements",
-    src="pyproject.toml",
-    extra_args=["--extra=cli"],
-    requirements_txt="requirements.txt",
+    name = "requirements",
+    src = "pyproject.toml",
+    extra_args = ["--extra=cli"],
+    requirements_txt = "requirements.txt",
 )
 
 py_binary(
-    name="main",
-    srcs=["main.py"],
-    deps=[
+    name = "main",
+    srcs = ["main.py"],
+    deps = [
         ":classifications",
         ":consensus",
         ":rgz",
@@ -23,13 +23,13 @@ py_binary(
 )
 
 py_library(
-    name="rgz",
-    srcs=[
+    name = "rgz",
+    srcs = [
         "constants.py",
         "rgz.py",
         "units.py",
     ],
-    deps=[
+    deps = [
         "@pypi//astropy",
         "@pypi//matplotlib",
         "@pypi//requests",
@@ -37,11 +37,11 @@ py_library(
 )
 
 py_library(
-    name="subjects",
-    srcs=[
+    name = "subjects",
+    srcs = [
         "subjects.py",
     ],
-    deps=[
+    deps = [
         ":rgz",
         "@pypi//astropy",
         "@pypi//astroquery",
@@ -69,7 +69,7 @@ py_library(
     srcs = [
         "classifications.py",
     ],
-    deps=[
+    deps = [
         ":rgz",
         ":subjects",
         "@pypi//astropy",
@@ -81,11 +81,12 @@ py_library(
 )
 
 py_library(
-    name="consensus",
-    srcs=[
+    name = "consensus",
+    srcs = [
         "consensus.py",
     ],
-    deps=[
+    deps = [
+        ":classifications",
         ":rgz",
         ":subjects",
         "@pypi//astropy",
@@ -97,24 +98,23 @@ py_library(
 )
 
 filegroup(
-    name="testdata",
-    srcs=glob(
+    name = "testdata",
+    srcs = glob(
         [
             "testdata/*.json",
             "testdata/first/*.json",
             "testdata/first/*.fits",
             "testdata/first/*.csv",
-        ]
+        ],
     ),
 )
 
 py_test(
-    name="subjects_test",
-    srcs=["subjects_test.py"],
-    data=[":testdata"],
-    deps=[
+    name = "subjects_test",
+    srcs = ["subjects_test.py"],
+    data = [":testdata"],
+    deps = [
         ":subjects",
-        "@pypi//line_profiler",
         "@rules_python//python/runfiles",
     ],
 )
@@ -134,7 +134,6 @@ py_test(
     data = [":testdata"],
     deps = [
         ":classifications",
-        "@pypi//line_profiler",
         "@rules_python//python/runfiles",
     ],
 )

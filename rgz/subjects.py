@@ -330,6 +330,6 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
                 continue
     json_subjects = []
     for subject in tqdm(subjects, desc="Serialising subjects..."):
-        json_subjects.append(subject_to_json_serialisable(subject))
+        json_subjects.append(subject.to_json())
     with open(output_path, "w") as f:
         json.dump(json_subjects, f, indent=_JSON_INDENT)

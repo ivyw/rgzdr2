@@ -1,11 +1,11 @@
 """Handles RGZ classifications."""
 
 import collections
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 import json
 import logging
 from pathlib import Path
-from typing import Any, Self
+from typing import Self
 
 import attr
 import numpy as np
@@ -13,7 +13,6 @@ import numpy.typing as npt
 from astropy.coordinates import SkyCoord
 import astropy.table
 import astropy.wcs
-from astroquery.vizier import Vizier
 import pyvo
 from tqdm import tqdm
 
@@ -56,6 +55,51 @@ def get_classifications(path: Path) -> Generator[rgz.JSON]:
             yield js
 
 
+class RadioSource(tuple[subjects.FIRSTID]):
+    """Represents a unique set of radio components.
+
+    Invariant: Always sorted, unique entries.
+    """
+
+    def __new__(cls, radio_source: Iterable[subjects.FIRSTID]) -> Self:
+        return super().__new__(cls, sorted(set(radio_source)))
+
+    def __repr__(self):
+        tuple_repr = super().__repr__()
+        return f"RadioSource({tuple_repr})"
+
+    def components(self) -> frozenset[subjects.FIRSTID]:
+        """Gets radio components in this source."""
+        return frozenset(self)
+
+
+class RadioSourceCombination(tuple[RadioSource]):
+    """Identifies a unique combination of radio components.
+
+    Invariant: Always sorted, unique entries.
+    """
+
+    def __new__(
+        cls: type[Self], radio_combinations: Iterable[Iterable[subjects.FIRSTID]]
+    ) -> Self:
+        representations = []
+        for radios in radio_combinations:
+            representations.append(RadioSource(radios))
+        return super().__new__(cls, sorted(representations))
+
+    def __repr__(self):
+        tuple_repr = super().__repr__()
+        return f"RadioCombination({tuple_repr})"
+
+    def sources(self) -> frozenset[RadioSource]:
+        """Gets radio sources in this combination.
+
+        A radio source is a collection of radio components that are all part of
+        the same physical object.
+        """
+        return frozenset(self)
+
+
 @attr.s
 class Classification:
     """A single RGZ classification of a subject by a citizen scientist.
@@ -80,14 +124,14 @@ class Classification:
     zid: subjects.ZooniverseID = attr.ib()
     # IR coordinate -> radio names. We use str as the key to avoid
     # floating point mismatch in keys.
-    coord_matches: list[tuple[rgz.HMSDMS, set[subjects.FIRSTID]]] = attr.ib()
+    coord_matches: list[tuple[rgz.HMSDMS, RadioSource]] = attr.ib()
     # Contributor of the classification.
     username: str | None = attr.ib()
     # Additional notes about this classification accumulated during
     # processing.
     notes: list[str] = attr.ib()
     # IR cross-match -> radio names.
-    ir_matches: list[tuple[ALLWISEID, set[subjects.FIRSTID]]] = attr.ib(
+    ir_matches: list[tuple[ALLWISEID, RadioSource]] = attr.ib(
         default=attr.Factory(list)
     )
 
@@ -139,12 +183,19 @@ class Classification:
             username=classification["username"] or None,
             notes=classification["notes"],
             coord_matches=[
-                (m["ir"], set(m["radio"])) for m in classification["coord_matches"]
+                (m["ir"], RadioSource(m["radio"]))
+                for m in classification["coord_matches"]
             ],
             ir_matches=[
-                (m["ir"], set(m["radio"])) for m in classification["ir_matches"]
+                (m["ir"], RadioSource(m["radio"])) for m in classification["ir_matches"]
             ],
         )
+
+    def radio_combinations(
+        self,
+    ) -> RadioSourceCombination:
+        """Gets the combination of radio sources present in this classification."""
+        return RadioSourceCombination(radio for _, radio in self.ir_matches)
 
 
 def transform_coord_ir(
@@ -271,7 +322,7 @@ def process(
 
     # Load all reduced subjects.
     with open(subjects_path, "r") as f:
-        subjects_ = [subjects.deserialise_subject(js) for js in json.load(f)]
+        subjects_ = [subjects.Subject.from_json(js) for js in json.load(f)]
 
     classifications = []
     bar = tqdm(total=n_classifications, desc="Processing classifications...")

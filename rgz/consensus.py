@@ -1,6 +1,7 @@
 """Aggregates classifications."""
 
 import collections
+from collections.abc import Iterable
 import json
 import logging
 from pathlib import Path
@@ -41,7 +42,7 @@ class ConsensusSource:
     n_radio_agreement: int = attr.ib()
     n_ir_agreement: int = attr.ib()
     n_joint_agreement: int = attr.ib()
-    votes: int = attr.ib()
+    n_votes: int = attr.ib()
 
     @classmethod
     def from_json(cls, obj: rgz.JSON) -> Self:
@@ -53,7 +54,7 @@ class ConsensusSource:
             n_radio_agreement=obj["n_radio_agreement"],
             n_ir_agreement=obj["n_ir_agreement"],
             n_joint_agreement=obj["n_joint_agreement"],
-            votes=obj["votes"],
+            n_votes=obj["votes"],
         )
 
     def to_json(self) -> rgz.JSON:
@@ -65,7 +66,7 @@ class ConsensusSource:
             "n_radio_agreement": self.n_radio_agreement,
             "n_ir_agreement": self.n_ir_agreement,
             "n_joint_agreement": self.n_joint_agreement,
-            "votes": self.votes,
+            "votes": self.n_votes,
         }
 
 
@@ -74,22 +75,19 @@ def aggregate_subject(
 ) -> list[ConsensusSource]:
     """Aggregates classifications into consensus sources for a single subject."""
     # Represent each combination of radio objects by something deterministic and hashable.
-    identifiers = [
-        tuple(sorted(tuple(sorted(radios)) for ir, radios in cl.ir_matches))
-        for cl in classifications
-    ]
+    radio_combinations = [cl.radio_combinations() for cl in classifications]
 
     # What's the most common combination (consensus)?
-    counter = collections.Counter(identifiers)
+    counter = collections.Counter(radio_combinations)
     ((consensus_radio, consensus_radio_count),) = counter.most_common(1)
-    consensus_radio_pc = consensus_radio_count / len(identifiers)
+    consensus_radio_pc = consensus_radio_count / len(radio_combinations)
 
     # Amongst people who chose this, what IR was most common?
-    first_to_ir_options = {firsts: [] for firsts in consensus_radio}
-    for ident, cl in zip(identifiers, classifications):
+    source_to_ir_options = {source: [] for source in consensus_radio.sources()}
+    for ident, cl in zip(radio_combinations, classifications):
         if ident == consensus_radio:
             for ir, radios in cl.ir_matches:
-                first_to_ir_options[tuple(sorted(radios))].append(ir)
+                source_to_ir_options[radios].append(ir)
 
     # How many people thought _each_ IR object was a host, regardless
     # of their choice of radio?
@@ -99,10 +97,8 @@ def aggregate_subject(
             n_ir_votes[ir] += 1
 
     matches = []
-    for first, irs in first_to_ir_options.items():
-        ((consensus_ir, consensus_ir_count),) = collections.Counter(
-            first_to_ir_options[first]
-        ).most_common(1)
+    for first, irs in source_to_ir_options.items():
+        ((consensus_ir, consensus_ir_count),) = collections.Counter(irs).most_common(1)
         matches.append(
             ConsensusSource(
                 zid=classifications[0].zid,
@@ -111,7 +107,7 @@ def aggregate_subject(
                 n_joint_agreement=consensus_ir_count,
                 n_ir_agreement=n_ir_votes[consensus_ir],
                 n_radio_agreement=consensus_radio_count,
-                votes=len(classifications),
+                n_votes=len(classifications),
             )
         )
 
