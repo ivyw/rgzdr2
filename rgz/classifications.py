@@ -64,7 +64,7 @@ class RadioSource(tuple[subjects.FIRSTID]):
     def __new__(cls, radio_source: Iterable[subjects.FIRSTID]) -> Self:
         return super().__new__(cls, sorted(set(radio_source)))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         tuple_repr = super().__repr__()
         return f"RadioSource({tuple_repr})"
 
@@ -87,7 +87,7 @@ class RadioSourceCombination(tuple[RadioSource]):
             representations.append(RadioSource(radios))
         return super().__new__(cls, sorted(representations))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         tuple_repr = super().__repr__()
         return f"RadioCombination({tuple_repr})"
 
