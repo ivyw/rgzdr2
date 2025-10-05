@@ -7,8 +7,6 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from python.runfiles import Runfiles
-
 import rgz.classifications
 
 # "Cache" data filename.
@@ -61,6 +59,86 @@ class TestProcess(unittest.TestCase):
         with open(self.test_data_path / _TEST_CLASSIFICATIONS_PROCESSED_FILENAME) as f:
             want = json.load(f)
         self.assertEqual(want, got)
+
+
+class TestRadioCombination(unittest.TestCase):
+    """Tests for rgz.consensus.RadioCombination."""
+
+    def test_invariant(self):
+        """Same radio sources produce same RadioCombination."""
+        ordered_radio_sources = [
+            [["abc"], ["def", "ghi"], ["jkl", "hij", "hij"]],
+            [["abc"], ["ghi", "def"], ["hij", "jkl", "hij"]],
+            [["hij", "jkl", "hij"], ["abc"], ["ghi", "def"]],
+            [["hij", "jkl"], ["abc"], ["ghi", "def"]],
+        ]
+
+        combinations = []
+        for radio_source in ordered_radio_sources:
+            combinations.append(
+                rgz.classifications.RadioSourceCombination(radio_source)
+            )
+
+        comparison_combination = combinations[0]
+        for radio_combination in combinations[1:]:
+            self.assertEqual(comparison_combination, radio_combination)
+
+    def test_sources(self):
+        """Returns correct sources."""
+        input_sources = [["abc"], ["def", "ghi"], ["jkl", "hij", "hij"]]
+        radio_combination = rgz.classifications.RadioSourceCombination(input_sources)
+        got = radio_combination.sources()
+        want = frozenset(
+            {
+                rgz.classifications.RadioSource({"abc"}),
+                rgz.classifications.RadioSource({"def", "ghi"}),
+                rgz.classifications.RadioSource({"jkl", "hij"}),
+            }
+        )
+        self.assertEqual(got, want)
+
+
+class TestRadioSource(unittest.TestCase):
+    """Tests for rgz.consensus.RadioSource."""
+
+    def test_invariant(self):
+        """Same radio sources produce same RadioSource."""
+        ordered_radio_sources = [
+            ["abc"],
+            ["def", "ghi"],
+            ["jkl", "hij", "hij"],
+            ["ghi", "def"],
+            ["hij", "jkl", "hij"],
+            [],
+        ]
+        want = [
+            frozenset({"abc"}),
+            frozenset({"def", "ghi"}),
+            frozenset({"jkl", "hij"}),
+            frozenset({"def", "ghi"}),
+            frozenset({"jkl", "hij"}),
+            frozenset(),
+        ]
+
+        for input, want_ in zip(ordered_radio_sources, want):
+            self.assertEqual(
+                want_,
+                rgz.classifications.RadioSource(input).components(),
+            )
+
+    def test_sources(self):
+        """Returns correct sources."""
+        input_sources = [["abc"], ["def", "ghi"], ["jkl", "hij", "hij"]]
+        radio_combination = rgz.classifications.RadioSourceCombination(input_sources)
+        got = radio_combination.sources()
+        want = frozenset(
+            {
+                rgz.classifications.RadioSource({"abc"}),
+                rgz.classifications.RadioSource({"def", "ghi"}),
+                rgz.classifications.RadioSource({"jkl", "hij"}),
+            }
+        )
+        self.assertEqual(got, want)
 
 
 if __name__ == "__main__":
