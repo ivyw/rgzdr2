@@ -41,7 +41,10 @@ def get_contours(
         coords = np.stack([xs, ys]).T
         if not px_coords:
             coords = [
-                subjects.transform_coord_radio(c, raw_subject, cache=cache) for c in coords
+                subjects.transform_coord_radio(coord=c, 
+                                               subject=subject, 
+                                               raw_subject=None,
+                                               cache=cache) for c in coords
             ]
             coords = [(a.value, b.value) for a, b in coords]
         else:
