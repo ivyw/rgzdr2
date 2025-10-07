@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.wcs
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import requests
 

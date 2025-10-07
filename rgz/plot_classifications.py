@@ -17,21 +17,21 @@ from rgz import subjects
 
 
 def get_contours(
-    raw_subject: rgz.JSON,
+    subject: subjects.Subject,
     px_coords=False,
     px_scaling=100 / constants.RADIO_MAX_PX,
     cache: Path = Path("first"),
 ) -> list[tuple]:
     """Returns the contours of a raw subject."""
-    # TODO I think there is something wrong with this
-    fname = cache / f'{raw_subject["_id"]["$oid"]}.json'
+    # TODO make this a class method of Subject
+    fname = cache / f'{subject.id}.json'
     try:
         with open(fname) as f:
             response = json.load(f)
-    except FileNotFoundError:
-        response = requests.get(raw_subject["location"]["contours"]).json()
-        with open(fname, "w") as f:
-            json.dump(response, f)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"contour data for subject with ID {subject.id}"
+                                f"not found! Have you run download_contours "
+                                "first?")
     contours = response["contours"]
     coords_list = []
     for contour in contours:
@@ -97,13 +97,14 @@ def plot_single_classification(
     # TODO input checks - check that the subject matches the classification
 
     # Get the raw subject so we can get the contours
-    raw_subject = get_raw_subject(subject=subject, 
-                                  raw_subjects_path=raw_subjects_path)
+    # # TODO bypass this entirely 
+    # raw_subject = get_raw_subject(subject=subject, 
+    #                               raw_subjects_path=raw_subjects_path)
 
     # Get the FIRST contours associated with this subject
     # TODO these don't have any associated labels or FIRST ids...
     contour_coords_list = get_contours(
-        raw_subject=raw_subject,
+        subject=subject,
         cache=cache,
         px_coords=False,
     )
@@ -132,7 +133,7 @@ def plot_single_classification(
 
     # Plot contours 
     # TODO can annotate these w/ FIRST component names
-    contour_colour = "y"
+    contour_colour = "white"
     for contour_coords in contour_coords_list:
         ax.plot(*zip(*contour_coords), 
                 transform=ax.get_transform("fk5"),
