@@ -104,13 +104,12 @@ def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
 
 
 def fetch_first_image_from_server_or_cache(
-    raw_subject: rgz.JSON,
+    subject_id: str,
+    coord: SkyCoord,
     cache: Path,
 ) -> fits.HDUList:
     """Fetches a FIRST image from the FIRST server or cache."""
-    coord = raw_subject["coords"]
-    coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
-    fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
+    fname = cache / f'{subject_id}.fits'
     try:
         return fits.open(fname)
     except FileNotFoundError:
