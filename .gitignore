@@ -3,3 +3,4 @@ MODULE.bazel.lock
 data/*
 *.pyc
 .vscode/*
+**/.vscode/*

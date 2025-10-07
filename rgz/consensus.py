@@ -148,6 +148,6 @@ def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -
         subject = zid_to_subject[zid]
         consensuses.extend(aggregate_subject(subject, zid_classifications))
 
-    # TODO: Sort the output for reproducibility.
+    consensuses.sort()
     with open(out_path, "w") as f:
         json.dump([c.to_json() for c in consensuses], f, indent=_JSON_INDENT)

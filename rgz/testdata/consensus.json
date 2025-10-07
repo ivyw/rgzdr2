@@ -1,0 +1,436 @@
+[
+  {
+    "zid": "ARG0002zwe",
+    "components": [
+      "FIRST_J100040.0+105612",
+      "FIRST_J100040.0+105620"
+    ],
+    "host_name": "J100039.98+105616.7",
+    "n_radio_agreement": 19,
+    "n_ir_agreement": 15,
+    "n_joint_agreement": 15,
+    "votes": 20
+  },
+  {
+    "zid": "ARG0002zwm",
+    "components": [
+      "FIRST_J100040.0+105612",
+      "FIRST_J100040.0+105620"
+    ],
+    "host_name": "J100039.98+105616.7",
+    "n_radio_agreement": 18,
+    "n_ir_agreement": 13,
+    "n_joint_agreement": 13,
+    "votes": 20
+  },
+  {
+    "zid": "ARG000307k",
+    "components": [
+      "FIRST_J100308.6+105048"
+    ],
+    "host_name": "J100308.64+105048.6",
+    "n_radio_agreement": 3,
+    "n_ir_agreement": 3,
+    "n_joint_agreement": 3,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00030kn",
+    "components": [
+      "FIRST_J100034.7+104405"
+    ],
+    "host_name": "J100034.96+104404.8",
+    "n_radio_agreement": 11,
+    "n_ir_agreement": 6,
+    "n_joint_agreement": 6,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00030wk",
+    "components": [
+      "FIRST_J100121.5+103749"
+    ],
+    "host_name": "J100121.59+103749.7",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 5,
+    "n_joint_agreement": 4,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00030wl",
+    "components": [
+      "FIRST_J100219.8+103749",
+      "FIRST_J100220.3+103748"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 2,
+    "n_joint_agreement": 2,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00030wn",
+    "components": [
+      "FIRST_J100219.8+103749",
+      "FIRST_J100220.3+103748"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 2,
+    "n_joint_agreement": 2,
+    "votes": 4
+  },
+  {
+    "zid": "ARG000310n",
+    "components": [
+      "FIRST_J100150.9+103548"
+    ],
+    "host_name": "J100150.94+103548.5",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 4,
+    "n_joint_agreement": 4,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00031ek",
+    "components": [
+      "FIRST_J100343.5+102737",
+      "FIRST_J100345.7+102837"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 9,
+    "n_ir_agreement": 17,
+    "n_joint_agreement": 7,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031go",
+    "components": [
+      "FIRST_J100343.5+102737",
+      "FIRST_J100345.7+102837"
+    ],
+    "host_name": "J100344.67+102807.7",
+    "n_radio_agreement": 14,
+    "n_ir_agreement": 7,
+    "n_joint_agreement": 7,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031nm",
+    "components": [
+      "FIRST_J100107.4+102407"
+    ],
+    "host_name": "J100107.15+102407.3",
+    "n_radio_agreement": 17,
+    "n_ir_agreement": 16,
+    "n_joint_agreement": 16,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031r7",
+    "components": [
+      "FIRST_J100010.8+102212",
+      "FIRST_J100013.5+102201",
+      "FIRST_J100015.5+102124",
+      "NOFIRST_J100012.23414988+102150.50800215"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 13,
+    "n_joint_agreement": 2,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031ro",
+    "components": [
+      "FIRST_J100010.8+102212",
+      "FIRST_J100013.5+102201",
+      "FIRST_J100015.5+102124",
+      "NOFIRST_J100012.23322692+102150.61709575"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 9,
+    "n_ir_agreement": 19,
+    "n_joint_agreement": 4,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031t1",
+    "components": [
+      "FIRST_J100010.8+102212",
+      "FIRST_J100013.5+102201",
+      "FIRST_J100015.5+102124",
+      "NOFIRST_J100012.24430629+102149.63524991"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 9,
+    "n_joint_agreement": 2,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031w6",
+    "components": [
+      "FIRST_J100339.0+101931",
+      "FIRST_J100339.4+101936",
+      "FIRST_J100340.3+101945",
+      "FIRST_J100342.0+101946",
+      "FIRST_J100342.8+102033"
+    ],
+    "host_name": "J100342.30+102002.7",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 15,
+    "n_joint_agreement": 3,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031w8",
+    "components": [
+      "FIRST_J100339.0+101931",
+      "FIRST_J100339.4+101936",
+      "FIRST_J100340.3+101945"
+    ],
+    "host_name": "J100339.43+101936.6",
+    "n_radio_agreement": 7,
+    "n_ir_agreement": 10,
+    "n_joint_agreement": 5,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031w8",
+    "components": [
+      "FIRST_J100342.0+101946",
+      "FIRST_J100342.8+102033"
+    ],
+    "host_name": "J100342.30+102002.7",
+    "n_radio_agreement": 7,
+    "n_ir_agreement": 13,
+    "n_joint_agreement": 7,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031wp",
+    "components": [
+      "FIRST_J100339.0+101931",
+      "FIRST_J100339.4+101936",
+      "FIRST_J100340.3+101945"
+    ],
+    "host_name": "J100339.43+101936.6",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 9,
+    "n_joint_agreement": 6,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031wp",
+    "components": [
+      "FIRST_J100342.0+101946",
+      "FIRST_J100342.8+102033"
+    ],
+    "host_name": "J100342.30+102002.7",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 14,
+    "n_joint_agreement": 6,
+    "votes": 20
+  },
+  {
+    "zid": "ARG000321x",
+    "components": [
+      "FIRST_J100322.1+101649",
+      "FIRST_J100322.2+101700",
+      "FIRST_J100322.4+101642"
+    ],
+    "host_name": "J100322.12+101650.8",
+    "n_radio_agreement": 7,
+    "n_ir_agreement": 7,
+    "n_joint_agreement": 7,
+    "votes": 8
+  },
+  {
+    "zid": "ARG0003229",
+    "components": [
+      "FIRST_J100322.1+101649",
+      "FIRST_J100322.2+101700",
+      "FIRST_J100322.4+101642"
+    ],
+    "host_name": "J100322.12+101650.8",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 3,
+    "n_joint_agreement": 3,
+    "votes": 5
+  },
+  {
+    "zid": "ARG000322i",
+    "components": [
+      "FIRST_J100322.1+101649",
+      "FIRST_J100322.2+101700",
+      "FIRST_J100322.4+101642"
+    ],
+    "host_name": "J100322.12+101650.8",
+    "n_radio_agreement": 3,
+    "n_ir_agreement": 3,
+    "n_joint_agreement": 2,
+    "votes": 5
+  },
+  {
+    "zid": "ARG000324f",
+    "components": [
+      "FIRST_J100157.3+101540"
+    ],
+    "host_name": "J100157.73+101549.6",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 2,
+    "n_joint_agreement": 2,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00032im",
+    "components": [
+      "FIRST_J100027.0+100644"
+    ],
+    "host_name": "J100026.98+100642.0",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 14,
+    "n_joint_agreement": 4,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032im",
+    "components": [
+      "FIRST_J100030.2+100804"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 8,
+    "n_joint_agreement": 2,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032lg",
+    "components": [
+      "FIRST_J100027.0+100644",
+      "NOFIRST_J100025.46248748+100636.19835643",
+      "NOFIRST_J100026.31664804+100635.58059235"
+    ],
+    "host_name": "J100026.98+100642.0",
+    "n_radio_agreement": 9,
+    "n_ir_agreement": 15,
+    "n_joint_agreement": 9,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032lg",
+    "components": [
+      "FIRST_J100030.2+100804"
+    ],
+    "host_name": "J100030.22+100804.7",
+    "n_radio_agreement": 9,
+    "n_ir_agreement": 8,
+    "n_joint_agreement": 6,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032pj",
+    "components": [
+      "FIRST_J100108.7+100505",
+      "FIRST_J100110.3+100459"
+    ],
+    "host_name": "J100108.87+100503.4",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 4,
+    "n_joint_agreement": 4,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00032po",
+    "components": [
+      "FIRST_J100108.7+100505",
+      "FIRST_J100110.3+100459"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 2,
+    "n_joint_agreement": 2,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00032qv",
+    "components": [
+      "FIRST_J100041.6+100429"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 3,
+    "n_joint_agreement": 3,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00032v2",
+    "components": [
+      "FIRST_J100220.0+100221",
+      "FIRST_J100221.2+100216",
+      "NOFIRST_J100221.93674305+100228.18786423"
+    ],
+    "host_name": "J100220.88+100216.1",
+    "n_radio_agreement": 4,
+    "n_ir_agreement": 17,
+    "n_joint_agreement": 4,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032va",
+    "components": [
+      "FIRST_J100220.0+100221",
+      "FIRST_J100221.2+100216"
+    ],
+    "host_name": "J100220.88+100216.1",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 16,
+    "n_joint_agreement": 5,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032va",
+    "components": [
+      "NOFIRST_J100221.95982217+100228.24257357"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 10,
+    "n_joint_agreement": 4,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032va",
+    "components": [
+      "NOFIRST_J100219.55137927+100153.52039315"
+    ],
+    "host_name": "J100219.86+100149.4",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 5,
+    "n_joint_agreement": 3,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032yf",
+    "components": [
+      "FIRST_J100250.5+100029"
+    ],
+    "host_name": "J100250.53+100029.9",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 3,
+    "n_joint_agreement": 3,
+    "votes": 5
+  },
+  {
+    "zid": "ARG00032yh",
+    "components": [
+      "FIRST_J100117.1+100028"
+    ],
+    "host_name": "J100117.11+100029.1",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 4,
+    "n_joint_agreement": 4,
+    "votes": 5
+  }
+]
