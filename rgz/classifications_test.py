@@ -61,6 +61,33 @@ class TestProcess(unittest.TestCase):
         self.assertEqual(want, got)
 
 
+class TestClassification(unittest.TestCase):
+    """Tests for rgz.classification.Classification."""
+
+    def test_radio_combinations(self):
+        cl = rgz.classifications.Classification(
+            cid="123",
+            zid="ARG123",
+            coord_matches=[
+                (
+                    "01 01 01 +01 01 01",
+                    rgz.classifications.RadioSource(["FIRST1234", "FIRST3456"]),
+                ),
+                (
+                    "02 01 01 +01 01 01",
+                    rgz.classifications.RadioSource(["FIRST56"]),
+                ),
+            ],
+            username="",
+            notes=[],
+        )
+        got = cl.radio_combinations()
+        want = rgz.classifications.RadioSourceCombination(
+            (("FIRST1234", "FIRST3456"), ("FIRST56",))
+        )
+        self.assertEqual(want, got)
+
+
 class TestRadioCombination(unittest.TestCase):
     """Tests for rgz.consensus.RadioCombination."""
 

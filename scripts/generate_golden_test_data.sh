@@ -13,3 +13,7 @@ bazel-bin/rgz/main classifications \
 bazel-bin/rgz/main host-lookup \
     --classifications=rgz/testdata/radio_classifications_test_subset_processed.json \
     --out=rgz/testdata/radio_classifications_test_subset_matched.json
+bazel-bin/rgz/main aggregate \
+    --subjects=rgz/testdata/radio_subjects_test_subset_processed.json \
+    --classifications=rgz/testdata/radio_classifications_test_subset_matched.json \
+    --out=rgz/testdata/consensus.json

@@ -97,14 +97,22 @@ py_library(
     ],
 )
 
+py_library(
+    name="testutils",
+    srcs=[
+        "testutils.py",
+    ],
+    deps = [],
+)
+
 filegroup(
     name = "testdata",
     srcs = glob(
         [
             "testdata/*.json",
+            "testdata/first/*.csv",
             "testdata/first/*.json",
             "testdata/first/*.fits",
-            "testdata/first/*.csv",
         ],
     ),
 )
@@ -134,6 +142,16 @@ py_test(
     data = [":testdata"],
     deps = [
         ":classifications",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "consensus_test",
+    srcs = ["consensus_test.py"],
+    data = [":testdata", ":testutils"],
+    deps = [
+        ":consensus",
         "@rules_python//python/runfiles",
     ],
 )
