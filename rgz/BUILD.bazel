@@ -99,14 +99,12 @@ py_library(
 
 filegroup(
     name = "testdata",
-    srcs = glob(
-        [
-            "testdata/*.json",
-            "testdata/first/*.json",
-            "testdata/first/*.fits",
-            "testdata/first/*.csv",
-        ],
-    ),
+    srcs = glob([
+        "testdata/*.json",
+        "testdata/first/*.csv",
+        "testdata/first/*.json",
+        "testdata/first/*.fits",
+    ]),
 )
 
 py_test(
