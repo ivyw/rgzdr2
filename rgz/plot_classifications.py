@@ -54,6 +54,8 @@ def get_raw_subject(subject: subjects.Subject,
                     raw_subjects_path: Path,
                     ) -> rgz.JSON:
     """Returns the "raw" subject associated with a Subject."""
+    # TODO read directly from FIRST directory instead of taking from the "master" JSON file
+    # the contours are stored in testdata/first/<oid>.json
     # NOTE: I hate this!!!
     # NOTE $oid seems to be unique 
     raw_subjects_jsons = []
@@ -107,7 +109,6 @@ def plot_single_classification(
     )
 
     # Get the WISE image associated with this subject 
-    # TODO: subject.coords should probably return a SkyCoord...
     ra, dec = subject.coords
     coords_wise = SkyCoord(ra, dec, unit="deg")
     hdulist_wise = cutouts.get_allwise_cutout(
@@ -127,8 +128,7 @@ def plot_single_classification(
         fig = ax.get_figure()
 
     # Plot AllWISE image 
-    # TODO use the same stretch as shown to citizen scientists
-    ax.imshow(hdulist_wise[0].data)
+    ax.imshow(hdulist_wise[0].data, cmap="gist_heat", vmax=6, vmin=2)
 
     # Plot contours 
     # TODO can annotate these w/ FIRST component names
