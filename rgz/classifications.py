@@ -225,7 +225,8 @@ def transform_coord_ir(
     if raw_subject:
         assert cache
         assert not wcs
-        im = subjects.fetch_first_image_from_server_or_cache(raw_subject, cache)
+        im = subjects.fetch_first_image_from_server_or_cache(raw_subject=raw_subject, 
+                                                             cache=cache)
         wcs = rgz.get_wcs(im)
     assert wcs
     # Coord in 424x424 -> 100x100
