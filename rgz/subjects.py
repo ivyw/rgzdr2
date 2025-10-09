@@ -102,6 +102,7 @@ def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
     fname = cache / f"{subject.id}.fits"
     return fits.open(fname)
 
+
 def fetch_first_image_from_server_or_cache(
     raw_subject: rgz.JSON | None,
     subject: Subject | None,
@@ -111,13 +112,13 @@ def fetch_first_image_from_server_or_cache(
     if (raw_subject is None) and (subject is None):
         raise ValueError(f"Cannot specify both a raw_subject and a subject!")
     if raw_subject is not None:
-        assert subject is None 
+        assert subject is None
         coord = raw_subject["coords"]
         coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
         fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     elif subject is not None:
         coord = subject.coords
-        fname = cache / f'{subject.id}.fits'
+        fname = cache / f"{subject.id}.fits"
     try:
         return fits.open(fname)
     except FileNotFoundError:
@@ -170,9 +171,9 @@ def transform_coord_radio(
 
     TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
-    with fetch_first_image_from_server_or_cache(raw_subject=raw_subject, 
-                                                subject=subject, 
-                                                cache=cache) as im:
+    with fetch_first_image_from_server_or_cache(
+        raw_subject=raw_subject, subject=subject, cache=cache
+    ) as im:
         wcs = rgz.get_wcs(im)
 
     # Coord in 132x132 -> 100x100.
@@ -192,14 +193,12 @@ def transform_bbox_px_to_phys(
     )
     return np.concatenate(
         [
-            transform_coord_radio(coord=phys_bbox[:2], 
-                                  raw_subject=raw_subject, 
-                                  subject=None,
-                                  cache=cache),
-            transform_coord_radio(coord=phys_bbox[2:], 
-                                  raw_subject=raw_subject, 
-                                  subject=None,
-                                  cache=cache),
+            transform_coord_radio(
+                coord=phys_bbox[:2], raw_subject=raw_subject, subject=None, cache=cache
+            ),
+            transform_coord_radio(
+                coord=phys_bbox[2:], raw_subject=raw_subject, subject=None, cache=cache
+            ),
         ]
     )
 
