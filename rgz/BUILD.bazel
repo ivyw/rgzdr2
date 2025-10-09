@@ -97,6 +97,22 @@ py_library(
     ],
 )
 
+py_library(
+    name = "plot_classifications",
+    srcs = [
+        "plot_classifications.py",
+    ],
+    deps = [
+        ":classifications",
+        ":cutouts",
+        ":rgz",
+        ":subjects",
+        "@pypi//astropy",
+        "@pypi//matplotlib",
+        "@pypi//numpy",
+    ],
+)
+
 filegroup(
     name = "testdata",
     srcs = glob([
@@ -132,6 +148,18 @@ py_test(
     data = [":testdata"],
     deps = [
         ":classifications",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+
+py_test(
+    name = "plot_classifications_test",
+    srcs = ["plot_classifications_test.py"],
+    deps = [
+        ":classifications",
+        ":plot_classifications",
+        ":subjects",
         "@rules_python//python/runfiles",
     ],
 )
