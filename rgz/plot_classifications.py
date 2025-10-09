@@ -15,8 +15,8 @@ from rgz import subjects
 
 def get_contours(
     subject: subjects.Subject,
-    px_coords=False,
-    px_scaling=100 / constants.RADIO_MAX_PX,
+    px_coords: bool = False,
+    px_scaling: float = 100 / constants.RADIO_MAX_PX,
     cache: Path = Path("first"),
 ) -> list[tuple]:
     """Returns the contours of a raw subject."""
