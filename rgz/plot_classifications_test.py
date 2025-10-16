@@ -8,10 +8,22 @@ from rgz import classifications
 from rgz import plot_classifications
 from rgz import subjects
 
-
+@unittest.skip("not implemented")
 class TestPlotClassifications(unittest.TestCase):
 
-    def test_plot_classifications(self): ...
+    def test_plot_classifications(self):
+        raise NotImplementedError
+
+
+    def test_subject_classification_mismatch(self):
+        raise NotImplementedError
+
+
+    def test_pixel_scaling(self):
+        # TODO(hzovaro) make a tmp JSON file containing coordinates. Apply a custom 
+        # stretch and check that the outputs are as expected
+        raise NotImplementedError
+        
 
 
 if __name__ == "__main__":
