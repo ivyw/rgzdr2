@@ -108,11 +108,40 @@ def fetch_first_image_from_server_or_cache(
     subject: Subject | None,
     cache: Path,
 ) -> fits.HDUList:
-    """Fetches a FIRST image from the FIRST server or cache."""
-    if (raw_subject is None) and (subject is None):
-        raise ValueError(f"Cannot specify both a raw_subject and a subject!")
-    if raw_subject is not None:
-        assert subject is None
+    """Fetches a FIRST image from the FIRST server or cache given a subject.
+    The subject can be specified either via a raw subject (in JSON format) or a
+    processed subject (as a Subject object).
+
+    This function looks for an existing FIRST image in the cache directory
+    assuming the filename
+        cache / f'{raw_subject["_id"]["$oid"]}.fits'
+    if a raw subject is specified, or
+        cache / f"{subject.id}.fits"
+    if a processed subject is specified. If no image can be found, it is
+    downloaded using astroquery.image_cutouts.first.First and saved using the
+    above filename. The image is returned in the form of an astropy HDUList.
+    TODO(hzovaro): write tests for this
+
+    Args:
+        raw_subject: desired raw subject in JSON format. Defaults to None. Must
+            be specified if subject is None.
+        subject: desired Subject. Defaults to None. Must be specified if
+            raw_subject is None.
+        cache: path to FIRST images.
+
+    Returns:
+        HDUList containing the FIRST image.
+
+    Raises:
+        ValueError if neither a raw subject or a subject are specified, or if
+        they are both specified.
+
+    """
+    if ((raw_subject is None) and (subject is None)) or (
+        (raw_subject is not None) and (subject is not None)
+    ):
+        raise ValueError(f"You must specify either a raw_subject or a subject!")
+    elif raw_subject is not None:
         coord = raw_subject["coords"]
         coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
         fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
