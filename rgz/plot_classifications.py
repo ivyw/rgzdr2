@@ -19,7 +19,7 @@ def get_contours(
     px_scaling: float = 100 / constants.RADIO_MAX_PX,
     cache: Path = Path("first"),
 ) -> list[tuple]:
-    """Returns the contours of a raw subject.
+    """Returns the contours of a subject.
 
     The raw contour data consists of a series of (x, y) coordinate pairs 
     relative to the upper-left hand corner of a 132x132 image, where (65, 65) 
@@ -56,36 +56,36 @@ def get_contours(
     fname = cache / f"{subject.id}.json"
     try:
         with open(fname) as f:
-            contours = json.load(f)["contours"]
+            islands = json.load(f)["contours"]
     except FileNotFoundError as e:
         raise FileNotFoundError(
             f"contour data for subject with ID {subject.id}" f"not found!"
         )
-    coords_list = []
-    for contour in contours:
-        contour = contour[0]
-        xs = [a["x"] for a in contour["arr"]]
-        ys = [a["y"] for a in contour["arr"]]
-        coords = np.stack([xs, ys]).T
-        if not px_coords:
-            coords = [
-                subjects.transform_coord_radio(
-                    coord=c, subject=subject, raw_subject=None, cache=cache
-                )
-                for c in coords
-            ]
-            coords = [(a.value, b.value) for a, b in coords]
-        else:
-            new_im_size = int(px_scaling * constants.RADIO_MAX_PX)
-            coords = [(c[0] * px_scaling, new_im_size - c[1] * px_scaling) for c in coords]
-        coords_list.append(coords)
-    return coords_list
+    contour_coords = []
+    for island in islands:
+        for contour in island:
+            xs = [coord["x"] for coord in contour["arr"]]
+            ys = [coord["y"] for coord in contour["arr"]]
+            coords = np.stack([xs, ys]).T
+            if not px_coords:
+                coords = [
+                    subjects.transform_coord_radio(
+                        coord=c, subject=subject, raw_subject=None, cache=cache
+                    )
+                    for c in coords
+                ]
+                coords = [(ra.value, dec.value) for ra, dec in coords]
+            else:
+                new_im_size = int(px_scaling * constants.RADIO_MAX_PX)
+                coords = [(c[0] * px_scaling, new_im_size - c[1] * px_scaling) for c in coords]
+            contour_coords.append(coords)
+    return contour_coords
 
 
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
     """Returns a SkyCoord object with coordinates extracted from a FIRST ID."""
     assert first_id.startswith("FIRST") or first_id.startswith("NOFIRST")
-    # TODO should probably use regex for this
+    # TODO(hzovaro) should probably use regex for this
     first_coord_nospaces_str = first_id.split("_J")[1]
     sign_str = "+" if "+" in first_coord_nospaces_str else "-"
     ra_nospaces_str, dec_nospaces_str = first_coord_nospaces_str.split(sign_str)
@@ -145,7 +145,7 @@ def plot_single_classification(
         )
 
     # Get the FIRST contours associated with this subject
-    contour_coords_list = get_contours(
+    contour_coords = get_contours(
         subject=subject,
         cache=cache,
         px_coords=False,
@@ -178,12 +178,12 @@ def plot_single_classification(
     ax.imshow(hdulist_wise[0].data, cmap="gist_heat", vmax=6, vmin=2)
 
     # Plot contours
-    # TODO annotate these with FIRST IDs, and colour the contours to indicate
+    # TODO(hzovaro) annotate these with FIRST IDs, and colour the contours to indicate
     # the source rather than overplotting a scatter marker.
     contour_colour = "white"
-    for contour_coords in contour_coords_list:
+    for contour_coord in contour_coords:
         ax.plot(
-            *zip(*contour_coords),
+            *zip(*contour_coord),
             transform=ax.get_transform("fk5"),
             color=contour_colour,
         )
