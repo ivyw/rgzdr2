@@ -118,10 +118,13 @@ def plot_single_classification(
     IR host galaxy click locations are represented by crosses, and the
     corresponding radio sources are indicated with circular markers.
     Individual host galaxy-radio source associations are indicated by markers
-    of the same colour. If the input classification has
+    of the same colour. If the input classification has no matches, then none
+    are displayed, and a warning message is displayed on the plot.
+    TODO(hzovaro): should we raise an exception if classification.coord_matches
+    is empty instead?
 
     Args:
-        subject: the subject to plot
+        subject: the subject to be plotted
         classification: the classification to plot. The Zooniverse ID must match
             that of the subject.
         cache: path to raw subject data.
