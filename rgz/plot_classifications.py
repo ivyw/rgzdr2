@@ -65,7 +65,7 @@ def get_contours(
     for island in islands:
         for contour in island:
             xs = [coord["x"] for coord in contour["arr"]]
-            ys = [coord["y"] for coord in contour["arr"]]
+            ys = [constants.RADIO_MAX_PX - coord["y"] for coord in contour["arr"]]
             coords = np.stack([xs, ys]).T
             if not px_coords:
                 coords = [
@@ -77,7 +77,7 @@ def get_contours(
                 coords = [(ra.value, dec.value) for ra, dec in coords]
             else:
                 new_im_size = int(px_scaling * constants.RADIO_MAX_PX)
-                coords = [(c[0] * px_scaling, new_im_size - c[1] * px_scaling) for c in coords]
+                coords = [(c[0] * px_scaling, c[1] * px_scaling) for c in coords]
             contour_coords.append(coords)
     return contour_coords
 
