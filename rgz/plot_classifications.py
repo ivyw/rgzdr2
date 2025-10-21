@@ -18,7 +18,7 @@ def get_contours(
     px_coords: bool = False,
     px_scaling: float = 100 / constants.RADIO_MAX_PX,
     cache: Path = Path("first"),
-) -> list[tuple]:
+) -> list[list[tuple]]:
     """Returns the contours of a subject.
 
     The raw contour data consists of a series of (x, y) coordinate pairs 
@@ -46,7 +46,8 @@ def get_contours(
         cache: path to contour data.
 
     Returns:
-        A list of lists each representing a contour, consisting of (x, y) pairs.
+        A list of lists each representing a radio island, each of which 
+        contains a list of (x, y) pairs for each contour.
 
     Raises:
         FileNotFoundError if the file containing the contour data cannot be 
@@ -61,8 +62,9 @@ def get_contours(
         raise FileNotFoundError(
             f"contour data for subject with ID {subject.id}" f"not found!"
         )
-    contour_coords = []
+    island_coords = []
     for island in islands:
+        contour_coords = []
         for contour in island:
             xs = [coord["x"] for coord in contour["arr"]]
             ys = [constants.RADIO_MAX_PX - coord["y"] for coord in contour["arr"]]
@@ -76,10 +78,10 @@ def get_contours(
                 ]
                 coords = [(ra.value, dec.value) for ra, dec in coords]
             else:
-                new_im_size = int(px_scaling * constants.RADIO_MAX_PX)
                 coords = [(c[0] * px_scaling, c[1] * px_scaling) for c in coords]
             contour_coords.append(coords)
-    return contour_coords
+        island_coords.append(contour_coords)
+    return island_coords
 
 
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
@@ -145,11 +147,12 @@ def plot_single_classification(
         )
 
     # Get the FIRST contours associated with this subject
-    contour_coords = get_contours(
+    island_coords = get_contours(
         subject=subject,
         cache=cache,
         px_coords=False,
     )
+    contour_coords = [island[0] for island in island_coords]
 
     # Get the WISE image associated with this subject
     ra, dec = subject.coords
