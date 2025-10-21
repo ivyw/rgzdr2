@@ -62,9 +62,9 @@ def get_contours(
         raise FileNotFoundError(
             f"contour data for subject with ID {subject.id}" f"not found!"
         )
-    island_coords = []
+    island_contours = []
     for island in islands:
-        contour_coords = []
+        contours = []
         for contour in island:
             xs = [coord["x"] for coord in contour["arr"]]
             ys = [constants.RADIO_MAX_PX - coord["y"] for coord in contour["arr"]]
@@ -79,9 +79,9 @@ def get_contours(
                 coords = [(ra.value, dec.value) for ra, dec in coords]
             else:
                 coords = [(c[0] * px_scaling, c[1] * px_scaling) for c in coords]
-            contour_coords.append(coords)
-        island_coords.append(contour_coords)
-    return island_coords
+            contours.append(coords)
+        island_contours.append(contours)
+    return island_contours
 
 
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
@@ -147,12 +147,12 @@ def plot_single_classification(
         )
 
     # Get the FIRST contours associated with this subject
-    island_coords = get_contours(
+    island_contours = get_contours(
         subject=subject,
         cache=cache,
         px_coords=False,
     )
-    contour_coords = [island[0] for island in island_coords]
+    island_zeroth_contours = [ic[0] for ic in island_contours]
 
     # Get the WISE image associated with this subject
     ra, dec = subject.coords
@@ -184,9 +184,9 @@ def plot_single_classification(
     # TODO(hzovaro) annotate these with FIRST IDs, and colour the contours to indicate
     # the source rather than overplotting a scatter marker.
     contour_colour = "white"
-    for contour_coord in contour_coords:
+    for contour in island_zeroth_contours:
         ax.plot(
-            *zip(*contour_coord),
+            *zip(*contour),
             transform=ax.get_transform("fk5"),
             color=contour_colour,
         )
