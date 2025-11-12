@@ -13,6 +13,10 @@ from rgz import cutouts
 from rgz import subjects
 
 
+class ContoursNotFoundError(Exception):
+    """Raised when the contours list in the raw subject JSON file is empty."""
+
+
 def get_contours(
     subject: subjects.Subject,
     px_coords: bool = False,
@@ -58,9 +62,9 @@ def get_contours(
     try:
         with open(fname) as f:
             islands = json.load(f)["contours"]
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         raise FileNotFoundError(
-            f"contour data for subject with ID {subject.id}" f"not found!"
+            f"contour data for subject with ID {subject.id} not found!"
         )
     island_contours = []
     for island in islands:
@@ -78,7 +82,7 @@ def get_contours(
                 ]
                 coords = [(ra.value, dec.value) for ra, dec in coords]
             else:
-                coords = [(c[0] * px_scaling, c[1] * px_scaling) for c in coords]
+                coords = [(x * px_scaling, y * px_scaling) for x, y in coords]
             contours.append(coords)
         island_contours.append(contours)
     return island_contours
@@ -87,19 +91,15 @@ def get_contours(
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
     """Returns a SkyCoord object with coordinates extracted from a FIRST ID."""
     assert first_id.startswith("FIRST") or first_id.startswith("NOFIRST")
-    # TODO(hzovaro) should probably use regex for this
-    # TODO(hzovaro) and write some simple tests
+    # TODO(hzovaro): should probably use regex for this
+    # TODO(hzovaro): and write some simple tests
     first_coord_nospaces_str = first_id.split("_J")[1]
     sign_str = "+" if "+" in first_coord_nospaces_str else "-"
     ra_nospaces_str, dec_nospaces_str = first_coord_nospaces_str.split(sign_str)
-    ra_str = (
-        ra_nospaces_str[:2] + " " + ra_nospaces_str[2:4] + " " + ra_nospaces_str[4:]
-    )
-    dec_str = (
-        dec_nospaces_str[:2] + " " + dec_nospaces_str[2:4] + " " + dec_nospaces_str[4:]
-    )
+    ra_str = f"{ra_nospaces_str[:2]} {ra_nospaces_str[2:4]} {ra_nospaces_str[4:]}"
+    dec_str = f"{dec_nospaces_str[:2]} {dec_nospaces_str[2:4]} {dec_nospaces_str[4:]}"
     dec_str = sign_str + dec_str
-    first_coords_str = ra_str + " " + dec_str
+    first_coords_str = f"{ra_str} {dec_str}"
     return SkyCoord(first_coords_str, unit=(u.hourangle, u.deg))
 
 
@@ -121,8 +121,6 @@ def plot_single_classification(
     Individual host galaxy-radio source associations are indicated by markers
     of the same colour. If the input classification has no matches, then none
     are displayed, and a warning message is displayed on the plot.
-    TODO(hzovaro): should we raise an exception if classification.coord_matches
-    is empty instead?
 
     Args:
         subject: the subject to be plotted
@@ -145,8 +143,8 @@ def plot_single_classification(
     # Check that the subject matches the classification
     if subject.zid != classification.zid:
         raise ValueError(
-            f"subject with Zooniverse id {subject.zid} does not "
-            "match that of input classification with id "
+            f"subject with Zooniverse ID {subject.zid} does not "
+            "match that of input classification with ID "
             f"{classification.zid}!"
         )
 
@@ -156,6 +154,10 @@ def plot_single_classification(
         cache=cache,
         px_coords=False,
     )
+    if len(island_contours) == 0:
+        raise ContoursNotFoundError(
+            f"Contour data not found for source with ZooniverseID {subject.zid}!"
+        )
     island_zeroth_contours = [ic[0] for ic in island_contours]
 
     # Get the WISE image associated with this subject
@@ -166,7 +168,8 @@ def plot_single_classification(
         size=constants.IM_WIDTH_ARCMIN * u.arcmin,
         save_fits=False,
     )
-    wcs_wise = WCS(hdulist_wise[0].header)
+    hdu_wise = hdulist_wise[0]
+    wcs_wise = WCS(hdu_wise.header)
 
     # Create figure and axes
     if ax is None:
@@ -182,10 +185,10 @@ def plot_single_classification(
 
     # Plot AllWISE image. The colour map and limits have been calibrated to
     # match what was shown to citizen scientists as closely as possible
-    ax.imshow(hdulist_wise[0].data, cmap="gist_heat", vmax=6, vmin=2)
+    ax.imshow(hdu_wise.data, cmap="gist_heat", vmax=6, vmin=2)
 
     # Plot contours
-    # TODO(hzovaro) annotate these with FIRST IDs, and colour the contours to indicate
+    # TODO(hzovaro): annotate these with FIRST IDs, and colour the contours to indicate
     # the source rather than overplotting a scatter marker.
     contour_colour = "white"
     for contour in island_zeroth_contours:
@@ -200,6 +203,8 @@ def plot_single_classification(
 
     # If the coord_matches list is empty, display a warning on the plot and
     # return.
+    # TODO(hzovaro): should we raise an exception if 
+    # classification.coord_matches is empty instead?
     if len(classification.coord_matches) == 0:
         ax.text(
             s="coord_matches list is empty!",
@@ -216,7 +221,7 @@ def plot_single_classification(
     for cc, click in enumerate(classification.coord_matches):
         coord_str, first_ids = click
         # Label for this IR source match shown in the legend
-        if coord_str == "NOSOURCE":
+        if coord_str == constants.NOSOURCE_LABEL:
             source_label = "No source"
         else:
             source_label = f"Source {cc + 1}"
@@ -235,7 +240,7 @@ def plot_single_classification(
             )
 
         # Plot the location of the IR host
-        if coord_str == "NOSOURCE":
+        if coord_str == constants.NOSOURCE_LABEL:
             continue
         click_coords = SkyCoord(coord_str, unit=(u.hourangle, u.deg))
         ax.scatter(
