@@ -31,15 +31,18 @@ class TestFindPointsInBox(unittest.TestCase):
     def test_simple(self):
         lower_ra = lower_dec = 0.0 * u.deg
         upper_ra = upper_dec = 1.0 * u.deg
-        points = np.array(
-            [
-                [0.5, 0.5],
-                [0.2, 0.9],
-                [-0.1, 0.1],
-                [0.1, -0.1],
-                [-0.1, -0.1],
-            ]
-        ) * u.deg
+        points = (
+            np.array(
+                [
+                    [0.5, 0.5],
+                    [0.2, 0.9],
+                    [-0.1, 0.1],
+                    [0.1, -0.1],
+                    [-0.1, -0.1],
+                ]
+            )
+            * u.deg
+        )
         want = [0, 1]
         got = rgz.subjects.find_points_in_box(
             points, lower_ra, upper_ra, lower_dec, upper_dec
@@ -51,12 +54,15 @@ class TestFindPointsInBox(unittest.TestCase):
         upper_dec = 1.0 * u.deg
         lower_ra = 359.9 * u.deg
         upper_ra = 0.1 * u.deg
-        points = np.array(
-            [
-                [0.0, 0.0],
-                [1.0, 0.0],
-            ]
-        ) * u.deg
+        points = (
+            np.array(
+                [
+                    [0.0, 0.0],
+                    [1.0, 0.0],
+                ]
+            )
+            * u.deg
+        )
         want = [0]
         got = rgz.subjects.find_points_in_box(
             points, lower_ra, upper_ra, lower_dec, upper_dec
