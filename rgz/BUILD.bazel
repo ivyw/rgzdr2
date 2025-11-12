@@ -102,19 +102,33 @@ py_library(
     srcs=[
         "testutils.py",
     ],
+)
+
+py_library(
     deps = [],
+    name = "plot_classifications",
+    srcs = [
+        "plot_classifications.py",
+    ],
+    deps = [
+        ":classifications",
+        ":cutouts",
+        ":rgz",
+        ":subjects",
+        "@pypi//astropy",
+        "@pypi//matplotlib",
+        "@pypi//numpy",
+    ],
 )
 
 filegroup(
     name = "testdata",
-    srcs = glob(
-        [
-            "testdata/*.json",
-            "testdata/first/*.csv",
-            "testdata/first/*.json",
-            "testdata/first/*.fits",
-        ],
-    ),
+    srcs = glob([
+        "testdata/*.json",
+        "testdata/first/*.csv",
+        "testdata/first/*.json",
+        "testdata/first/*.fits",
+    ]),
 )
 
 py_test(
@@ -152,6 +166,14 @@ py_test(
     data = [":testdata", ":testutils"],
     deps = [
         ":consensus",
+
+py_test(
+    name = "plot_classifications_test",
+    srcs = ["plot_classifications_test.py"],
+    deps = [
+        ":classifications",
+        ":plot_classifications",
+        ":subjects",
         "@rules_python//python/runfiles",
     ],
 )
