@@ -203,7 +203,7 @@ def plot_single_classification(
 
     # If the coord_matches list is empty, display a warning on the plot and
     # return.
-    # TODO(hzovaro): should we raise an exception if 
+    # TODO(hzovaro): should we raise an exception if
     # classification.coord_matches is empty instead?
     if len(classification.coord_matches) == 0:
         ax.text(
