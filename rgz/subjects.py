@@ -199,7 +199,7 @@ def transform_coord_radio(
     Note that this uses the WCS of the subject image, and can be slow!
 
     """
-    # TODO(MatthewJA): Speed this up by avoiding the image reload whenever 
+    # TODO(MatthewJA): Speed this up by avoiding the image reload whenever
     # possible, e.g. by passing in the image.
     with fetch_first_image_from_server_or_cache(
         raw_subject=raw_subject, subject=subject, cache=cache
