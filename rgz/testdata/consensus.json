@@ -173,14 +173,24 @@
     "components": [
       "FIRST_J100339.0+101931",
       "FIRST_J100339.4+101936",
-      "FIRST_J100340.3+101945",
+      "FIRST_J100340.3+101945"
+    ],
+    "host_name": "J100339.43+101936.6",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 10,
+    "n_joint_agreement": 6,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031w6",
+    "components": [
       "FIRST_J100342.0+101946",
       "FIRST_J100342.8+102033"
     ],
     "host_name": "J100342.30+102002.7",
     "n_radio_agreement": 6,
     "n_ir_agreement": 15,
-    "n_joint_agreement": 3,
+    "n_joint_agreement": 6,
     "votes": 20
   },
   {
@@ -299,9 +309,9 @@
     "components": [
       "FIRST_J100030.2+100804"
     ],
-    "host_name": "NOSOURCE",
+    "host_name": "J100030.22+100804.7",
     "n_radio_agreement": 4,
-    "n_ir_agreement": 8,
+    "n_ir_agreement": 6,
     "n_joint_agreement": 2,
     "votes": 20
   },
@@ -392,23 +402,23 @@
   {
     "zid": "ARG00032va",
     "components": [
-      "NOFIRST_J100221.95982217+100228.24257357"
-    ],
-    "host_name": "NOSOURCE",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 10,
-    "n_joint_agreement": 4,
-    "votes": 20
-  },
-  {
-    "zid": "ARG00032va",
-    "components": [
       "NOFIRST_J100219.55137927+100153.52039315"
     ],
     "host_name": "J100219.86+100149.4",
     "n_radio_agreement": 5,
     "n_ir_agreement": 5,
     "n_joint_agreement": 3,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00032va",
+    "components": [
+      "NOFIRST_J100221.95982217+100228.24257357"
+    ],
+    "host_name": "NOSOURCE",
+    "n_radio_agreement": 5,
+    "n_ir_agreement": 10,
+    "n_joint_agreement": 4,
     "votes": 20
   },
   {

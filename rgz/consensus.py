@@ -37,7 +37,7 @@ class ConsensusSource:
     """
 
     zid: subjects.ZooniverseID = attr.ib()
-    components: set[subjects.FIRSTID] = attr.ib()
+    components: set[subjects.FIRSTID] = attr.ib(order=sorted)
     host_name: classifications.ALLWISEID | None = attr.ib()
     n_radio_agreement: int = attr.ib()
     n_ir_agreement: int = attr.ib()
@@ -78,11 +78,18 @@ def aggregate_subject(
     subject: subjects.Subject, classifications: list[classifications.Classification]
 ) -> list[ConsensusSource]:
     """Aggregates classifications into consensus sources for a single subject."""
+    # Confirm every classification is of the subject.
+    for classification in classifications:
+        if classification.zid != subject.zid:
+            raise ValueError(
+                f"Classification is not of subject {subject.zid}:"
+                f" {classification.cid} ({classification.zid})"
+            )
     # Represent each combination of radio objects by something deterministic and hashable.
     radio_component_combinations = [cl.radio_combinations() for cl in classifications]
 
     # What's the most common combination (consensus)?
-    counter = collections.Counter(radio_component_combinations)
+    counter = collections.Counter(sorted(radio_component_combinations))
     ((consensus_radio_combination, consensus_radio_count),) = counter.most_common(1)
 
     # Amongst people who chose this, what IR was most common?
@@ -105,7 +112,9 @@ def aggregate_subject(
 
     matches = []
     for radio_source, irs in radio_source_to_ir_options.items():
-        ((consensus_ir, consensus_ir_count),) = collections.Counter(irs).most_common(1)
+        ((consensus_ir, consensus_ir_count),) = collections.Counter(
+            sorted(irs)
+        ).most_common(1)
         matches.append(
             ConsensusSource(
                 zid=classifications[0].zid,
@@ -148,6 +157,6 @@ def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -
         subject = zid_to_subject[zid]
         consensuses.extend(aggregate_subject(subject, zid_classifications))
 
-    consensuses.sort()
+    jsons = [c.to_json() for c in sorted(consensuses)]
     with open(out_path, "w") as f:
-        json.dump([c.to_json() for c in consensuses], f, indent=_JSON_INDENT)
+        json.dump(jsons, f, indent=_JSON_INDENT)

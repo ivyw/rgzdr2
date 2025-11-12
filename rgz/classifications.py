@@ -195,7 +195,11 @@ class Classification:
         self,
     ) -> RadioSourceCombination:
         """Gets the combination of radio sources present in this classification."""
-        return RadioSourceCombination(radio for _, radio in self.ir_matches)
+        if self.ir_matches:
+            radios = (radio for _, radio in self.ir_matches)
+        else:
+            radios = (radio for _, radio in self.coord_matches)
+        return RadioSourceCombination(radios)
 
 
 def transform_coord_ir(
