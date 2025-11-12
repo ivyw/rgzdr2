@@ -104,13 +104,50 @@ def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
 
 
 def fetch_first_image_from_server_or_cache(
-    raw_subject: rgz.JSON,
+    raw_subject: rgz.JSON | None,
+    subject: Subject | None,
     cache: Path,
 ) -> fits.HDUList:
-    """Fetches a FIRST image from the FIRST server or cache."""
-    coord = raw_subject["coords"]
-    coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
-    fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
+    """Fetches a FIRST image from the FIRST server or cache given a subject.
+    The subject can be specified either via a raw subject (in JSON format) or a
+    processed subject (as a Subject object).
+
+    This function looks for an existing FIRST image in the cache directory
+    assuming the filename
+        cache / f'{raw_subject["_id"]["$oid"]}.fits'
+    if a raw subject is specified, or
+        cache / f"{subject.id}.fits"
+    if a processed subject is specified. If no image can be found, it is
+    downloaded using astroquery.image_cutouts.first.First and saved using the
+    above filename. The image is returned in the form of an astropy HDUList.
+
+    Args:
+        raw_subject: desired raw subject in JSON format. Defaults to None. Must
+            be specified if subject is None.
+        subject: desired Subject. Defaults to None. Must be specified if
+            raw_subject is None.
+        cache: path to FIRST images.
+
+    Returns:
+        HDUList containing the FIRST image.
+
+    Raises:
+        ValueError if neither a raw subject or a subject are specified, or if
+        they are both specified.
+
+    """
+    # TODO(hzovaro): write tests for this
+    if ((raw_subject is None) and (subject is None)) or (
+        (raw_subject is not None) and (subject is not None)
+    ):
+        raise ValueError(f"You must specify either a raw_subject or a subject!")
+    elif raw_subject is not None:
+        coord = raw_subject["coords"]
+        coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
+        fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
+    elif subject is not None:
+        coord = subject.coords
+        fname = cache / f"{subject.id}.fits"
     try:
         return fits.open(fname)
     except FileNotFoundError:
@@ -153,16 +190,20 @@ def fetch_first_catalogue_from_server_or_cache(
 
 def transform_coord_radio(
     coord: npt.NDArray[np.float64],
-    raw_subject: rgz.JSON,
+    raw_subject: rgz.JSON | None,
+    subject: Subject | None,
     cache: Path,
 ) -> Quantity[u.deg, u.deg]:
     """Transforms a radio image pixel coordinate into RA/dec.
 
     Note that this uses the WCS of the subject image, and can be slow!
 
-    TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
-    with fetch_first_image_from_server_or_cache(raw_subject, cache) as im:
+    # TODO(MatthewJA): Speed this up by avoiding the image reload whenever
+    # possible, e.g. by passing in the image.
+    with fetch_first_image_from_server_or_cache(
+        raw_subject=raw_subject, subject=subject, cache=cache
+    ) as im:
         wcs = rgz.get_wcs(im)
 
     # Coord in 132x132 -> 100x100.
@@ -182,8 +223,12 @@ def transform_bbox_px_to_phys(
     )
     return np.concatenate(
         [
-            transform_coord_radio(phys_bbox[:2], raw_subject, cache),
-            transform_coord_radio(phys_bbox[2:], raw_subject, cache),
+            transform_coord_radio(
+                coord=phys_bbox[:2], raw_subject=raw_subject, subject=None, cache=cache
+            ),
+            transform_coord_radio(
+                coord=phys_bbox[2:], raw_subject=raw_subject, subject=None, cache=cache
+            ),
         ]
     )
 
@@ -218,7 +263,7 @@ def get_first_from_bbox(
     first_tree: FIRSTTree,
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
-    # TODO: Also use the contours to ensure that they really are within the boxes.
+    # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
     phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
     # Find the centre...
     centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
@@ -238,7 +283,7 @@ def get_first_from_bbox(
         frame="icrs",
     )
 
-    # TODO: Speed this up using some kind of tree.
+    # TODO(MatthewJA): Speed this up using some kind of tree.
     ra, dec = rgz.get_deg(skc)
     width_deg = width.to(u.deg).value
     height_deg = height.to(u.deg).value
