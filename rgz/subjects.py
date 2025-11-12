@@ -235,23 +235,24 @@ def transform_bbox_px_to_phys(
 
 def find_points_in_box(
     points: npt.NDArray,
-    lower_ra: float,
-    upper_ra: float,
-    lower_dec: float,
-    upper_dec: float,
+    lower_ra: u.Quantity[u.deg],
+    upper_ra: u.Quantity[u.deg],
+    lower_dec: u.Quantity[u.deg],
+    upper_dec: u.Quantity[u.deg],
 ) -> list[int]:
     """Finds points that are within a box."""
     if upper_ra < lower_ra:
         # Edge case at RA = 0.
         # Left side:
         return find_points_in_box(
-            points, lower_ra, 360.0, lower_dec, upper_dec
-        ) + find_points_in_box(points, 0, upper_ra, lower_dec, upper_dec)
+            points, lower_ra, 360.0 * u.deg, lower_dec, upper_dec
+        ) + find_points_in_box(points, 0 * u.deg, upper_ra, lower_dec, upper_dec)
+    # We need to have <= or we would fail on the boundary.
     mask = (
-        (points[:, 0] < upper_ra)
-        & (points[:, 0] > lower_ra)
-        & (points[:, 1] < upper_dec)
-        & (points[:, 1] > lower_dec)
+        (points[:, 0] <= upper_ra)
+        & (points[:, 0] >= lower_ra)
+        & (points[:, 1] <= upper_dec)
+        & (points[:, 1] >= lower_dec)
     )
     return list(mask.nonzero()[0])
 
