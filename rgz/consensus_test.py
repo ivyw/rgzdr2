@@ -44,8 +44,8 @@ class TestAggregate(unittest.TestCase):
         got_zids = [c["zid"] for c in got]
         self.assertEqual(want_zids, got_zids)
         # Check contained hosts (order-independent).
-        want_hosts = set(c["host_name"] for c in want)
-        got_hosts = set(c["host_name"] for c in got)
+        want_hosts = {c["host_name"] for c in want}
+        got_hosts = {c["host_name"] for c in got}
         self.assertEqual(want_hosts, got_hosts)
         # Check contained hosts (order-dependent).
         want_hosts = [c["host_name"] for c in want]
