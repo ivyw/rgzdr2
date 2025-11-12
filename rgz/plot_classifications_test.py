@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 import unittest
 
@@ -7,6 +8,9 @@ import matplotlib.pyplot as plt
 from rgz import classifications
 from rgz import plot_classifications
 from rgz import subjects
+
+
+logging = logging.getLogger(__name__)
 
 @unittest.skip("not implemented")
 class TestPlotClassifications(unittest.TestCase):
@@ -44,7 +48,7 @@ if __name__ == "__main__":
     with open(processed_subjects_path, "r") as f:
         subject_json = json.load(f)[subject_idx]
     subject = subjects.Subject.from_json(subject_json)
-    print(subject.id)
+    logging.info(subject.id)
 
     # Find a classification that references this subject
     with open(processed_classifications_path, "r") as f:
