@@ -120,7 +120,6 @@ def fetch_first_image_from_server_or_cache(
     if a processed subject is specified. If no image can be found, it is
     downloaded using astroquery.image_cutouts.first.First and saved using the
     above filename. The image is returned in the form of an astropy HDUList.
-    TODO(hzovaro): write tests for this
 
     Args:
         raw_subject: desired raw subject in JSON format. Defaults to None. Must
@@ -137,6 +136,7 @@ def fetch_first_image_from_server_or_cache(
         they are both specified.
 
     """
+    # TODO(hzovaro): write tests for this
     if ((raw_subject is None) and (subject is None)) or (
         (raw_subject is not None) and (subject is not None)
     ):
@@ -198,8 +198,9 @@ def transform_coord_radio(
 
     Note that this uses the WCS of the subject image, and can be slow!
 
-    TODO: Speed this up by avoiding the image reload whenever possible, e.g. by passing in the image.
     """
+    # TODO(MatthewJA): Speed this up by avoiding the image reload whenever 
+    # possible, e.g. by passing in the image.
     with fetch_first_image_from_server_or_cache(
         raw_subject=raw_subject, subject=subject, cache=cache
     ) as im:
@@ -262,7 +263,7 @@ def get_first_from_bbox(
     first_tree: FIRSTTree,
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
-    # TODO: Also use the contours to ensure that they really are within the boxes.
+    # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
     phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
     # Find the centre...
     centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
@@ -282,7 +283,7 @@ def get_first_from_bbox(
         frame="icrs",
     )
 
-    # TODO: Speed this up using some kind of tree.
+    # TODO(MatthewJA): Speed this up using some kind of tree.
     ra, dec = rgz.get_deg(skc)
     width_deg = width.to(u.deg).value
     height_deg = height.to(u.deg).value
