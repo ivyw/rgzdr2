@@ -167,16 +167,16 @@ Dependencies are listed in `pyproject.toml` and managed by `uv`. If you need to,
 
 ### Testing
 
-Run tests with Bazel:
+Run tests with `pytest`:
 
 ```bash
-bazel test rgz:all
+uv run pytest
 ```
 
 ### Notebooks
 
-To run notebooks, use the `jupyter_server` target from the root directory:
+To run notebooks, call `jupyter` from `uv`:
 
 ```bash
-bazel run notebooks:jupyter_server
+uv run jupyter notebook
 ```
