@@ -21,7 +21,6 @@ from rgz import rgz
 from rgz import subjects
 from rgz import units as u
 
-
 # Indent of output JSON files.
 _JSON_INDENT = 2
 

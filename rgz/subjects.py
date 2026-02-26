@@ -24,7 +24,6 @@ from rgz import constants
 from rgz import rgz
 from rgz import units as u
 
-
 # Indent of output JSON files.
 _JSON_INDENT = 2
 
