@@ -1,7 +1,28 @@
 [project]
 name = "rgzdr2"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.0"
+description = "rgzdr2 is the second incarnation data reduction pipeline for Radio Galaxy Zoo."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "attrs",
+    "requests",
+    "matplotlib",
+    "pandas",
+    "tqdm",
+    "astropy",
+    "astroquery",
+    "backoff",
+    "line_profiler",
+    "jupyter",
+    "jupyterlab",
+    "notebook",
+    "jupyterlab-code-formatter",
+    "black",
+    "ipympl",
+    "scipy",  # Needed for astropy.
+]
+
+[project.optional-dependencies]
+cli = ["click"]
+test = ["line_profiler"]
