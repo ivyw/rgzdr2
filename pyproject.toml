@@ -1,7 +1,7 @@
 [project]
-name = "rgzdr2"
+name = "rgz"
 version = "0.0.0"
-description = "rgzdr2 is the second incarnation data reduction pipeline for Radio Galaxy Zoo."
+description = "rgz is the second incarnation data reduction pipeline for Radio Galaxy Zoo."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -13,16 +13,26 @@ dependencies = [
     "astropy",
     "astroquery",
     "backoff",
-    "line_profiler",
-    "jupyter",
-    "jupyterlab",
-    "notebook",
-    "jupyterlab-code-formatter",
     "black",
     "ipympl",
-    "scipy",  # Needed for astropy.
+    "scipy",      # Needed for astropy.
+]
+
+[dependency-groups]
+dev = [
+    "pytest"
 ]
 
 [project.optional-dependencies]
 cli = ["click"]
-test = ["line_profiler"]
+notebooks = ["jupyterlab", "jupyter", "notebook", "jupyterlab-code-formatter"]
+
+[project.scripts]
+rgz = "rgz.main:cli"
+
+[build-system]
+build-backend = "uv_build"
+requires = ["uv_build>=0.10.6,<0.11.0"]
+
+[tool.uv.build-backend]
+module-root = ""
