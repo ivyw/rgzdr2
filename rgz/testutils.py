@@ -8,16 +8,16 @@ from pathlib import Path
 CACHE_DATA_FILENAME = "first"
 
 # Test (processed) subjects JSON filename.
-SUBJECTS_PROCESSED_FILENAME = "radio_subjects_test_subset_processed.json"
+SUBJECTS_PROCESSED_FILENAME = "subjects_processed.json"
 
 # Test (raw) classifications JSON filename.
-CLASSIFICATIONS_FILENAME = "radio_classifications_test_subset.json"
+CLASSIFICATIONS_FILENAME = "classifications.json"
 
 # Test (processed) classifications JSON filename.
-CLASSIFICATIONS_PROCESSED_FILENAME = "radio_classifications_test_subset_processed.json"
+CLASSIFICATIONS_PROCESSED_FILENAME = "classifications_processed.json"
 
 # Test (matched) classifications JSON filename.
-CLASSIFICATIONS_MATCHED_FILENAME = "radio_classifications_test_subset_matched.json"
+CLASSIFICATIONS_MATCHED_FILENAME = "classifications_matched.json"
 
 # Test consensus JSON filename.
 CONSENSUS_FILENAME = "consensus.json"

@@ -18,10 +18,10 @@ _TEST_DIR = Path(os.path.dirname(__file__)) / "testdata/"
 _TEST_CACHE_DATA_PATH = _TEST_DIR / "first"
 
 # Path to test (raw) subjects JSON.
-_TEST_SUBJECTS_PATH = _TEST_DIR / "radio_subjects_test_subset.json"
+_TEST_SUBJECTS_PATH = _TEST_DIR / "subjects.json"
 
 # Path to test (processed) subjects JSON.
-_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "radio_subjects_test_subset_processed.json"
+_TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / "subjects_processed.json"
 
 
 class TestFindPointsInBox(unittest.TestCase):
