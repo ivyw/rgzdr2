@@ -7,7 +7,6 @@ import tempfile
 import unittest
 
 import numpy as np
-from python.runfiles import Runfiles
 
 import rgz.subjects
 import rgz.units as u
