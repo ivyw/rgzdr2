@@ -32,12 +32,12 @@ if __name__ == "__main__":
 
     # Paths
     testdata_path = Path("testdata")
-    raw_subjects_path = testdata_path / "radio_subjects_test_subset.json"
+    raw_subjects_path = testdata_path / "subjects.json"
     processed_subjects_path = (
-        testdata_path / "radio_subjects_test_subset_processed.json"
+        testdata_path / "subjects_processed.json"
     )
     processed_classifications_path = (
-        testdata_path / "radio_classifications_test_subset_processed.json"
+        testdata_path / "classifications_processed.json"
     )
 
     # Load a subject
