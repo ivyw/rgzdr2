@@ -12,7 +12,6 @@ from astropy.table import Table
 import pandas as pd
 import requests
 
-
 logger = logging.getLogger(__name__)
 
 
