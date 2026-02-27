@@ -183,7 +183,13 @@ uv run pytest
 
 ### Notebooks
 
-To run notebooks, call `jupyter` from `uv`:
+To run notebooks, you need to install the source as a kernel.
+
+```bash
+.venv/bin/python -m ipykernel install --user --name=rgz --display-name "rgz"
+```
+
+Then you can call `jupyter` from `uv`, and choose the `rgz` kernel.
 
 ```bash
 uv run jupyter notebook

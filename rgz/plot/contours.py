@@ -3,6 +3,9 @@
 import json
 from pathlib import Path
 
+import matplotlib.axes
+import numpy as np
+
 from rgz import constants
 from rgz import subjects
 

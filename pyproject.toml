@@ -20,7 +20,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pytest"
+    "ipykernel>=7.2.0",
+    "pytest",
 ]
 
 [project.optional-dependencies]
@@ -34,5 +35,15 @@ rgz = "rgz.main:cli"
 build-backend = "uv_build"
 requires = ["uv_build>=0.10.6,<0.11.0"]
 
+[tool.uv]
+package = true
+
 [tool.uv.build-backend]
 module-root = ""
+
+[tool.uv.sources]
+rgz = { editable = true, path = "rgz"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rgz"]
