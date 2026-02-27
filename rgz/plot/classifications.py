@@ -82,7 +82,6 @@ def plot_single_classification(
         cache=cache,
         px_coords=False,
     )
-    island_zeroth_contours = [ic[0] for ic in island_contours]
 
     wise_image = wise.get_wise_image(subject.coords)
     hdu_wise = wise_image.data
@@ -99,13 +98,7 @@ def plot_single_classification(
     # Plot contours
     # TODO(hzovaro): annotate these with FIRST IDs, and colour the contours to indicate
     # the source rather than overplotting a scatter marker.
-    contour_colour = "white"
-    for contour in island_zeroth_contours:
-        ax.plot(
-            *zip(*contour),
-            transform=ax.get_transform("fk5"),
-            color=contour_colour,
-        )
+    plot_contours.plot(island_contours, ax)
 
     # Add classification
     colours = plt.rcParams["axes.prop_cycle"].by_key()["color"]

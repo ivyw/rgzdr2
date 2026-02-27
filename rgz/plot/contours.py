@@ -10,6 +10,7 @@ from rgz import subjects
 class ContoursNotFoundError(Exception):
     """Raised when the contours list in the raw subject JSON file is empty."""
 
+
 def get_contours(
     subject: subjects.Subject,
     px_coords: bool = False,
@@ -84,3 +85,15 @@ def get_contours(
             f"Contour data not found for source with ZooniverseID {subject.zid}!"
         )
     return island_contours
+
+
+def plot(contours: list[list[tuple]], ax: matplotlib.axes.Axes) -> None:
+    """Plots contours onto an axis."""
+    island_zeroth_contours = [ic[0] for ic in contours]
+    contour_colour = "white"
+    for contour in island_zeroth_contours:
+        ax.plot(
+            *zip(*contour),
+            transform=ax.get_transform("fk5"),
+            color=contour_colour,
+        )
