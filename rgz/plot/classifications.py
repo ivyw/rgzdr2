@@ -94,7 +94,7 @@ def plot_single_classification(
 
     # Plot AllWISE image. The colour map and limits have been calibrated to
     # match what was shown to citizen scientists as closely as possible
-    ax.imshow(hdu_wise.data, cmap="gist_heat", vmax=6, vmin=2)
+    wise.imshow(hdu_wise, ax)
 
     # Plot contours
     # TODO(hzovaro): annotate these with FIRST IDs, and colour the contours to indicate
