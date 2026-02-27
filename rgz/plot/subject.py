@@ -22,5 +22,5 @@ def plot_single_subject(
         px_coords=False,
     )
     # We need the WISE image to get the WCS.
-    fig, ax = plotting.maybe_create_axes(ax, wcs=wcs)
     wise_image = wise.get_wise_image(subject.coords)
+    fig, ax = plotting.maybe_create_axes(ax, wcs=wise_image.wcs)

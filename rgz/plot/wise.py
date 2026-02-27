@@ -4,6 +4,8 @@ import astropy.io.fits
 import astropy.wcs
 from astropy.coordinates import SkyCoord
 import attrs
+import matplotlib.axes
+import numpy.typing as npt
 
 from rgz import cutouts
 from rgz import constants
@@ -39,3 +41,8 @@ def get_wise_image(coords: tuple[float, float]) -> WISEImage:
         data=hdu_wise,
         wcs=astropy.wcs.WCS(hdu_wise.header),
     )
+
+def imshow(im: astropy.io.fits.ImageHDU, ax: matplotlib.axes.Axes):
+    """Shows a WISE image."""
+    data: npt.ArrayLike = im.data # pyright: ignore[reportAssignmentType]
+    ax.imshow(data, cmap="gist_heat", vmax=6, vmin=2)
