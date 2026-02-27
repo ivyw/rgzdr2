@@ -42,7 +42,8 @@ def get_wise_image(coords: tuple[float, float]) -> WISEImage:
         wcs=astropy.wcs.WCS(hdu_wise.header),
     )
 
+
 def imshow(im: astropy.io.fits.ImageHDU, ax: matplotlib.axes.Axes):
     """Shows a WISE image."""
-    data: npt.ArrayLike = im.data # pyright: ignore[reportAssignmentType]
+    data: npt.ArrayLike = im.data  # pyright: ignore[reportAssignmentType]
     ax.imshow(data, cmap="gist_heat", vmax=6, vmin=2)
