@@ -30,9 +30,6 @@ _JSON_INDENT = 2
 # Max number of retries for fetching data from the internet.
 MAX_TRIES = 10
 
-# Filename of the FIRST catalogue.
-_FIRST_CATALOGUE_FILENAME = "first_2014Dec17.csv"
-
 logger = logging.getLogger(__name__)
 
 
@@ -170,7 +167,7 @@ def download_first_catalogue(cache: Path):
     dec = skc.dec.deg  # type: ignore[reportOptionalMemberAccess]
     first[0]["RA_DEG"] = ra
     first[0]["DE_DEG"] = dec
-    first[0].write(cache / _FIRST_CATALOGUE_FILENAME, format="csv")
+    first[0].write(cache / constants.FIRST_CATALOGUE_NAME, format="csv")
 
 
 def fetch_first_catalogue_from_server_or_cache(
@@ -179,7 +176,7 @@ def fetch_first_catalogue_from_server_or_cache(
     """Fetches the FIRST catalogue from Vizier or cache."""
     try:
         return astropy.io.ascii.read(
-            str(cache / _FIRST_CATALOGUE_FILENAME), guess=False, format="csv"
+            str(cache / constants.FIRST_CATALOGUE_NAME), guess=False, format="csv"
         )  # type: ignore[reportReturnType]
     except IOError as e:
         logger.info("Cache miss; downloading FIRST table from Vizier")

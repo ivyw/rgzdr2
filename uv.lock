@@ -2123,6 +2123,7 @@ notebooks = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "ipykernel" },
     { name = "pytest" },
 ]
 
@@ -2148,7 +2149,10 @@ requires-dist = [
 provides-extras = ["cli", "notebooks"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest" }]
+dev = [
+    { name = "ipykernel", specifier = ">=7.2.0" },
+    { name = "pytest" },
+]
 
 [[package]]
 name = "rpds-py"
