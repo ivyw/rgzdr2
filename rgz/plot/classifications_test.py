@@ -6,7 +6,7 @@ import unittest
 import matplotlib.pyplot as plt
 
 from rgz import classifications
-from rgz import plot_classifications
+from rgz.plot import classifications as plot_classifications
 from rgz import subjects
 
 logging = logging.getLogger(__name__)
