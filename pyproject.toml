@@ -27,6 +27,7 @@ dev = [
 [project.optional-dependencies]
 cli = ["click"]
 notebooks = ["jupyterlab", "jupyter", "notebook", "jupyterlab-code-formatter"]
+profile = ["line_profiler"]
 
 [project.scripts]
 rgz = "rgz.main:cli"

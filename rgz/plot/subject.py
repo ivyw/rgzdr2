@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-from astropy.coordinates import SkyCoord
 import astropy.io.ascii
 import astropy.table
 import matplotlib.axes
@@ -17,6 +16,7 @@ from rgz.plot import wise
 
 _first_cat_cache = None
 
+
 def plot_first(
     coords: tuple[float, float], cache: Path, ax: matplotlib.axes.Axes
 ) -> None:
@@ -30,12 +30,20 @@ def plot_first(
         )  # pyright: ignore[reportAssignmentType]
         _first_cat_cache = table
 
-    ra = np.asarray(table["RA_DEG"])
-    dec = np.asarray(table["DE_DEG"])
+    ras = np.asarray(table["RA_DEG"])
+    decs = np.asarray(table["DE_DEG"])
     xlim = ax.get_xlim()
     ylim = ax.get_ylim()
     transform = ax.get_transform("fk5")  # pyright: ignore[reportCallIssue]
-    ax.scatter(ra * u.deg, dec * u.deg, transform=transform, c="w", marker="x")
+
+    # Curiously this function is no faster if we filter to only include points that are nearby.
+    ax.scatter(
+        ras * u.deg,
+        decs * u.deg,
+        transform=transform,
+        c="w",
+        marker="x",
+    )
 
     centre_ra, centre_dec = coords
     im_width_deg = constants.IM_WIDTH_ARCMIN / 60
@@ -45,9 +53,14 @@ def plot_first(
             centre_ra - im_width_deg <= ra <= centre_ra + im_width_deg
             and centre_dec - im_width_deg <= dec <= centre_dec + im_width_deg
         ):
-            ax.annotate(row["FIRST"], (ra, dec), xycoords=transform, xytext=(6, -3),
-                        color='white',
-                        textcoords='offset points')
+            ax.annotate(
+                row["FIRST"],
+                (ra, dec),
+                xycoords=transform,
+                xytext=(6, -3),
+                color="white",
+                textcoords="offset points",
+            )
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
