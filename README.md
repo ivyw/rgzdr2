@@ -10,16 +10,10 @@ Purpose is to develop the DR2 pipeline that overcomes the limitations of the RGZ
 
 ## Getting started
 
-Install Bazel. Then:
+Install `uv`. Then:
 
 ```bash
-bazel build rgz:main
-```
-
-This will build the RGZ binary. Then you can run it:
-
-```bash
-bazel-bin/rgz/main --help
+uv run rgz
 ```
 
 ## Data dependencies
@@ -42,7 +36,7 @@ You need to have the RGZ data dumped as JSON: this is the only input. To save so
 ### Processing RGZ subjects
 
 ```bash
-bazel-bin/rgz/main subjects --in=data/radio_subjects.json --out=data/radio_subjects_processed.json --cache=data/cache
+uv run rgz subjects --in=data/radio_subjects.json --out=data/radio_subjects_processed.json --cache=data/cache
 ```
 
 This will:
@@ -141,7 +135,7 @@ For example:
 ### Processing the RGZ classifications
 
 ```bash
-bazel-bin/rgz/main classifications --in=data/radio_classifications.json --out=data/radio_classifications_processed.json --cache=data/cache --subjects=data/radio_subjects_processed.json
+uv run rgz classifications --in=data/radio_classifications.json --out=data/radio_classifications_processed.json --cache=data/cache --subjects=data/radio_subjects_processed.json
 ```
 
 This will:
@@ -154,13 +148,13 @@ A reduced RGZ classification is a JSON object with the following schema: (TODO)
 Once the classifications are processed, perform the host lookup. This is separate because it is slow, and we may want to make this asynchronous in future. This will include AllWISE cross-matches.
 
 ```bash
-bazel-bin/rgz/main host-lookup --classifications=data/radio_classifications_processed.json --out=data/radio_classifications_matched.json
+uv run rgz host-lookup --classifications=data/radio_classifications_processed.json --out=data/radio_classifications_matched.json
 ```
 
 ### Aggregate classifications into a consensus
 
 ```bash
-bazel-bin/rgz/main aggregate --subjects=data/radio_subjects_processed.json --classifications=data/radio_classifications_matched.json --out=data/radio_consensus.json
+uv run rgz aggregate --subjects=data/radio_subjects_processed.json --classifications=data/radio_classifications_matched.json --out=data/radio_consensus.json
 ```
 
 This will, for each subject, decide on a consensus between all classifications for that subject. It does not account for duplicates or overlaps.
@@ -169,26 +163,20 @@ This will, for each subject, decide on a consensus between all classifications f
 
 ### Dependency management
 
-Dependencies are listed in `pyproject.toml`. After updating them here, use `bazel` to update the corresponding requirements file:
-
-```bash
-bazel run rgz:requirements.update
-```
-
-...and add them as a dependency in the relevant BUILD rules.
+Dependencies are listed in `pyproject.toml` and managed by `uv`. If you need to, you can sync this with `uv sync`.
 
 ### Testing
 
-Run tests with Bazel:
+Run tests with `pytest`:
 
 ```bash
-bazel test rgz:all
+uv run pytest
 ```
 
 ### Notebooks
 
-To run notebooks, use the `jupyter_server` target from the root directory:
+To run notebooks, call `jupyter` from `uv`:
 
 ```bash
-bazel run notebooks:jupyter_server
+uv run jupyter notebook
 ```

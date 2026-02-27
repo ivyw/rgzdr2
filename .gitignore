@@ -5,3 +5,7 @@ data/*
 .vscode/*
 **/.vscode/*
 cutouts/*
+.jj/*
+**/__pycache__/*
+**/.ipynb_checkpoints/*
+.venv/*
