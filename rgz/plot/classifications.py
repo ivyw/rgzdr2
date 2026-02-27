@@ -13,6 +13,7 @@ from rgz import cutouts
 from rgz import subjects
 from rgz.plot import contours as plot_contours
 from rgz.plot import plotting
+from rgz.plot import wise
 
 
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
@@ -83,16 +84,9 @@ def plot_single_classification(
     )
     island_zeroth_contours = [ic[0] for ic in island_contours]
 
-    # Get the WISE image associated with this subject
-    ra, dec = subject.coords
-    coords_wise = SkyCoord(ra, dec, unit="deg")
-    hdulist_wise = cutouts.get_allwise_cutout(
-        coords=coords_wise,
-        size=constants.IM_WIDTH_ARCMIN * u.arcmin,
-        save_fits=False,
-    )
-    hdu_wise = hdulist_wise[0]
-    wcs_wise = WCS(hdu_wise.header)
+    wise_image = wise.get_wise_image(subject.coords)
+    hdu_wise = wise_image.data
+    wcs_wise = wise_image.wcs
 
     _, ax = plotting.maybe_create_axes(ax=ax, wcs=wcs_wise)
 

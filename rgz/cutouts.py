@@ -94,8 +94,8 @@ def get_allwise_cutout(
     size: u.Quantity[u.arcmin] = 3 * u.arcmin,
     band: Literal["W1", "W2", "W3", "W4"] = "W1",
     save_fits: bool = False,
-    cutout_path: Path = None,
-) -> fits.HDUList | None:
+    cutout_path: Path | None = None,
+) -> fits.HDUList:
     """Returns a FITS HDUList of an AllWISE cutout, optionally saving to file.
 
     This function extracts a cutout image from AllWISE via the NASA/IPAC

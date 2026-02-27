@@ -7,6 +7,7 @@ import matplotlib.axes
 from rgz import subjects
 from rgz.plot import contours as plot_contours
 from rgz.plot import plotting
+from rgz.plot import wise
 
 
 def plot_single_subject(
@@ -20,4 +21,6 @@ def plot_single_subject(
         cache=cache,
         px_coords=False,
     )
-    fig, ax = maybe_create_axes
+    # We need the WISE image to get the WCS.
+    fig, ax = plotting.maybe_create_axes(ax, wcs=wcs)
+    wise_image = wise.get_wise_image(subject.coords)
