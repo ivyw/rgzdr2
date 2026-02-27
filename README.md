@@ -165,6 +165,14 @@ This will, for each subject, decide on a consensus between all classifications f
 
 Dependencies are listed in `pyproject.toml` and managed by `uv`. If you need to, you can sync this with `uv sync`.
 
+### Linting
+
+Run `black`:
+
+```bash
+uv run black rgz
+```
+
 ### Testing
 
 Run tests with `pytest`:
