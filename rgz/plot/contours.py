@@ -78,4 +78,9 @@ def get_contours(
                 coords = [(x * px_scaling, y * px_scaling) for x, y in coords]
             contours.append(coords)
         island_contours.append(contours)
+
+    if len(island_contours) == 0:
+        raise ContoursNotFoundError(
+            f"Contour data not found for source with ZooniverseID {subject.zid}!"
+        )
     return island_contours
