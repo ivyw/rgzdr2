@@ -12,6 +12,7 @@ from rgz import classifications
 from rgz import cutouts
 from rgz import subjects
 from rgz.plot import contours as plot_contours
+from rgz.plot import plotting
 
 
 def get_first_coords_from_id(first_id: str) -> SkyCoord:
@@ -80,10 +81,6 @@ def plot_single_classification(
         cache=cache,
         px_coords=False,
     )
-    if len(island_contours) == 0:
-        raise plot_contours.ContoursNotFoundError(
-            f"Contour data not found for source with ZooniverseID {subject.zid}!"
-        )
     island_zeroth_contours = [ic[0] for ic in island_contours]
 
     # Get the WISE image associated with this subject
@@ -97,15 +94,7 @@ def plot_single_classification(
     hdu_wise = hdulist_wise[0]
     wcs_wise = WCS(hdu_wise.header)
 
-    # Create figure and axes
-    if ax is None:
-        fig, ax = plt.subplots(subplot_kw=dict(projection=wcs_wise))
-    else:
-        # Replace existing axes with ones with the correct projection
-        fig = ax.get_figure()
-        bbox = ax.get_position()
-        ax.remove()
-        ax = fig.add_axes(rect=bbox, projection=wcs_wise)
+    _, ax = plotting.maybe_create_axes(ax=ax, wcs=wcs_wise)
 
     ax.set_title(f"Zooniverse ID {subject.zid}\n(subject ID: {subject.id})")
 
