@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 def maybe_create_axes(
     ax: matplotlib.axes.Axes | None, wcs: astropy.wcs.WCS
 ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+    """Creates axes with correct WCS projection."""
     if ax is None:
         return plt.subplots(subplot_kw=dict(projection=wcs))
     # Replace existing axes with ones with the correct projection

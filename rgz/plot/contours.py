@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import matplotlib.axes
+import matplotlib.patheffects
 import numpy as np
 
 from rgz import constants
@@ -99,4 +100,7 @@ def plot(contours: list[list[tuple]], ax: matplotlib.axes.Axes) -> None:
             *zip(*contour),
             transform=ax.get_transform("fk5"),
             color=contour_colour,
+            path_effects=[
+                matplotlib.patheffects.withStroke(linewidth=2, foreground="red")
+            ],
         )
