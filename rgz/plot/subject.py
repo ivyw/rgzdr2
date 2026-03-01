@@ -5,6 +5,7 @@ from pathlib import Path
 import astropy.io.ascii
 import astropy.table
 import matplotlib.axes
+import matplotlib.patheffects
 import numpy as np
 
 from rgz import constants
@@ -41,8 +42,9 @@ def plot_first(
         ras * u.deg,
         decs * u.deg,
         transform=transform,
-        c="w",
-        marker="x",
+        color="w",
+        marker="o",
+        edgecolors="red",
     )
 
     centre_ra, centre_dec = coords
@@ -60,6 +62,9 @@ def plot_first(
                 xytext=(6, -3),
                 color="white",
                 textcoords="offset points",
+                path_effects=[
+                    matplotlib.patheffects.withStroke(linewidth=2, foreground="red")
+                ],
             )
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
