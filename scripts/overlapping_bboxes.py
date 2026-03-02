@@ -8,13 +8,20 @@ import click
 import rgz.subjects
 
 
+def inside(point: tuple[float, float], box: rgz.subjects.BBox) -> bool:
+    """Determines if a point is inside a bounding box."""
+    xmin, ymin, xmax, ymax = box
+    x, y = point
+    return xmin <= x <= xmax and ymin <= y <= ymax
+
+
 def overlaps(box_1: rgz.subjects.BBox, box_2: rgz.subjects.BBox) -> bool:
     """Determines if two bounding boxes overlap."""
-    xmin_1, ymin_1, xmax_1, ymax_1 = box_1
-    xmin_2, ymin_2, xmax_2, ymax_2 = box_2
-    return not (
-        xmax_1 < xmin_2 or xmax_2 < xmin_1 or ymax_1 < ymin_2 or ymax_2 < ymin_1
-    )
+    xmin_1, ymin_1, _, _ = box_1
+    xmin_2, ymin_2, _, _ = box_2
+    p1 = (xmin_1, ymin_1)
+    p2 = (xmin_2, ymin_2)
+    return inside(p1, box_2) or inside(p2, box_1)
 
 
 def has_overlapping(subject: rgz.subjects.Subject) -> bool:
