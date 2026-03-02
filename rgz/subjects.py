@@ -4,7 +4,7 @@ from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
-from typing import Any, Self
+from typing import Self, Iterable
 
 from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
@@ -375,3 +375,11 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
         json_subjects.append(subject.to_json())
     with open(output_path, "w") as f:
         json.dump(json_subjects, f, indent=_JSON_INDENT)
+
+
+def read(subjects_path: Path) -> Iterable[Subject]:
+    """Reads subjects from a JSON file."""
+    with open(subjects_path) as f:
+        json_subjects = json.load(f)
+    for s in json_subjects:
+        yield Subject.from_json(s)
