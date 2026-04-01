@@ -359,22 +359,33 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
     first_tree = build_first_tree(first_catalogue)
 
     subjects = []
+    failures = set()
     # Get subject count for progress bar.
     with open(subjects_path, encoding="utf-8") as f:
         n_subjects = len(f.readlines())
     with open(subjects_path, encoding="utf-8") as f:
         # Each row is a JSON document.
         for row in tqdm(f, desc="Processing subjects...", total=n_subjects):
+            raw_subject = json.loads(row)
             try:
-                subjects.append(process_subject(json.loads(row), cache, first_tree))
+                subjects.append(process_subject(raw_subject, cache, first_tree))
             except FileNotFoundError as e:
-                logger.warning(e)
+                failures.add(raw_subject["zooniverse_id"])
                 continue
+            except Exception as e:
+                logger.warning(
+                    "Error processing {}: {}".format(raw_subject["zooniverse_id"], e)
+                )
+                failures.add(raw_subject["zooniverse_id"])
     json_subjects = []
     for subject in tqdm(subjects, desc="Serialising subjects..."):
         json_subjects.append(subject.to_json())
     with open(output_path, "w") as f:
         json.dump(json_subjects, f, indent=_JSON_INDENT)
+    if failures:
+        print("Failures:")
+        for subject in failures:
+            print(subject)
 
 
 def read(subjects_path: Path) -> Iterable[Subject]:

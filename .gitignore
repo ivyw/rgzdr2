@@ -9,3 +9,4 @@ cutouts/*
 **/__pycache__/*
 **/.ipynb_checkpoints/*
 .venv/*
+full_data/*
