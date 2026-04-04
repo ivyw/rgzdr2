@@ -13,8 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 @click.group()
-def cli():
-    pass
+@click.option(
+    '--verbose',
+    is_flag=True,
+)
+def cli(verbose: bool=False):
+    if verbose:
+        logging.basicConfig(level=logging.INFO)
 
 
 @cli.command()

@@ -2,8 +2,10 @@
 
 import collections
 from collections.abc import Generator, Iterable
+import functools
 import json
 import logging
+import multiprocessing
 from pathlib import Path
 from typing import Self
 
@@ -350,7 +352,6 @@ def process(
     with open(output_path, "w") as f:
         json.dump(json_classifications, f, indent=_JSON_INDENT)
 
-
 def host_lookup(
     classifications_path: Path,
     output_path: Path,
@@ -376,36 +377,19 @@ def host_lookup(
 
             coordinates_to_lookup.add(ir)
 
-    sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))
-
-    coordinate_table = astropy.table.Table(
-        {
-            "ra": sc.ra.deg,  # type: ignore[reportOptionalMemberAccess]
-            "dec": sc.dec.deg,  # type: ignore[reportOptionalMemberAccess]
-        }
-    )
-
-    # Batch query IRSA.
-    irsa = pyvo.dal.TAPService("https://irsa.ipac.caltech.edu/TAP")
-    wise = constants.ALLWISE_SOURCE_CATALOGUE
-    r = radius.to(u.deg).value
-    query = f"""
-        SELECT w.designation, w.ra, w.dec FROM {wise} as w
-        WHERE CONTAINS(POINT(ra, dec), CIRCLE(TAP_UPLOAD.my_table.ra, TAP_UPLOAD.my_table.dec, {r})) = 1
-        """
-    logger.info("Querying IRSA...")
-    q = irsa.run_async(
-        query,
-        maxrec=len(coordinates_to_lookup) + 1,
-        delete=True,
-        uploads={
-            "my_table": coordinate_table,
-        },
-    )
-    if q.query_status != "OK":
-        raise NotImplementedError(f"Unimplemented query status: {q.query_status}")
-
-    results = astropy.table.unique(q.to_table())
+    # Sort for determinism.
+    coordinates_to_lookup = sorted(coordinates_to_lookup)
+    # Run small batches so that queries take a reasonable amount of time.
+    batch_size = 20000
+    batches = []
+    for batch_idx in tqdm(range(0, len(coordinates_to_lookup), batch_size), desc="Batching coordinates..."):
+        batch = coordinates_to_lookup[batch_idx:batch_idx + batch_size]
+        batches.append(batch)
+    with multiprocessing.Pool(25) as p:
+        all_results = p.starmap(query_irsa, [(radius, b) for b in batches])
+    
+    logging.info("Joining tables...")
+    results = astropy.table.vstack(all_results)
     sc = SkyCoord(ra=results["ra"], dec=results["dec"])
 
     # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
@@ -433,3 +417,39 @@ def host_lookup(
             f,
             indent=_JSON_INDENT,
         )
+
+def query_irsa(radius, coordinates_to_lookup) -> astropy.table.Table:
+    """Queries IRSA for the given coordinates."""
+    logging.info("Sorting classifications into SkyCoords...")
+    sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))
+    logging.info("Building coordinate table...")
+    coordinate_table = astropy.table.Table(
+        {
+            "ra": sc.ra.deg,  # type: ignore[reportOptionalMemberAccess]
+            "dec": sc.dec.deg,  # type: ignore[reportOptionalMemberAccess]
+        }
+    )
+
+    # Batch query IRSA.
+    logging.info("Connecting to TAP...")
+    irsa = pyvo.dal.TAPService("https://irsa.ipac.caltech.edu/TAP")
+    wise = constants.ALLWISE_SOURCE_CATALOGUE
+    r = radius.to(u.deg).value
+    query = f"""
+        SELECT w.designation, w.ra, w.dec FROM {wise} as w
+        WHERE CONTAINS(POINT(ra, dec), CIRCLE(TAP_UPLOAD.my_table.ra, TAP_UPLOAD.my_table.dec, {r})) = 1
+        """
+    logger.info("Querying IRSA...")
+    q = irsa.run_async(
+        query,
+        maxrec=len(coordinates_to_lookup) + 1,
+        delete=True,
+        uploads={
+            "my_table": coordinate_table,
+        },
+    )
+    if q.query_status != "OK":
+        raise NotImplementedError(f"Unimplemented query status: {q.query_status}")
+
+    results = astropy.table.unique(q.to_table())
+    return results
