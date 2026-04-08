@@ -346,7 +346,7 @@ def process_subject(
     zid = raw_subject["zooniverse_id"]
     bboxes = get_bboxes(raw_subject, cache)
 
-    # Get bboxes in physical coordinates 
+    # Get bboxes in physical coordinates
     phys_bboxes = [
         transform_bbox_px_to_phys(bbox, raw_subject, cache) for bbox in bboxes
     ]
@@ -357,13 +357,15 @@ def process_subject(
         firsts = get_first_from_bbox(bbox, raw_subject, cache, first_tree)
         bbox_to_firsts[bbox] = firsts
 
-    # Create class instance 
-    s = Subject(id=sid, 
-                zid=zid, 
-                coords=raw_subject["coords"], 
-                bbox_list=bboxes,
-                phys_bbox_list=phys_bboxes,
-                bboxes=bbox_to_firsts)
+    # Create class instance
+    s = Subject(
+        id=sid,
+        zid=zid,
+        coords=raw_subject["coords"],
+        bbox_list=bboxes,
+        phys_bbox_list=phys_bboxes,
+        bboxes=bbox_to_firsts,
+    )
     return s
 
 
