@@ -43,7 +43,7 @@ def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
     header = im[0].header  # type: ignore[reportAttributeAccessIssue]
     # WCS.dropaxis doesn't seem to work on these images.
     # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...
-    # TODO(hzovaro): should update function name to make it clear that 
+    # TODO(hzovaro): should update function name to make it clear that
     # this is designed for FIRST images and not WISE ones
     for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
         for i in [3, 4]:

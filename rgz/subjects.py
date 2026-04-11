@@ -54,7 +54,8 @@ class Subject:
                 (xmin, ymin, xmax, ymax).
         wcs: astropy World Coordinate System extracted from FIRST image.
     """
-    # TODO(hzovaro) should we also store the WISE wcs? 
+
+    # TODO(hzovaro) should we also store the WISE wcs?
 
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
@@ -186,7 +187,8 @@ def transform_coord_radio(
 
 
 def transform_bbox_px_to_phys(
-    px_bbox: BBox, wcs: WCS,
+    px_bbox: BBox,
+    wcs: WCS,
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
     # TODO(hzovaro): remove raw_subject.
@@ -324,11 +326,9 @@ def process_subject(
         firsts = get_first_from_bbox(bbox, wcs, first_tree)
         bbox_to_firsts[bbox] = firsts
 
-    return Subject(id=sid, 
-                zid=zid, 
-                coords=raw_subject["coords"], 
-                bboxes=bbox_to_firsts,
-                wcs=wcs)
+    return Subject(
+        id=sid, zid=zid, coords=raw_subject["coords"], bboxes=bbox_to_firsts, wcs=wcs
+    )
 
 
 def build_first_tree(first_catalogue: astropy.table.table.Table) -> FIRSTTree:

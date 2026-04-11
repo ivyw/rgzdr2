@@ -302,9 +302,7 @@ def process_classification(
     )
 
 
-def process(
-    classifications_path: Path, subjects_path: Path, output_path: Path
-):
+def process(classifications_path: Path, subjects_path: Path, output_path: Path):
     """Processes classifications from raw to reduced JSON."""
     # Get classifications count for progress bar.
     with open(classifications_path, encoding="utf-8") as f:
@@ -343,6 +341,7 @@ def process(
     with open(output_path, "w") as f:
         json.dump(json_classifications, f, indent=_JSON_INDENT)
 
+
 def host_lookup(
     classifications_path: Path,
     output_path: Path,
@@ -373,12 +372,14 @@ def host_lookup(
     # Run small batches so that queries take a reasonable amount of time.
     batch_size = 20000
     batches = []
-    for batch_idx in tqdm(range(0, len(coordinates_to_lookup), batch_size), desc="Batching coordinates..."):
-        batch = coordinates_to_lookup[batch_idx:batch_idx + batch_size]
+    for batch_idx in tqdm(
+        range(0, len(coordinates_to_lookup), batch_size), desc="Batching coordinates..."
+    ):
+        batch = coordinates_to_lookup[batch_idx : batch_idx + batch_size]
         batches.append(batch)
     with multiprocessing.Pool(25) as p:
         all_results = p.starmap(query_irsa, [(radius, b) for b in batches])
-    
+
     logging.info("Joining tables...")
     results = astropy.table.vstack(all_results)
     sc = SkyCoord(ra=results["ra"], dec=results["dec"])
@@ -408,6 +409,7 @@ def host_lookup(
             f,
             indent=_JSON_INDENT,
         )
+
 
 def query_irsa(radius, coordinates_to_lookup) -> astropy.table.Table:
     """Queries IRSA for the given coordinates."""

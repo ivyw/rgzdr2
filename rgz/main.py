@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 @click.option(
-    '--verbose',
+    "--verbose",
     is_flag=True,
 )
-def cli(verbose: bool=False):
+def cli(verbose: bool = False):
     if verbose:
         logging.basicConfig(level=logging.INFO)
 
