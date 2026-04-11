@@ -205,24 +205,19 @@ class Classification:
 
 def transform_coord_ir(
     coord: npt.NDArray[np.float64],
-    raw_subject: rgz.JSON | None = None,
-    cache: Path | None = None,
-    wcs: astropy.wcs.WCS | None = None,
+    wcs: astropy.wcs.WCS,
 ) -> u.Quantity[u.deg, u.deg]:
-    """Transforms a coordinate from raw classifications to physical.
-
-    You can pass a subject and cache, or a WCS.
+    """Transforms a WISE image pixel coordinate into RA/Dec.
 
     Args:
         coord: Coord to transform, in px coordinates (0, IR_MAX_PX).
-        raw_subject: Raw JSON subject.
-        cache: Path to the subject data location.
-        wcs: WCS of the subject being classified.
+        wcs: WCS of the FIRST image of the subject being classified.
 
     Returns:
         Transformed coordinate RA/dec in deg.
     """
-    # TODO: We should use subjects here, not raw subjects.
+    """
+    # OLD CODE - leaving here to remind you that this is using the FIRST WCS.
     if not raw_subject and not wcs:
         raise ValueError()
     if raw_subject and not cache:
@@ -235,6 +230,7 @@ def transform_coord_ir(
         )
         wcs = rgz.get_wcs(im)
     assert wcs
+    """
     # Coord in 424x424 -> 100x100
     px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
     # Flip y axis.
@@ -245,14 +241,12 @@ def transform_coord_ir(
 def process_classification(
     raw_classification: rgz.JSON,
     subject: subjects.Subject,
-    wcs: astropy.wcs.WCS,
 ) -> Classification:
     """Reduces a JSON classification into a nice, value-added format.
 
     Args:
         raw_classification: JSON classification.
         subject: Subject being classified.
-        wcs: WCS of the subject image.
 
     Returns:
         Reduced classification.
@@ -286,7 +280,7 @@ def process_classification(
                 notes.append("MULTISOURCE")
             ir_coord = transform_coord_ir(
                 np.array([float(anno["ir"]["0"]["x"]), float(anno["ir"]["0"]["y"])]),
-                wcs=wcs,
+                wcs=subject.wcs,
             )
             ir_ra, ir_dec = ir_coord
             ir_coord = SkyCoord(
@@ -309,7 +303,7 @@ def process_classification(
 
 
 def process(
-    classifications_path: Path, subjects_path: Path, cache: Path, output_path: Path
+    classifications_path: Path, subjects_path: Path, output_path: Path
 ):
     """Processes classifications from raw to reduced JSON."""
     # Get classifications count for progress bar.
@@ -335,13 +329,10 @@ def process(
     bar = tqdm(total=n_classifications, desc="Processing classifications...")
     for subject in subjects_:
         raw_classifications_for_subject = subject_to_classifications[subject.id]
-        im = subjects.read_subject_image_from_file(subject, cache)
-        wcs = rgz.get_wcs(im)
         for raw_classification in raw_classifications_for_subject:
             classification = process_classification(
                 raw_classification,
                 subject,
-                wcs,
             )
             classifications.append(classification)
             bar.update(1)
