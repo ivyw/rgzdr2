@@ -52,8 +52,9 @@ class Subject:
         bboxes: Bounding boxes for the radio islands in the subject.
                 This is defined per Radio Galaxy Zoo, so
                 (xmin, ymin, xmax, ymax).
-        wcs: astropy World Coordinate System extracted from FIRST image
+        wcs: astropy World Coordinate System extracted from FIRST image.
     """
+    # TODO(hzovaro) should we also store the WISE wcs? 
 
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
@@ -96,12 +97,6 @@ def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUL
     # Technically allowed by documentation, but I don't expect it to happen
     # with the files we're opening (i.e. FIRST survey files).
     raise TypeError(f"Expected HDUList; got {type(ims)}")
-
-
-def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
-    """Reads a FIRST image from the cache."""
-    fname = cache / f"{subject.id}.fits"
-    return fits.open(fname)
 
 
 def fetch_first_image_from_server_or_cache(
