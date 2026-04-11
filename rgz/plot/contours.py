@@ -74,7 +74,8 @@ def get_contours(
             if not px_coords:
                 coords = [
                     subjects.transform_coord_radio(
-                        coord=c, wcs=subject.wcs,
+                        coord=c,
+                        wcs=subject.wcs,
                     )
                     for c in coords
                 ]
