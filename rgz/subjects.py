@@ -63,26 +63,23 @@ class Subject:
 
     def to_json(self) -> rgz.JSON:
         """Converts a Subject into a JSON-compatible dictionary."""
-        # TODO(hzovaro): how to serialise a WCS? 
         return {
             "id": self.id,
             "zid": self.zid,
             "coords": self.coords,
-            # TODO(hzovaro): add WCS
+            "wcs": self.wcs.to_header_string(),
             "bboxes": [{"bbox": list(k), "first": v} for k, v in self.bboxes.items()],
         }
 
     @classmethod
-    # TODO(hzovaro): how to un-serialise a WCS?
-    # TODO(hzovaro): where/how does this get used?
     def from_json(cls, subject: rgz.JSON) -> Self:
         """Reads a Subject from JSON."""
         return cls(
             subject["id"],
             subject["zid"],
             subject["coords"],
-            # TODO(hzovaro): add WCS
             {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
+            WCS(subject["wcs"]),
         )
 
 
@@ -197,6 +194,7 @@ def transform_bbox_px_to_phys(
     px_bbox: BBox, wcs: WCS,
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
+    # TODO(hzovaro): remove raw_subject.
     # NOTE: this fn is only used in this file
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
@@ -238,12 +236,11 @@ def find_points_in_box(
 def get_first_from_bbox(
     px_bbox: BBox,
     wcs: WCS,
-    cache: Path,
     first_tree: FIRSTTree,
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
     # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
-    phys_bbox = transform_bbox_px_to_phys(px_bbox, wcs, cache)
+    phys_bbox = transform_bbox_px_to_phys(px_bbox, wcs)
     # Find the centre...
     centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
     # ...and the width and height.
