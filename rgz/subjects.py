@@ -182,7 +182,11 @@ def transform_coord_radio(
 ) -> Quantity[u.deg, u.deg]:
     """Transforms a radio image pixel coordinate into RA/dec."""
     # Coord in 132x132 -> 100x100.
+    if np.any(coord < 0) or np.any(coord >= constants.RADIO_MAX_PX):
+        raise ValueError("pixel coordinates must be in range "
+                         f"[0, {constants.RADIO_MAX_PX})!")
     coord = coord * 100 / constants.RADIO_MAX_PX
+    # TODO(hzovaro) I suspect 0 is the wrong origin to use in the below...
     return wcs.all_pix2world([coord], 0)[0] * u.deg
 
 
@@ -191,8 +195,6 @@ def transform_bbox_px_to_phys(
     wcs: WCS,
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
-    # TODO(hzovaro): remove raw_subject.
-    # NOTE: this fn is only used in this file
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
     phys_bbox = np.array(
@@ -294,7 +296,7 @@ def get_bboxes(
                 raise FileNotFoundError(f"HTTP 404: {url}")
             raise RuntimeError("Error:", response.status_code)
         js = response.json()
-        assert abs(js["width"] - 132) <= 1
+        assert abs(js["width"] - constants.RADIO_MAX_PX) <= 1
         with open(fname, "w") as f:
             # Don't indent here to keep the filesize down.
             # These don't need to be human-readable.
