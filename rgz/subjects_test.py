@@ -6,8 +6,11 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from astropy.wcs import WCS
 import numpy as np
 
+import rgz.consensus
+import rgz.constants
 import rgz.subjects
 import rgz.units as u
 
@@ -88,6 +91,77 @@ class TestProcess(unittest.TestCase):
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
         self.assertEqual(want, got)
+
+
+# TODO(hzovaro): add test for serialisation/deserialisation - in particular that
+# transforming a WCS from WCS object -> string -> object doesn't result in any 
+# problematic differences 
+# TODO(hzovaro): add test for transform_bbox_px_to_phys
+class TestTransformCoordRadio(unittest.TestCase):
+    """Tests for transform_coord_radio."""
+
+    def make_dummy_wcs(self):
+        # Make a dummy WCS 
+        w = WCS(naxis=2)
+        w.wcs.cdelt = [0.3, 0.3]
+        w.wcs.crpix = [10, 15]
+        w.wcs.crval = [2, 3]
+        return w
+    
+    
+    def test_all_pix2world(self):
+        """Sanity check for WCS.all_pix2world."""
+        # Create some dummy RA/Dec pairs and check that the common-sense 
+        # transformation gives the same result as w.all_pix2world
+        coords_phys = np.array([
+            [1, 5], [-1, 10], [99, 100], [256, .3],
+            [-99, 0.0003], [359., 179.], [1.3454, 63.0324],
+        ])
+        # NOTE: w.wcs.crpix is indexed from 1, so we have to subtract 1 as 
+        # below.
+        w = self.make_dummy_wcs()
+        coords_px = (
+            (coords_phys - w.wcs.crval) / w.wcs.cdelt
+            + (w.wcs.crpix - 1)
+        )
+        want = coords_phys
+        got = w.all_pix2world(coords_px, 0) 
+        self.assertTrue(
+            np.allclose(want, got)
+        )
+
+
+    def test_transform_coord_radio(self):
+        w = self.make_dummy_wcs() 
+
+        # Check for coords being out of bounds
+        with self.assertRaises(ValueError):
+            rgz.subjects.transform_coord_radio(np.array([-1, 0]), w)
+            rgz.subjects.transform_coord_radio(np.array([132, 0]), w)
+            rgz.subjects.transform_coord_radio(np.array([-1, 253]), w)
+
+        # Check transformation has worked correctly
+        for coords in [[0, 0], [1, 10], [99, 100], [131, 5]]:
+            coords_unscaled_px = np.array([coords])
+            coords_px = (
+                coords_unscaled_px / 132 * 100  # rgz.constants.RADIO_MAX_PX * 100
+            )
+            coords_phys = (coords_px - (w.wcs.crpix - 1)) * w.wcs.cdelt + w.wcs.crval
+            want = coords_phys
+            got = rgz.subjects.transform_coord_radio(coords_unscaled_px[0],
+                                                     wcs=w)
+            self.assertTrue(np.allclose(
+                want, np.array([[c.value for c in got]]))
+            )
+
+
+class TestTransformBboxPxToPhys(unittest.TestCase):
+    """Tests for transform_bbox_px_to_phys."""
+
+    def test_transformation(self):
+        # Make a dummy WCS 
+        ...
+
 
 
 if __name__ == "__main__":
