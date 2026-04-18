@@ -309,7 +309,8 @@ def get_bboxes(
     bboxes = []
     for contour in js["contours"]:
         assert contour[0]["k"] == 0
-        bboxes.append(tuple([round(c, 1) for c in contour[0]["bbox"]]))
+        # Bboxes are 1-indexed...
+        bboxes.append(tuple([round(c, 1) - 1 for c in contour[0]["bbox"]]))
     return tuple(bboxes)
 
 
