@@ -40,7 +40,6 @@ class TestProcess(unittest.TestCase):
         rgz.classifications.process(
             self.test_data_path / rgz.testutils.CLASSIFICATIONS_FILENAME,
             self.test_data_path / rgz.testutils.SUBJECTS_PROCESSED_FILENAME,
-            self.test_data_path / rgz.testutils.CACHE_DATA_FILENAME,
             output_path,
         )
         with open(output_path) as f:
