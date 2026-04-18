@@ -183,12 +183,14 @@ def transform_coord_radio(
 ) -> Quantity[u.deg, u.deg]:
     """Transforms a radio image pixel coordinate into RA/dec."""
     # Coord in 132x132 -> 100x100.
-    # TODO(hzovaro): are coords indexed from 1 or zero? Change the below to 
-    # reflect this. 
+    # TODO(hzovaro): are coords indexed from 1 or zero? Change the below to
+    # reflect this.
     if np.any(coord < 0) or np.any(coord >= constants.RADIO_MAX_PX):
-        raise ValueError(f"pixel coordinates {coord} "
-                         "are outside of range "
-                         f"[0, {constants.RADIO_MAX_PX})!")
+        raise ValueError(
+            f"pixel coordinates {coord} "
+            "are outside of range "
+            f"[0, {constants.RADIO_MAX_PX})!"
+        )
     coord = coord * 100 / constants.RADIO_MAX_PX
     # TODO(hzovaro) I suspect 0 is the wrong origin to use in the below...
     return wcs.all_pix2world([coord], 0)[0] * u.deg
@@ -201,11 +203,11 @@ def transform_bbox_px_to_phys(
     """Transforms a bbox from pixel coordinates to RA/dec."""
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
-    # TODO(hzovaro): are coords indexed from 1 or zero? The below would 
-    # suggest that they are indexed from 0, but need to double check 
+    # TODO(hzovaro): are coords indexed from 1 or zero? The below would
+    # suggest that they are indexed from 0, but need to double check
     # against the usage of all_pix2world in transform_coord_radio
-    # TODO(hzovaro): I think there is a bug in the below - reckon it should be 
-    # radio_max_px - 1 - ymax since radio_max_px is the size of the image, not the 
+    # TODO(hzovaro): I think there is a bug in the below - reckon it should be
+    # radio_max_px - 1 - ymax since radio_max_px is the size of the image, not the
     # maximum coordinate...
     phys_bbox = np.array(
         [xmin, constants.RADIO_MAX_PX - ymax, xmax, constants.RADIO_MAX_PX - ymin]
