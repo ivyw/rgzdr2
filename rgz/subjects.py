@@ -52,10 +52,11 @@ class Subject:
         bboxes: Bounding boxes for the radio islands in the subject.
                 This is defined per Radio Galaxy Zoo, so
                 (xmin, ymin, xmax, ymax).
-        wcs: astropy World Coordinate System extracted from FIRST image.
+        wcs: astropy World Coordinate System extracted from FIRST image centred
+                on this subject.
     """
 
-    # TODO(hzovaro) should we also store the WISE wcs?
+    # TODO(hzovaro): should we also store the WISE wcs?
 
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
@@ -133,8 +134,8 @@ def fetch_first_image_from_server_or_cache(
 
     """
     # TODO(hzovaro): write tests for this
-    coord = raw_subject["coords"]
-    coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
+    ra, dec = raw_subject["coords"]
+    coord = SkyCoord(ra=ra, dec=dec, unit="deg")
     fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     try:
         return fits.open(fname)
