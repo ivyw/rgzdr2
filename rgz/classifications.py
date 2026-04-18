@@ -216,21 +216,6 @@ def transform_coord_ir(
     Returns:
         Transformed coordinate RA/dec in deg.
     """
-    """
-    # OLD CODE - leaving here to remind you that this is using the FIRST WCS.
-    if not raw_subject and not wcs:
-        raise ValueError()
-    if raw_subject and not cache:
-        raise ValueError()
-    if raw_subject:
-        assert cache
-        assert not wcs
-        im = subjects.fetch_first_image_from_server_or_cache(
-            raw_subject=raw_subject, cache=cache
-        )
-        wcs = rgz.get_wcs(im)
-    assert wcs
-    """
     # Coord in 424x424 -> 100x100
     px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
     # Flip y axis.
