@@ -192,7 +192,7 @@ def transform_coord_radio(
             f"[0, {constants.RADIO_MAX_PX})!"
         )
     coord = coord * 100 / constants.RADIO_MAX_PX
-    return wcs.all_pix2world([coord], 1)[0] * u.deg
+    return wcs.all_pix2world([coord], 0)[0] * u.deg
 
 
 def transform_bbox_px_to_phys(
