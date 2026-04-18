@@ -219,7 +219,7 @@ def transform_coord_ir(
     # Coord in 424x424 -> 100x100
     px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
     # Flip y axis.
-    px_coord[1] = 100 - px_coord[1]
+    px_coord[1] = 100 - 1 - px_coord[1]
     return wcs.all_pix2world([px_coord], 0)[0] * u.deg
 
 
