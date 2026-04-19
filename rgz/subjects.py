@@ -203,7 +203,12 @@ def transform_bbox_px_to_phys(
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
     phys_bbox = np.array(
-        [xmin, constants.RADIO_MAX_PX - 1 - ymax, xmax, constants.RADIO_MAX_PX - 1 - ymin]
+        [
+            xmin,
+            constants.RADIO_MAX_PX - 1 - ymax,
+            xmax,
+            constants.RADIO_MAX_PX - 1 - ymin,
+        ]
     )
     return np.concatenate(
         [

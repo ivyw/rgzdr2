@@ -99,7 +99,7 @@ class TestProcess(unittest.TestCase):
             got = json.load(f)
 
         if update:
-            with open(_TEST_SUBJECTS_PROCESSED_PATH, 'w') as f:
+            with open(_TEST_SUBJECTS_PROCESSED_PATH, "w") as f:
                 json.dump(got, f)
 
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
