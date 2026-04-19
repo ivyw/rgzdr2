@@ -91,12 +91,17 @@ class TestProcess(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_regression(self):
+    def test_regression(self, update: bool = False):
         """Tests behaviour consistency in processing subjects."""
         output_path = self.temp_dir_path / "out.json"
         rgz.subjects.process(_TEST_SUBJECTS_PATH, _TEST_CACHE_DATA_PATH, output_path)
         with open(output_path) as f:
             got = json.load(f)
+
+        if update:
+            with open(_TEST_SUBJECTS_PROCESSED_PATH, 'w') as f:
+                json.dump(got, f)
+
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
         self.assertEqual(want, got)
@@ -167,10 +172,10 @@ class TestTransformBboxPxToPhys(unittest.TestCase):
         want = np.concatenate(
             [
                 rgz.subjects.transform_coord_radio(
-                    coord=np.array([xmin, 132 - ymax]), wcs=w
+                    coord=np.array([xmin, 131 - ymax]), wcs=w
                 ),
                 rgz.subjects.transform_coord_radio(
-                    coord=np.array([xmax, 132 - ymin]), wcs=w
+                    coord=np.array([xmax, 131 - ymin]), wcs=w
                 ),
             ]
         )

@@ -251,10 +251,11 @@ def process_classification(
             continue
         for radio in anno["radio"].values():
             box = (
-                round(float(radio["xmax"]), 1),
-                round(float(radio["ymax"]), 1),
-                round(float(radio["xmin"]), 1),
-                round(float(radio["ymin"]), 1),
+                # Bboxes in the source are 1-indexed.
+                round(float(radio["xmax"]), 1) - 1,
+                round(float(radio["ymax"]), 1) - 1,
+                round(float(radio["xmin"]), 1) - 1,
+                round(float(radio["ymin"]), 1) - 1,
             )
             boxes.add(box)
 
