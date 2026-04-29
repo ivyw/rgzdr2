@@ -263,6 +263,7 @@ def process_classification(
             ir = "NOSOURCE"
         else:
             if len(anno["ir"]) != 1:
+                # TODO(MatthewJA): Should we handle this differently?
                 notes.append("MULTISOURCE")
             ir_coord = transform_coord_ir(
                 np.array([float(anno["ir"]["0"]["x"]), float(anno["ir"]["0"]["y"])]),
