@@ -23,7 +23,7 @@ class CutoutNotFoundError(Exception):
     """Raised when no valid cutouts can be found."""
 
 
-class CutoutDownloadFailError(Exception):
+class CutoutDownloadError(Exception):
     """Raised when a cutout download fails."""
 
 
@@ -79,7 +79,9 @@ def get_allwise_image_list(
         raise SIAQueryFailError(
             f"Simple Image Access Query failed with message {e.message}!"
         ) from e
-    df = Table(fits.open(BytesIO(r.content))[1].data).to_pandas()
+    df = Table(
+        fits.open(BytesIO(r.content), ignore_missing_simple=True)[1].data
+    ).to_pandas()
 
     # Filter by band and science readiness
     cond = df["energy_bandpassname"] == band
@@ -137,7 +139,7 @@ def get_allwise_cutout(
         InvalidWISEBandError: the specified band is not a valid WISE band.
         CutoutNotFoundError: no AllWISE cutout could be found for the input
             combination of coordinates and band.
-        CutoutDownloadFailError: an error occurred during the download of the
+        CutoutDownloadError: an error occurred during the download of the
             FITS file.
     """
     # Input validation
@@ -188,11 +190,9 @@ def get_allwise_cutout(
     )
     cutout_url = f"{access_url}?{url_params}"
     try:
-        hdulist = fits.open(cutout_url)
+        hdulist = fits.open(cutout_url, ignore_missing_simple=True)
     except Exception as e:
-        raise CutoutDownloadFailError(
-            f"Cutout download failed with message {e.message}!"
-        ) from e
+        raise CutoutDownloadError(str(e)) from e
 
     # Save to file if requested
     if save_fits:
