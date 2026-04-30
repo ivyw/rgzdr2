@@ -2,12 +2,11 @@
 
 import collections
 from collections.abc import Generator, Iterable
-import functools
 import json
 import logging
 import multiprocessing
 from pathlib import Path
-from typing import Self
+from typing import Self, override
 
 import attr
 import numpy as np
@@ -131,10 +130,6 @@ class Classification:
     # Additional notes about this classification accumulated during
     # processing.
     notes: list[str] = attr.ib()
-    # IR cross-match -> radio names.
-    ir_matches: list[tuple[ALLWISEID, RadioSource]] = attr.ib(
-        default=attr.Factory(list)
-    )
 
     def to_json(self) -> rgz.JSON:
         """Converts a Classification into a JSON-serialisable dictionary.
@@ -162,10 +157,6 @@ class Classification:
             ),
             "username": self.username or "",
             "notes": self.notes,
-            "ir_matches": sorted(
-                [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
-                key=dict_key,
-            ),
         }
 
     @classmethod
@@ -187,20 +178,62 @@ class Classification:
                 (m["ir"], RadioSource(m["radio"]))
                 for m in classification["coord_matches"]
             ],
-            ir_matches=[
-                (m["ir"], RadioSource(m["radio"])) for m in classification["ir_matches"]
-            ],
         )
 
     def radio_combinations(
         self,
     ) -> RadioSourceCombination:
         """Gets the combination of radio sources present in this classification."""
-        if self.ir_matches:
-            radios = (radio for _, radio in self.ir_matches)
-        else:
-            radios = (radio for _, radio in self.coord_matches)
-        return RadioSourceCombination(radios)
+        return RadioSourceCombination((radio for _, radio in self.coord_matches))
+
+
+class CrossMatchedClassification(Classification):
+    # IR cross-match -> radio names.
+    ir_matches: list[tuple[ALLWISEID, RadioSource]] = attr.ib(
+        default=attr.Factory(list)
+    )
+
+    @classmethod
+    def from_classification(cls, classification: Classification) -> Self:
+        """Converts from a Classification."""
+        return cls(**attr.asdict(classification))
+
+    @override
+    def to_json(self) -> rgz.JSON:
+        j = super().to_json()
+
+        def dict_key(d):
+            return (d["ir"], d["radio"])
+
+        j["ir_matches"] = sorted(
+            [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
+            key=dict_key,
+        )
+        return j
+
+    @override
+    def radio_combinations(
+        self,
+    ) -> RadioSourceCombination:
+        """Gets the combination of radio sources present in this classification."""
+        return RadioSourceCombination((radio for _, radio in self.ir_matches))
+
+    @override
+    @classmethod
+    def from_json(cls, classification: rgz.JSON) -> Self:
+        """Reads a CrossMatchedClassification from a JSON dict.
+
+        Args:
+            classification: Classification dict to deserialise.
+
+        Returns:
+            CrossMatchedClassification.
+        """
+        c = super().from_json(classification)
+        c.ir_matches = [
+            (m["ir"], RadioSource(m["radio"])) for m in classification["ir_matches"]
+        ]
+        return c
 
 
 def transform_coord_ir(
@@ -373,7 +406,8 @@ def host_lookup(
 
     # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
     # multiple values at once.
-    for c in tqdm(classifications, desc="Reprocessing classifications..."):
+    for i in tqdm(range(len(classifications)), desc="Reprocessing classifications..."):
+        c = CrossMatchedClassification.from_classification(classifications[i])
         ir_matches = []
         for ir, radio in c.coord_matches:
             if ir == "NOSOURCE":
@@ -398,7 +432,10 @@ def host_lookup(
         )
 
 
-def query_irsa(radius, coordinates_to_lookup) -> astropy.table.Table:
+def query_irsa(
+    radius: u.Quantity[u.deg],
+    coordinates_to_lookup: list[tuple[float, float]],
+) -> astropy.table.Table:
     """Queries IRSA for the given coordinates."""
     logging.info("Sorting classifications into SkyCoords...")
     sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))

@@ -75,7 +75,8 @@ class ConsensusSource:
 
 
 def aggregate_subject(
-    subject: subjects.Subject, classifications: list[classifications.Classification]
+    subject: subjects.Subject,
+    classifications: list[classifications.CrossMatchedClassification],
 ) -> list[ConsensusSource]:
     """Aggregates classifications into consensus sources for a single subject."""
     # Confirm every classification is of the subject.
@@ -143,7 +144,8 @@ def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -
 
     with open(classifications_path) as f:
         all_classifications = [
-            classifications.Classification.from_json(j) for j in json.load(f)
+            classifications.CrossMatchedClassification.from_json(j)
+            for j in json.load(f)
         ]
 
     zid_to_subject = {s.zid: s for s in all_subjects}
