@@ -10,6 +10,7 @@ from typing import Self
 import attr
 
 from rgz import classifications
+from rgz import radioislands
 from rgz import rgz
 from rgz import subjects
 
@@ -37,7 +38,7 @@ class ConsensusSource:
     """
 
     zid: subjects.ZooniverseID = attr.ib()
-    components: set[subjects.FIRSTID] = attr.ib(order=sorted)
+    components: set[radioislands.FIRSTID] = attr.ib(order=sorted)
     host_name: classifications.ALLWISEID | None = attr.ib()
     n_radio_agreement: int = attr.ib()
     n_ir_agreement: int = attr.ib()
