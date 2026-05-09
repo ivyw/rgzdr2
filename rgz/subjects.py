@@ -82,36 +82,6 @@ class Subject:
         )
 
 
-def get_bboxes(
-    raw_subject: rgz.JSON,
-    cache: Path,
-) -> Sequence[BBox]:
-    """Fetches the bboxes of a subject from RGZ, caching locally."""
-    fname = cache / f'{raw_subject["_id"]["$oid"]}.json'
-    try:
-        with open(fname) as f:
-            js = json.load(f)
-    except FileNotFoundError:
-        url = raw_subject["location"]["contours"]
-        response = requests.get(url)
-        if not response.ok:
-            if response.status_code == 404:
-                raise FileNotFoundError(f"HTTP 404: {url}")
-            raise RuntimeError("Error:", response.status_code)
-        js = response.json()
-        assert abs(js["width"] - constants.RADIO_MAX_PX) <= 1
-        with open(fname, "w") as f:
-            # Don't indent here to keep the filesize down.
-            # These don't need to be human-readable.
-            json.dump(js, f)
-    bboxes = []
-    for contour in js["contours"]:
-        assert contour[0]["k"] == 0
-        # Bboxes are 1-indexed...
-        bboxes.append(tuple([round(c, 1) - 1 for c in contour[0]["bbox"]]))
-    return tuple(bboxes)
-
-
 def process_subject(
     raw_subject: rgz.JSON,
     cache: Path,
@@ -120,15 +90,17 @@ def process_subject(
     """Reduces a JSON subject into a nice, value-added format."""
     sid = raw_subject["_id"]["$oid"]
     zid = raw_subject["zooniverse_id"]
-    bboxes = get_bboxes(raw_subject, cache)
-    # contours = get_contours(...)
-    # TODO(hzovaro): also, get contours from the raw_subject. 
-    bbox_to_firsts = {}
 
-    with radioislands.fetch_first_image_from_server_or_cache(
-        raw_subject=raw_subject, cache=cache
-    ) as im:
-        wcs = rgz.get_wcs(im)
+    # TODO(hzovaro): Everything below is defined on a per-subject basis,
+    # not a per-radio-island basis, so maybe it would be better 
+    # to store these in subjects.
+    radioislands.download_contour_data(raw_subject, cache)
+    radioislands.download_first_image(raw_subject, cache)
+    bboxes = radioislands.get_bboxes(sid, cache)
+    contours = radioislands.get_contours(sid, cache)
+    # TODO(hzovaro): get_wcs is specific to FIRST so this should be 
+    # where the rest of the FIRST-related utilities are.
+    wcs = radioislands.get_wcs(sid, cache)
 
     # TODO(hzovaro): make radio islands here. 
     # risland_list = []
@@ -139,6 +111,7 @@ def process_subject(
     #     risland_list.append(radio_island)
 
     # TODO(hzovaro): move the below to the constructor for RadioIsland.
+    bbox_to_firsts = {}
     for bbox in bboxes:
         firsts = radioislands.get_first_from_bbox(bbox, wcs, first_tree)
         bbox_to_firsts[bbox] = firsts
