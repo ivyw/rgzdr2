@@ -1,4 +1,11 @@
-- name: astral-sh/setup-uv
-  uses: astral-sh/setup-uv@v8.1.0
-- name: test
-  run: uv run pytest
+name: Run tests
+run-name: ${{ github.actor }} is testing the package
+on: [push]
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: astral-sh/setup-uv
+        uses: astral-sh/setup-uv@v8.1.0
+      - name: test
+        run: uv run pytest
