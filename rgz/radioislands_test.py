@@ -2,6 +2,7 @@
 
 import unittest
 
+from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 import numpy as np
 
@@ -64,14 +65,6 @@ class TestFindPointsInBox(unittest.TestCase):
         )
         self.assertSetEqual(set(got), set(want))
 
-
-# TODO(hzovaro): add test for serialisation/deserialisation - in particular that
-# transforming a WCS from WCS object -> string -> object doesn't result in any
-# problematic differences
-# TODO(hzovaro): add test for transform_bbox_px_to_phys
-class TestTransformCoordRadio(unittest.TestCase):
-    """Tests for transform_coord_radio."""
-
     def test_all_pix2world(self):
         """Sanity check for WCS.all_pix2world."""
         # Create some dummy RA/Dec pairs and check that the common-sense
@@ -95,24 +88,6 @@ class TestTransformCoordRadio(unittest.TestCase):
         got = w.all_pix2world(coords_px, 0)
         self.assertTrue(np.allclose(want, got))
 
-    def test_transform_coord_radio(self):
-        w = make_dummy_wcs()
-
-        # Check for coords being out of bounds
-        with self.assertRaises(ValueError):
-            rgz.radioislands.transform_coord_radio(np.array([-1, 0]), w)
-            rgz.radioislands.transform_coord_radio(np.array([132, 0]), w)
-            rgz.radioislands.transform_coord_radio(np.array([-1, 253]), w)
-
-        # Check transformation has worked correctly
-        for coords in [[0, 0], [1, 10], [99, 100], [131, 5]]:
-            coords_unscaled_px = np.array([coords])
-            coords_px = coords_unscaled_px / rgz.constants.RADIO_MAX_PX * 100
-            coords_phys = (coords_px - (w.wcs.crpix - 1)) * w.wcs.cdelt + w.wcs.crval
-            want = coords_phys
-            got = rgz.radioislands.transform_coord_radio(coords_unscaled_px[0], wcs=w)
-            self.assertTrue(np.allclose(want, np.array([[c.value for c in got]])))
-
 
 class TestTransformBboxPxToPhys(unittest.TestCase):
     """Tests for transform_bbox_px_to_phys."""
@@ -122,23 +97,107 @@ class TestTransformBboxPxToPhys(unittest.TestCase):
     def test_transform(self):
         # TODO(hzovaro) test some more coords
         xmin = 1
-        ymin = 1
+        ymin = 2
         xmax = 2
-        ymax = 2
-        bbox = [xmin, ymin, xmax, ymax]
+        ymax = 1
+        bbox = (xmin, ymin, xmax, ymax)
+
         w = make_dummy_wcs()
+        # TODO this test needs to be updated since transform_coord_radio has been removed.
         want = np.concatenate(
             [
+                # NOTE: transform_coord_radio assumes input args have origin of
+                # 1 but have been flipped
+                # NOTE 2: in the before code, the order below was ymax on the
+                # top line and ymin on the bottom. But this doesn't make sense.
                 rgz.radioislands.transform_coord_radio(
-                    coord=np.array([xmin, 131 - ymax]), wcs=w
+                    coord=np.array([xmin - 1, 131 - (ymin - 1)]),
+                    wcs=w,  # = 131 - 1 = 130
                 ),
                 rgz.radioislands.transform_coord_radio(
-                    coord=np.array([xmax, 131 - ymin]), wcs=w
+                    coord=np.array([xmax - 1, 131 - (ymax - 1)]),
+                    wcs=w,  # = 131 - 0 = 131
                 ),
             ]
         )
-        got = rgz.radioislands.transform_bbox_px_to_phys(px_bbox=bbox, wcs=w)
-        self.assertTrue(np.allclose(want, got))
+        want = rgz.radioislands.BBox(
+            xmin=want[0],
+            ymin=want[1],
+            xmax=want[2],
+            ymax=want[3],
+        )
+
+        got = rgz.radioislands.transform_bbox_px_to_phys(bbox=bbox, wcs=w)
+        self.assertEqual(want, got)
+
+
+class TestBBox(unittest.TestCase):
+    """Tests for the BBox class."""
+
+    def test_init(self):
+        # Test invalid inputs
+        with self.assertRaises(ValueError):
+            for args in (
+                [10, 14, 50, 55],
+                [10 * u.deg, 14 * u.deg, 50 * u.deg, 55 * u.deg],
+                [14 * u.deg, 10 * u.deg, 50 * u.deg, 55 * u.deg],
+                [10 * u.deg, 14 * u.deg, 50 * u.deg, 49 * u.deg],
+                [10 * u.deg, 10 * u.deg, 50 * u.deg, 55 * u.deg],
+                [10 * u.deg, 14 * u.deg, 50 * u.deg, 50 * u.deg],
+                [10 * u.deg, 14 * u.deg, 87.9 * u.deg, 90.1 * u.deg],
+                [10 * u.deg, 14 * u.deg, -101.9 * u.deg, -89.0 * u.deg],
+                [-0.1 * u.deg, 1.2 * u.deg, 50 * u.deg, 55 * u.deg],
+                [359.8 * u.deg, 361.2 * u.deg, 50 * u.deg, 55 * u.deg],
+            ):
+                rgz.radioislands.BBox(*args)
+
+        # Test width, height and centre attributes are correctly populated
+        bbox = rgz.radioislands.BBox(
+            ra_min=59.8 * u.deg,
+            ra_max=62.1 * u.deg,
+            dec_min=-3.5 * u.deg,
+            dec_max=-1.9 * u.deg,
+        )
+        self.assertTrue(bbox.width.value, (62.1 - 59.8))
+        self.assertTrue(bbox.height.value, (-3.5 - -1.9))
+        self.assertTrue(
+            bbox.centre, SkyCoord((59.8 + 62.1) / 2 * u.deg, (-3.5 + -1.9) / 2 * u.deg)
+        )
+
+    def test_serialisation(self):
+        """Test BBox.to_dict()."""
+        ra_min = 10
+        dec_min = 5
+        ra_max = 12
+        dec_max = 8
+        bbox = rgz.radioislands.BBox(
+            ra_min=ra_min * u.deg,
+            ra_max=ra_max * u.deg,
+            dec_min=dec_min * u.deg,
+            dec_max=dec_max * u.deg,
+        )
+        bbox_dict = dict(
+            ra_min=ra_min,
+            ra_max=ra_max,
+            dec_min=dec_min,
+            dec_max=dec_max,
+            width=ra_max - ra_min,
+            height=dec_max - dec_min,
+            centre=[
+                0.5 * (ra_min + ra_max),
+                0.5 * (dec_min + dec_max),
+            ],
+        )
+
+        # Test serialisation
+        want = bbox_dict
+        got = bbox.to_dict()
+        self.assertDictEqual(want, got)
+
+        # Test deserialisation
+        want = bbox
+        got = rgz.radioislands.BBox.from_dict(bbox_dict)
+        self.assertEqual(want, got)
 
 
 if __name__ == "__main__":
