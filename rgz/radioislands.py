@@ -1,9 +1,10 @@
 # """Handles RGZ radio islands."""
 from collections.abc import Sequence
+from dataclasses import dataclass
 import json
 import logging
 from pathlib import Path
-from typing import Self, Iterable
+from typing import Self
 
 from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
@@ -30,17 +31,80 @@ MAX_TRIES = 10
 logger = logging.getLogger(__name__)
 
 
-# TODO(hzovaro) to avoid circular imports, move this somewhere else
-# TODO(hzovaro) replace with DataClass and update everything that uses bboxes
-type BBox = tuple[float, float, float, float]  # xmin, ymin, xmax, ymax
 type HDU = fits.hdu.base.ExtensionHDU
 type FIRSTID = str
 
 
-# def get_phys_bbox(self, bbox_px: BBox, wcs: ...) -> BBox_phys:
-#     """Returns a BBox_phys corresponding to a bbox_px according to a given World Coordinate System."""
-
+# Sticking with a simple tuple instead of a class since we don't really 
+# use these anywhere
+type RGZBBox = tuple[float, float, float, float]
 type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
+
+@dataclass(init=True)
+class BBox:
+    """Class for holding a bounding box in physical coordinates."""
+    ra_min: Quantity[u.deg]
+    dec_min: Quantity[u.deg]
+    ra_max: Quantity[u.deg]
+    dec_max: Quantity[u.deg]
+
+    def __post_init__(self):
+        if not isinstance(self.ra_min, Quantity):
+            raise ValueError("'ra_min' must be an astropy Quantity!")
+        if not isinstance(self.ra_max, Quantity):
+            raise ValueError("'ra_max' must be an astropy Quantity!")
+        if not isinstance(self.dec_min, Quantity):
+            raise ValueError("'dec_min' must be an astropy Quantity!")
+        if not isinstance(self.dec_max, Quantity):
+            raise ValueError("'dec_max' must be an astropy Quantity!")
+        if (self.dec_max > 90.0 * u.deg) or (self.dec_max < -90.0 * u.deg):
+            raise ValueError("'dec_max' must be between -90 and 90 degrees!")
+        if (self.dec_min > 90.0 * u.deg) or (self.dec_min < -90.0 * u.deg):
+            raise ValueError("'dec_min' must be between -90 and 90 degrees!")
+        if (self.ra_max > 360.0 * u.deg) or (self.ra_max < 0.0 * u.deg):
+            raise ValueError("'ra_max' must be between -90 and 90 degrees!")
+        if (self.ra_min > 360.0 * u.deg) or (self.ra_min < 0.0 * u.deg):
+            raise ValueError("'ra_min' must be between -90 and 90 degrees!")
+        if (self.ra_max <= self.ra_min):
+            raise ValueError("'ra_max' must be greater than 'ra_min'!")
+        # TODO(hzovaro): this test always fails - I think we read ymin amd ymax
+        # in back-to-front in transform_rgzbbox_to_phys. Need to check by 
+        # plotting. BUT, this doesn't actually affect the code.
+        # if (self.dec_max <= self.dec_min):
+        #     raise ValueError("'dec_max' must be greater than 'dec_min'!")
+        
+    @property
+    def width(self):
+        return self.ra_max - self.ra_min
+        
+    @property
+    def height(self):
+        return self.dec_max - self.dec_min
+        
+    @property
+    def centre(self):
+        return SkyCoord(0.5 * (self.ra_min + self.ra_max),
+                        0.5 * (self.dec_min + self.dec_max))
+
+    def to_json(self) -> rgz.JSON:
+        return {
+            "ra_min": self.ra_min.value,
+            "ra_max": self.ra_max.value,
+            "dec_min": self.dec_min.value,
+            "dec_max": self.dec_max.value,
+            "width": self.width.value,
+            "height": self.height.value,
+            "centre": [self.centre.ra.value, self.centre.dec.value],
+        }
+    
+    @classmethod
+    def from_json(cls, bbox_dict: rgz.JSON):
+        return cls(
+            ra_min=bbox_dict["ra_min"] * u.deg,
+            dec_min=bbox_dict["dec_min"] * u.deg,
+            ra_max=bbox_dict["ra_max"] * u.deg,
+            dec_max=bbox_dict["dec_max"] * u.deg,
+        )
 
 
 @backoff.on_exception(
@@ -85,7 +149,7 @@ def download_first_image(
     coord = SkyCoord(ra=ra, dec=dec, unit="deg")
     fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     if Path(fname).exists():
-        logger.warn(f"File {fname} already exists! Not re-downloading")
+        logger.warning(f"File {fname} already exists! Not re-downloading")
         return
     logger.debug("Cache miss; downloading %s", fname)
     # Previously:
@@ -103,7 +167,6 @@ def load_first_image(
     cache: Path,
 ) -> fits.HDUList:
     """Fetches FIRST image data for a subject.
-    #TODO(hzovaro): what is the appropriate return type?
     """
     # TODO(hzovaro): this should be a method of radioisland
     fname = cache / f'{sid}.fits'
@@ -114,7 +177,7 @@ def get_wcs(
     sid: str,
     cache: Path,
 ) -> WCS:
-    """Fetches the WCS of a subject."""
+    """Fetches the FIRST WCS of a subject."""
     hdulist = load_first_image(sid, cache)
     return rgz.get_wcs(hdulist)
 
@@ -157,44 +220,34 @@ def download_first_catalogue(cache: Path):
 
 
 def get_first_from_bbox(
-    px_bbox: BBox,
-    wcs: WCS,
+    bbox: BBox,
     first_tree: FIRSTTree,
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
     # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
-    phys_bbox = transform_bbox_px_to_phys(px_bbox, wcs)
-    # Find the centre...
-    centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
-    # ...and the width and height.
-    width = abs(phys_bbox[2] - phys_bbox[0]).to(u.arcsec)
-    height = abs(phys_bbox[3] - phys_bbox[1]).to(u.arcsec)
+    # TODO(hzovaro): Something is broken in here!!!
 
     # Round widths and heights up to nearest arcsec plus two.
-    width = np.ceil(width.to(u.arcsec)) + 2 * u.arcsec
-    height = np.ceil(height.to(u.arcsec)) + 2 * u.arcsec
-
-    logger.debug("get_first_from_bbox: %s %s %s", centre, width, height)
-    skc = SkyCoord(
-        ra=centre[0].value,
-        dec=centre[1].value,
-        unit=(centre[0].unit, centre[0].unit),
-        frame="icrs",
-    )
+    width = np.ceil(bbox.width.to(u.arcsec)) + 2 * u.arcsec
+    height = np.ceil(bbox.height.to(u.arcsec)) + 2 * u.arcsec
+    logger.debug("get_first_from_bbox: %s %s %s", bbox.centre, width, height)
 
     # TODO(MatthewJA): Speed this up using some kind of tree.
-    ra, dec = rgz.get_deg(skc)
+    ra = bbox.centre.ra.value
+    dec = bbox.centre.dec.value
     width_deg = width.to(u.deg).value
     height_deg = height.to(u.deg).value
     upper_ra = ra + width_deg / 2
     lower_ra = ra - width_deg / 2
     upper_dec = dec + height_deg / 2
     lower_dec = dec - height_deg / 2
+    # breakpoint()
     matching_indices = find_points_in_box(
-        first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
+        # first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
+        first_tree[0], lower_ra, upper_ra, upper_dec, lower_dec  # test: swap ras around
     )
     if not matching_indices:
-        coord_str = rgz.coord_to_string(skc)
+        coord_str = rgz.coord_to_string(bbox.centre)
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
 
     names = []
@@ -203,45 +256,31 @@ def get_first_from_bbox(
     return sorted(names)
 
 
-def transform_coord_radio(
-    coord: npt.NDArray[np.float64],
+def transform_rgzbbox_to_phys(
+    bbox: RGZBBox,
     wcs: WCS,
-) -> Quantity[u.deg, u.deg]:
-    """Transforms a radio image pixel coordinate into RA/dec."""
-    # Coord in 132x132 -> 100x100.
-    # TODO(hzovaro): are coords indexed from 1 or zero? Change the below to
-    # reflect this.
-    if np.any(coord < 0) or np.any(coord >= constants.RADIO_MAX_PX):
-        raise ValueError(
-            f"pixel coordinates {coord} "
-            "are outside of range "
-            f"[0, {constants.RADIO_MAX_PX})!"
-        )
-    coord = coord * 100 / constants.RADIO_MAX_PX
-    return wcs.all_pix2world([coord], 0)[0] * u.deg
+) -> BBox:
+    """Transforms a bbox from pixel coordinates to RA/dec.
+    NOTE: the order in which the coordinates are read in looks weird, but it
+    is correct!!! See here: https://github.com/ivyw/rgzdr2/issues/56
+    """
+    # Reset origin to zero, flip vertically, and scale.
+    xmin_transformed = (bbox[0] - 1) * 100 / constants.RADIO_MAX_PX
+    ymax_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[1] - 1)) * 100 / constants.RADIO_MAX_PX
+    xmax_transformed = (bbox[2] - 1) * 100 / constants.RADIO_MAX_PX
+    ymin_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[3] - 1)) * 100 / constants.RADIO_MAX_PX
 
+    # Transform to RA/Dec.
+    ra_min, dec_min = wcs.all_pix2world(np.array([[xmin_transformed, ymin_transformed]]), 0)[0] * u.deg
+    ra_max, dec_max = wcs.all_pix2world(np.array([[xmax_transformed, ymax_transformed]]), 0)[0] * u.deg
+    # TODO(hzovaro) I think dec min and max are swapped around. This doesn't 
+    # actually affect the code but it should be fixed. Need to confirm by 
+    # plotting. This also affects find_points_in_box().
 
-def transform_bbox_px_to_phys(
-    px_bbox: BBox,
-    wcs: WCS,
-) -> npt.NDArray[np.float64]:
-    """Transforms a bbox from pixel coordinates to RA/dec."""
-    xmin, ymin, xmax, ymax = px_bbox
-    # Flip vertically.
-    phys_bbox = np.array(
-        [
-            xmin,
-            constants.RADIO_MAX_PX - 1 - ymax,
-            xmax,
-            constants.RADIO_MAX_PX - 1 - ymin,
-        ]
-    )
-    return np.concatenate(
-        [
-            transform_coord_radio(coord=phys_bbox[:2], wcs=wcs),
-            transform_coord_radio(coord=phys_bbox[2:], wcs=wcs),
-        ]
-    )
+    return BBox(ra_min=ra_min,
+                dec_min=dec_min,
+                ra_max=ra_max,
+                dec_max=dec_max)
 
 
 def find_points_in_box(
@@ -276,11 +315,10 @@ def download_contour_data(
     #TODO(hzovaro): what is the appropriate return type?
     """
     # NOTE: this function is what creates the file below.
-    # TODO(hzovaro): should this be a method of radioisland?
     # TODO(hzovaro): handle file already exists properly
     fname = cache / f'{raw_subject["_id"]["$oid"]}.json'
     if Path(fname).exists():
-        logger.warn(f"File {fname} already exists! Not re-downloading")
+        logger.warning(f"File {fname} already exists! Not re-downloading")
         return
     url = raw_subject["location"]["contours"]
     response = requests.get(url)
@@ -303,24 +341,41 @@ def load_contour_data(
     """Fetches contour data for a raw subject.
     #TODO(hzovaro): what is the appropriate return type?
     """
-    # TODO(hzovaro): this should be a method of radioisland
     fname = cache / f'{sid}.json'
     with open(fname) as f:
         return json.load(f)        
 
 
-def get_bboxes(
+def __get_rgzbboxes(
     sid: str,
+    wcs: WCS,
     cache: Path,
-) -> Sequence[BBox]:
-    """Fetches the bboxes of a subject."""
+) -> Sequence[RGZBBox]:
+    """Fetches the RAW RGZ bboxes in weird fucked up coordinates. ONLY TO BE USED FOR DEBUGGING!"""
     js = load_contour_data(sid, cache)
     bboxes = []
     for contour in js["contours"]:
         assert contour[0]["k"] == 0
-        # Bboxes are 1-indexed...
-        bboxes.append(tuple([round(c, 1) - 1 for c in contour[0]["bbox"]]))
-    return tuple(bboxes)
+        # NOTE: Bboxes are 1-indexed.
+        bbox = tuple([round(c, 1) for c in contour[0]["bbox"]])
+        bboxes.append(bbox)
+    return bboxes
+
+
+def get_bboxes(
+    sid: str,
+    wcs: WCS,
+    cache: Path,
+) -> Sequence[BBox]:
+    """Fetches the bboxes of a subject in RA/Dec."""
+    js = load_contour_data(sid, cache)
+    bboxes = []
+    for contour in js["contours"]:
+        assert contour[0]["k"] == 0
+        # NOTE: Bboxes are 1-indexed.
+        bbox = tuple([round(c, 1) for c in contour[0]["bbox"]])
+        bboxes.append(transform_rgzbbox_to_phys(bbox=bbox, wcs=wcs))
+    return bboxes
 
 
 class ContoursNotFoundError(Exception):
@@ -329,14 +384,14 @@ class ContoursNotFoundError(Exception):
 
 def get_contours(
     sid: str,
+    wcs: WCS,
     cache: Path,
-) -> list[list[tuple]]:
-    """Returns the contours of a subject.
-
-    # TODO(hzovaro): return type? 
+) -> list[list[tuple]]:  # N contours x N points x 2
+    """Returns the contours of a subject in RA/Dec.
+    # TODO(hzovaro): this is broken - it should return a list of len
+    # N x radio islands x N x contours x 2 but it only returns a list of length 1
     # TODO(hzovaro): what about contour level?
-    # TODO(hzovaro): make sure the coordinate system is consistent with whatever 
-    get_bboxes returns. Also, rounding.
+    # TODO(hzovaro): should we round these?
 
     The raw contour data consists of a series of (x, y) coordinate pairs
     relative to the upper-left hand corner of a 132x132 image, where (65, 65)
@@ -363,100 +418,86 @@ def get_contours(
         
     """
     js = load_contour_data(sid, cache)
-    px_scaling = 100 / constants.RADIO_MAX_PX
     island_contours = []
     for island in js["contours"]:
         contours = []
         for contour in island:
-            xs = [coord["x"] for coord in contour["arr"]]
-            ys = [constants.RADIO_MAX_PX - 1 - coord["y"] for coord in contour["arr"]]
-            coords = np.stack([xs, ys]).T
-            coords = [(x * px_scaling, y * px_scaling) for x, y in coords]
+            xs = [(coord["x"] - 1) * 100 / constants.RADIO_MAX_PX for coord in contour["arr"]]
+            ys = [(constants.RADIO_MAX_PX - 1 - (coord["y"] - 1)) * 100 / constants.RADIO_MAX_PX for coord in contour["arr"]]
+            # transform 
+            coords = wcs.all_pix2world(np.vstack([xs, ys]).T, 0) * u.deg
+            coords = [(x.value, y.value) for x, y in coords]
             contours.append(coords)
-        island_contours.append(contours)
-
+    island_contours.append(contours)
     if len(island_contours) == 0:
-        # TODO(hzovaro): should probs quote the subject ID here 
-        raise ContoursNotFoundError(f"Contour data not found!")
+        raise ContoursNotFoundError(f"Contour data not found for subject {sid}!")
     return island_contours
 
 
-# @dataclass
-# class BBox:
-#     """Class for holding a bounding box."""
-#     xmin_px: float 
-#     ymin_px: float
-#     xmax_px: float 
-#     ymax_px: float
+class RadioIsland:
+    """A Radio Galaxy Zoo radio island.
 
-
-# @dataclass
-# class BBox_phys:
-#     """Class for holding a bounding box."""
-#     xmin_phys: Quantity[u.deg]
-#     ymin_phys: Quantity[u.deg]
-#     xmax_phys: Quantity[u.deg]
-#     ymax_phys: Quantity[u.deg]
-
-
-# class RadioIsland:
-#     """A Radio Galaxy Zoo radio island.
-
-#     Radio islands are defined as contiguous radio sources in FIRST.
+    Radio islands are defined as contiguous radio sources in FIRST.
     
-#     Attributes: 
-#     - pixel-unit bounding box
-#     - physical-unit bounding box 
-#         - to make this, need a WCS instance. 
-#     - contours 
-#         - would this make the instances too big? Probably not if we just show 
-#             the zeroth contours. 
-#         - Q: do we want to store contours as part of class instances, or just 
-#             make a method that gets them dynamically? 
+    Attributes: 
+    - physical-unit bounding box 
+    - contours 
 
-#     Methods:
-#     - get_first_from_bbox
+    Methods:
+    - get_first_from_bbox
 
-#     TODO: 
-#     - where would this get made in the code? and at that point, what information
-#         do we have? 
-#             A: in process_subject.
-#     - how and where would this get used in plotting methods?
 
-#     Extracting contours:
-#     - contours are accessed in get_bbox. TODO: modify this method to return bbox
-#         and the zeroth contour. OR, make a separate method that's basically the 
-#         same but it grabs the contours instead. 
-#         - NOTE: there is a method in plot/contours.py called get_contours that gets contours. 
-#             This essentially reads in the raw data in the same way as get_bboxes in subjects.py, except for
-#             that get_contours assumes that the raw subject json file (cache/<subject id>.json)
-#             already exists, whereas get_bboxes queries the URL for this data 
-#             if the json file doesn't exist. We can easily merge these into 
-#             a single function (perhaps splitting off the json-file-checking-and
-#             -URL-querying into its own function).
-#             We can make the level of contours to return an input arg, so that 
-#             you can get it to return just the zeroth contour, or the full set.
-#             In the constructor for RadioIsland we can call it with level=0.
+    """
 
-#     """
+    def __init__(self, 
+                 rgzbbox: RGZBBox,
+                 bbox: BBox,
+                 contours: list[list[tuple]], # TODO what is this?
+                 first_tree: FIRSTTree | None = None,
+                 firsts: list[FIRSTID] | None = None,
+                 ) -> None:
+        """Initialise a RadioIsland instance."""
+        # Input validation
+        if (first_tree is None) and (firsts is None):
+            raise ValueError("first_tree must be specified if firsts is None!")
+        if (first_tree is not None) and (firsts is not None):
+            raise ValueError("Only one of first_tree and firsts may be specified!")
+        if (firsts is not None):
+            if len(firsts) == 0:
+                raise ValueError("firsts must not be empty!")
+
+        # Initialise instance attributes
+        self.rgzbbox = rgzbbox
+        self.bbox = bbox
+        self.contours = contours  # TODO(hzovaro): input check this
+        if firsts is not None:
+            self.firsts = firsts
+        else:
+            self.firsts = get_first_from_bbox(bbox, first_tree)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, RadioIsland):
+            return ValueError("other must be a BBox!")
+        return (self.bbox == other.bbox) &\
+            (self.rgzbbox == other.rgzbbox) &\
+            (self.contours == other.contours) &\
+            (self.firsts == other.firsts)
+
+    def to_json(self) -> rgz.JSON:
+        """Converts a RadioIsland into a JSON-compatible dictionary."""
+        return {
+            "bbox": self.bbox.to_json(), 
+            "rgzbbox": self.rgzbbox,
+            "contours": self.contours,
+            "firsts": self.firsts,
+        }
     
-
-#     def __init__(self, 
-#                  bbox_px: BBox,
-#                  contours: ...,
-#                  first_tree: FIRSTTree,
-#                  wcs: ...) -> None:
-#         """
-#         logic: 
-#             - bboxes and the contours come from the raw subject file.
-#             - the WCS, first IDs, transformed bbox coords are all done in post-processing.
-#         """
-
-#         self.bbox_px = bbox_px
-#         self.contours = contours 
-#         self.wcs = wcs
-
-#         # Postprocessing 
-#         self.bbox_phys = get_phys_bbox(bbox_px, wcs) 
-#         self.firsts = get_first_from_bbox(bbox_px, wcs, first_tree)
-    
+    @classmethod
+    def from_json(cls, radioisland: rgz.JSON) -> Self:
+        """Reads a RadioIsland from JSON."""
+        return cls(
+            bbox=BBox.from_json(radioisland["bbox"]),
+            rgzbbox=radioisland["rgzbbox"],
+            contours=radioisland["contours"],
+            firsts=radioisland["firsts"],
+        )
