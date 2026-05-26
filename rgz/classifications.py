@@ -251,13 +251,13 @@ def process_classification(
             # ?????? ignore this
             continue
         for radio in anno["radio"].values():
-            box = (
-                # Bboxes in the source are 1-indexed.
+            box = radioislands.RGZBBox(
                 round(float(radio["xmax"]), 1) - 1,
                 round(float(radio["ymax"]), 1) - 1,
                 round(float(radio["xmin"]), 1) - 1,
                 round(float(radio["ymin"]), 1) - 1,
             )
+            box = radioislands.transform_rgzbbox_to_phys(bbox=box, wcs=subject.wcs)
             boxes.add(box)
 
         if anno["ir"] == "No Sources":
@@ -277,7 +277,9 @@ def process_classification(
                 frame="icrs",
             )
             ir = rgz.coord_to_string(ir_coord)
-        matches.append((ir, {c for b in boxes for c in subject.bboxes[b]}))
+        first_ids = [ri.firsts for ri in subject.radioislands if box == ri.bbox]
+        matches.append((ir, set(first_ids)))
+
     return Classification(
         cid=cid,
         zid=zid,
