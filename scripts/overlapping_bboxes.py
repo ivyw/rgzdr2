@@ -10,6 +10,8 @@ import rgz.subjects
 
 def inside(point: tuple[float, float], box: rgz.subjects.BBox) -> bool:
     """Determines if a point is inside a bounding box."""
+    # TODO(hzovaro): this *should* work with RA/dec instead of pixel coords
+    # but will need to update the input args.
     xmin, ymin, xmax, ymax = box
     x, y = point
     return xmin <= x <= xmax and ymin <= y <= ymax
@@ -29,6 +31,7 @@ def has_overlapping(subject: rgz.subjects.Subject) -> bool:
     if len(subject.bboxes) <= 1:
         return False
 
+    # TODO(hzovaro): replace with [ri.bbox for ri in subject.radioislands]
     for box_1, box_2 in itertools.combinations(subject.bboxes, r=2):
         if overlaps(box_1, box_2):
             return True
