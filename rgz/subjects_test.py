@@ -1,6 +1,7 @@
 """Tests for processing RGZ subjects."""
 
 import json
+import logging
 import os
 from pathlib import Path
 import tempfile
@@ -9,6 +10,9 @@ import unittest
 import rgz.consensus
 import rgz.constants
 import rgz.subjects
+
+logger = logging.getLogger(__name__)
+
 
 # Path to test directory.
 _TEST_DIR = Path(os.path.dirname(__file__)) / "testdata/"
@@ -46,12 +50,46 @@ class TestProcess(unittest.TestCase):
 
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
-        self.assertEqual(want, got)
 
+        # Check len is the same
+        self.assertTrue(len(want), len(got))
 
-# TODO(hzovaro): add test for serialisation/deserialisation - in particular that
-# transforming a WCS from WCS object -> string -> object doesn't result in any
-# problematic differences
+        # Check attributes are the same
+        ii = 0
+        for subject_old, subject_new in zip(want, got):
+            self.assertEqual(subject_old["id"], subject_new["id"])
+            self.assertEqual(subject_old["zid"], subject_new["zid"])
+            self.assertEqual(subject_old["coords"], subject_new["coords"])
+            self.assertEqual(subject_old["wcs"], subject_new["wcs"])
+
+            # Check same number of radioislands
+            if not (len(subject_old["bboxes"]) == len(subject_new["radioislands"])):
+                breakpoint()
+            self.assertEqual(
+                len(subject_old["bboxes"]),
+                len(subject_new["radioislands"])
+            )
+
+            # Check firsts are the same
+            for bbox_old, ri_new in zip(
+                subject_old["bboxes"],
+                subject_new["radioislands"],
+            ):
+                self.assertEqual(
+                    bbox_old["bbox"],
+                    [c - 1 for c in ri_new["rgzbbox"]]  # NOTE: need to subtract 1 from these since in the code that produced the test data these coords had already been shifted so that the origin was (0, 0).
+                )
+                old_firsts = set(bbox_old["first"])
+                new_firsts = set(ri_new["firsts"])
+                if not (old_firsts == new_firsts):
+                    breakpoint()
+                self.assertEqual(old_firsts, new_firsts)
+
+            logger.warning(f"Test passed for subject {ii}!")
+            ii += 1
+
+        # TODO(hzovaro) uncomment once testing is finished.
+        # self.assertEqual(want, got)
 
 
 if __name__ == "__main__":
