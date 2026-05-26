@@ -1,27 +1,17 @@
 """Handles RGZ subjects."""
 
-from collections.abc import Sequence
 import json
 import logging
 from pathlib import Path
 from typing import Self, Iterable
 
-from astropy.coordinates import SkyCoord
 from astroquery.image_cutouts.first import First
-import astropy.io.ascii
 from astropy.io import fits
-import astropy.table
-from astropy.units import Quantity
 from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 import attr
-import backoff
-import numpy as np
-import numpy.typing as npt
-import requests
 from tqdm import tqdm
 
-from rgz import constants
 from rgz import radioislands  # TODO(hzovaro): consider renaming to first or something similar.
 from rgz import rgz
 from rgz import units as u
@@ -32,7 +22,6 @@ _JSON_INDENT = 2
 
 logger = logging.getLogger(__name__)
 
-type BBox = tuple[float, float, float, float]  # xmin, ymin, xmax, ymax
 type HDU = fits.hdu.base.ExtensionHDU
 type ZooniverseID = str
 
@@ -57,7 +46,7 @@ class Subject:
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    bboxes: dict[BBox, list[radioislands.FIRSTID]] = attr.ib()
+    radioislands: list = attr.ib()  # TODO why doesn't list[radioislands.RadioIsland] = attr.ib() work here>?
     wcs: WCS = attr.ib()
 
     def to_json(self) -> rgz.JSON:
@@ -66,8 +55,8 @@ class Subject:
             "id": self.id,
             "zid": self.zid,
             "coords": self.coords,
+            "radioislands": [ri.to_json() for ri in self.radioislands],
             "wcs": self.wcs.to_header_string(),
-            "bboxes": [{"bbox": list(k), "first": v} for k, v in self.bboxes.items()],
         }
 
     @classmethod
@@ -77,10 +66,12 @@ class Subject:
             subject["id"],
             subject["zid"],
             subject["coords"],
-            {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
+            # radioislands.from_dict(ri) needs to retrn a radioisland, because 
+            # the below line needs to be a list of radioislands.
+            [radioislands.RadioIsland.from_json(ri) for ri in subject["radioislands"]],
             WCS(subject["wcs"]),
         )
-
+    
 
 def process_subject(
     raw_subject: rgz.JSON,
@@ -96,28 +87,39 @@ def process_subject(
     # to store these in subjects.
     radioislands.download_contour_data(raw_subject, cache)
     radioislands.download_first_image(raw_subject, cache)
-    bboxes = radioislands.get_bboxes(sid, cache)
-    contours = radioislands.get_contours(sid, cache)
+    wcs = radioislands.get_wcs(sid, cache)
+    
+    # NOTE: both of these are in physical units already.
+    bboxes = radioislands.get_bboxes(sid, wcs=wcs, cache=cache)
+    rgzbboxes = radioislands.__get_rgzbboxes(sid, wcs=wcs, cache=cache)
+    # TODO(hzovaro) there is a bug here - get_contours is only returning a list of len 1 
+    # when it should be 2 for subject 52af81007aa69f059a001a84
+    contours_list = radioislands.get_contours(sid, wcs=wcs, cache=cache)
+    
     # TODO(hzovaro): get_wcs is specific to FIRST so this should be 
     # where the rest of the FIRST-related utilities are.
-    wcs = radioislands.get_wcs(sid, cache)
 
-    # TODO(hzovaro): make radio islands here. 
-    # risland_list = []
-    # for bbox in bboxes:
-    #     risland = radioislands.RadioIsland(
-    #         bbox_px=bbox,
-    #     )
-    #     risland_list.append(radio_island)
-
-    # TODO(hzovaro): move the below to the constructor for RadioIsland.
-    bbox_to_firsts = {}
-    for bbox in bboxes:
-        firsts = radioislands.get_first_from_bbox(bbox, wcs, first_tree)
-        bbox_to_firsts[bbox] = firsts
-
+    risland_list = []
+    # TODO(hzovaro): change back to include contours once get_contours is fixed
+    # for bbox, rgzbbox, contours in zip(bboxes, rgzbboxes, contours_list):
+    for bbox, rgzbbox in zip(bboxes, rgzbboxes):
+        risland = radioislands.RadioIsland(
+            bbox=bbox,
+            rgzbbox=rgzbbox,
+            # contours=contours[0], # For now just store the zeroth contour
+            contours=[[1,2], [3,4], [5,6]],  # TODO(hzovaro) change back
+            first_tree=first_tree,
+        )
+        risland_list.append(risland)
+    # if sid == "52af81007aa69f059a001a84":
+    #     # OLD:
+    #     # [{'bbox': [70.3, 69.2, 61.4, 61.7], 'first': ['FIRST_J100345.7+102837']}, 
+    #     #  {'bbox': [93.0, 113.5, 83.4, 103.5], 'first': ['FIRST_J100343.5+102737']}]
+    #     breakpoint()
     return Subject(
-        id=sid, zid=zid, coords=raw_subject["coords"], bboxes=bbox_to_firsts, wcs=wcs
+        id=sid, zid=zid, coords=raw_subject["coords"], 
+        radioislands=risland_list, 
+        wcs=wcs
     )
 
 
