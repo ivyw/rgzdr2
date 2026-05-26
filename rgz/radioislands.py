@@ -67,11 +67,8 @@ class BBox:
             raise ValueError("'ra_min' must be between -90 and 90 degrees!")
         if (self.ra_max <= self.ra_min):
             raise ValueError("'ra_max' must be greater than 'ra_min'!")
-        # TODO(hzovaro): this test always fails - I think we read ymin amd ymax
-        # in back-to-front in transform_rgzbbox_to_phys. Need to check by 
-        # plotting. BUT, this doesn't actually affect the code.
-        # if (self.dec_max <= self.dec_min):
-        #     raise ValueError("'dec_max' must be greater than 'dec_min'!")
+        if (self.dec_max <= self.dec_min):
+            raise ValueError("'dec_max' must be greater than 'dec_min'!")
         
     @property
     def width(self):
@@ -152,8 +149,6 @@ def download_first_image(
         logger.warning(f"File {fname} already exists! Not re-downloading")
         return
     logger.debug("Cache miss; downloading %s", fname)
-    # Previously:
-    # im = download_first(coord, image_size=3 * u.arcmin)
     ims = First.get_images(coord, image_size=3 * u.arcmin)
     if not isinstance(ims, fits.HDUList):
         # Technically allowed by documentation, but I don't expect it to happen
@@ -225,7 +220,6 @@ def get_first_from_bbox(
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
     # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
-    # TODO(hzovaro): Something is broken in here!!!
 
     # Round widths and heights up to nearest arcsec plus two.
     width = np.ceil(bbox.width.to(u.arcsec)) + 2 * u.arcsec
@@ -241,10 +235,8 @@ def get_first_from_bbox(
     lower_ra = ra - width_deg / 2
     upper_dec = dec + height_deg / 2
     lower_dec = dec - height_deg / 2
-    # breakpoint()
     matching_indices = find_points_in_box(
-        # first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
-        first_tree[0], lower_ra, upper_ra, upper_dec, lower_dec  # test: swap ras around
+        first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
     )
     if not matching_indices:
         coord_str = rgz.coord_to_string(bbox.centre)
@@ -263,19 +255,19 @@ def transform_rgzbbox_to_phys(
     """Transforms a bbox from pixel coordinates to RA/dec.
     NOTE: the order in which the coordinates are read in looks weird, but it
     is correct!!! See here: https://github.com/ivyw/rgzdr2/issues/56
+    (noting that since making that comment on the GitHub, I identified a 
+    further minor issue where ymin and yax were swapped around, meaning that 
+    dec_min was greater than dec_max. This has now been fixed in the below code)
     """
     # Reset origin to zero, flip vertically, and scale.
     xmin_transformed = (bbox[0] - 1) * 100 / constants.RADIO_MAX_PX
-    ymax_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[1] - 1)) * 100 / constants.RADIO_MAX_PX
+    ymin_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[1] - 1)) * 100 / constants.RADIO_MAX_PX
     xmax_transformed = (bbox[2] - 1) * 100 / constants.RADIO_MAX_PX
-    ymin_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[3] - 1)) * 100 / constants.RADIO_MAX_PX
+    ymax_transformed = (constants.RADIO_MAX_PX - 1 - (bbox[3] - 1)) * 100 / constants.RADIO_MAX_PX
 
     # Transform to RA/Dec.
     ra_min, dec_min = wcs.all_pix2world(np.array([[xmin_transformed, ymin_transformed]]), 0)[0] * u.deg
     ra_max, dec_max = wcs.all_pix2world(np.array([[xmax_transformed, ymax_transformed]]), 0)[0] * u.deg
-    # TODO(hzovaro) I think dec min and max are swapped around. This doesn't 
-    # actually affect the code but it should be fixed. Need to confirm by 
-    # plotting. This also affects find_points_in_box().
 
     return BBox(ra_min=ra_min,
                 dec_min=dec_min,
