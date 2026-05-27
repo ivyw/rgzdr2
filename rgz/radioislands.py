@@ -45,7 +45,7 @@ class SpuriousBBoxError(ValueError):
     pass
 
 
-@dataclass(init=True)
+@dataclass(init=True, frozen=True)
 class BBox:
     """Class for holding a bounding box in physical coordinates."""
     ra_min: Quantity[u.deg]
