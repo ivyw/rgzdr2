@@ -2,6 +2,7 @@
 
 import json
 import logging
+import numpy as np
 import os
 from pathlib import Path
 import tempfile
@@ -51,6 +52,14 @@ class TestProcess(unittest.TestCase):
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
 
+        subject_ids_old = [s["id"] for s in want]
+        subject_ids_new = [s["id"] for s in got]
+        self.assertEqual(set(subject_ids_new), set(subject_ids_old))
+
+        # Sort
+        want = [want[ii] for ii in np.argsort(subject_ids_old)]
+        got = [got[ii] for ii in np.argsort(subject_ids_new)]
+
         # Check len is the same
         self.assertTrue(len(want), len(got))
 
@@ -79,17 +88,12 @@ class TestProcess(unittest.TestCase):
                     bbox_old["bbox"],
                     [c - 1 for c in ri_new["rgzbbox"]]  # NOTE: need to subtract 1 from these since in the code that produced the test data these coords had already been shifted so that the origin was (0, 0).
                 )
-                old_firsts = set(bbox_old["first"])
-                new_firsts = set(ri_new["firsts"])
-                # TODO(hzovaro): since correcting the bbox up/down issue, there
-                # is some kind of weird rounding issue where NOFIRSTS have very
-                # slightly different coords at like the 10th decimal place,
-                # so this test fails. But when FIRSTS are found in the bboxes
-                # they match.
-                print("Old: "); print(old_firsts); print("New: "); print(new_firsts)
-                # if not (old_firsts == new_firsts):
-                    # breakpoint()
-                # self.assertEqual(old_firsts, new_firsts)
+                # We don't try to compare NOFIRSTs since we've changed the string
+                # formatting so the comparison will always fail
+                old_firsts = set([f for f in bbox_old["first"] if not f.startswith("NOFIRST")])
+                new_firsts = set([f for f in ri_new["firsts"] if not f.startswith("NOFIRST")])
+                # print("Old: "); print(old_firsts); print("New: "); print(new_firsts)
+                self.assertEqual(old_firsts, new_firsts)
 
             logger.warning(f"Test passed for subject {ii}!")
             ii += 1
