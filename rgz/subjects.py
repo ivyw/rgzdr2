@@ -92,30 +92,24 @@ def process_subject(
     # NOTE: both of these are in physical units already.
     bboxes = radioislands.get_bboxes(sid, wcs=wcs, cache=cache)
     rgzbboxes = radioislands.__get_rgzbboxes(sid, wcs=wcs, cache=cache)
-    # TODO(hzovaro) there is a bug here - get_contours is only returning a list of len 1 
-    # when it should be 2 for subject 52af81007aa69f059a001a84
     contours_list = radioislands.get_contours(sid, wcs=wcs, cache=cache)
     
     # TODO(hzovaro): get_wcs is specific to FIRST so this should be 
     # where the rest of the FIRST-related utilities are.
 
     risland_list = []
-    # TODO(hzovaro): change back to include contours once get_contours is fixed
-    # for bbox, rgzbbox, contours in zip(bboxes, rgzbboxes, contours_list):
-    for bbox, rgzbbox in zip(bboxes, rgzbboxes):
+    assert len(bboxes) == len(rgzbboxes)
+    assert len(contours_list) == len(rgzbboxes)
+    for bbox, rgzbbox, contours in zip(bboxes, rgzbboxes, contours_list):
+        # TODO(hzovaro): implement some kind of "invalid bbox" flag for dodgy
+        # bboxes.
         risland = radioislands.RadioIsland(
             bbox=bbox,
             rgzbbox=rgzbbox,
-            # contours=contours[0], # For now just store the zeroth contour
-            contours=[[1,2], [3,4], [5,6]],  # TODO(hzovaro) change back
+            contours=contours[0], # For now just store the zeroth contour
             first_tree=first_tree,
         )
         risland_list.append(risland)
-    # if sid == "52af81007aa69f059a001a84":
-    #     # OLD:
-    #     # [{'bbox': [70.3, 69.2, 61.4, 61.7], 'first': ['FIRST_J100345.7+102837']}, 
-    #     #  {'bbox': [93.0, 113.5, 83.4, 103.5], 'first': ['FIRST_J100343.5+102737']}]
-    #     breakpoint()
     return Subject(
         id=sid, zid=zid, coords=raw_subject["coords"], 
         radioislands=risland_list, 
