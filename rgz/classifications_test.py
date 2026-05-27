@@ -41,6 +41,8 @@ class TestProcess(unittest.TestCase):
 
         with open(want_path) as f:
             want = json.load(f)
+        print(got[0])
+        print(want[0])
         self.assertEqual(want, got)
 
 

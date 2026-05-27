@@ -251,7 +251,7 @@ def process_classification(
             # ?????? ignore this
             continue
         for radio in anno["radio"].values():
-            box = radioislands.RGZBBox(
+            box = (
                 round(float(radio["xmax"]), 1) - 1,
                 round(float(radio["ymax"]), 1) - 1,
                 round(float(radio["xmin"]), 1) - 1,
