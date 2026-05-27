@@ -40,6 +40,11 @@ type FIRSTID = str
 type RGZBBox = tuple[float, float, float, float]
 type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
 
+class SpuriousBBoxError(ValueError):
+    """Raised when an input bounding box has invalid dimensions."""
+    pass
+
+
 @dataclass(init=True)
 class BBox:
     """Class for holding a bounding box in physical coordinates."""
@@ -58,17 +63,21 @@ class BBox:
         if not isinstance(self.dec_max, Quantity):
             raise ValueError("'dec_max' must be an astropy Quantity!")
         if (self.dec_max > 90.0 * u.deg) or (self.dec_max < -90.0 * u.deg):
-            raise ValueError("'dec_max' must be between -90 and 90 degrees!")
+            raise SpuriousBBoxError("'dec_max' must be between -90 and 90 degrees!")
         if (self.dec_min > 90.0 * u.deg) or (self.dec_min < -90.0 * u.deg):
-            raise ValueError("'dec_min' must be between -90 and 90 degrees!")
+            raise SpuriousBBoxError("'dec_min' must be between -90 and 90 degrees!")
         if (self.ra_max > 360.0 * u.deg) or (self.ra_max < 0.0 * u.deg):
-            raise ValueError("'ra_max' must be between -90 and 90 degrees!")
+            raise SpuriousBBoxError("'ra_max' must be between -90 and 90 degrees!")
         if (self.ra_min > 360.0 * u.deg) or (self.ra_min < 0.0 * u.deg):
-            raise ValueError("'ra_min' must be between -90 and 90 degrees!")
+            raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees!")
         if (self.ra_max <= self.ra_min):
-            raise ValueError("'ra_max' must be greater than 'ra_min'!")
+            logger.warning("'ra_max' is less than 'ra_min'!")
+            # TODO(hzovaro): change back
+            # raise SpuriousBBoxError("'ra_max' must be greater than 'ra_min'!")
         if (self.dec_max <= self.dec_min):
-            raise ValueError("'dec_max' must be greater than 'dec_min'!")
+            logger.warning("'dec_max' is less than 'dec_min'!")
+            # TODO(hzovaro): change back
+            # raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
         
     @property
     def width(self):
@@ -146,7 +155,7 @@ def download_first_image(
     coord = SkyCoord(ra=ra, dec=dec, unit="deg")
     fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     if Path(fname).exists():
-        logger.warning(f"File {fname} already exists! Not re-downloading")
+        logger.debug(f"File {fname} already exists! Not re-downloading")
         return
     logger.debug("Cache miss; downloading %s", fname)
     ims = First.get_images(coord, image_size=3 * u.arcmin)
@@ -240,6 +249,8 @@ def get_first_from_bbox(
     )
     if not matching_indices:
         coord_str = rgz.coord_to_string(bbox.centre)
+        ra_hh, ra_mm, ra_ss, dec_dd, dec_mm, dec_ss = [float(s) for s in coord_str.split(" ")]
+        coord_str = f"NOFIRST_J{ra_hh:02.0f}{ra_mm:02.0f}{ra_ss:0.1f}{dec_dd:+02.0f}{dec_mm:02.0f}{dec_ss:02.0f}"
         return [f'NOFIRST_J{coord_str.replace(" ", "")}']
 
     names = []
@@ -310,7 +321,7 @@ def download_contour_data(
     # TODO(hzovaro): handle file already exists properly
     fname = cache / f'{raw_subject["_id"]["$oid"]}.json'
     if Path(fname).exists():
-        logger.warning(f"File {fname} already exists! Not re-downloading")
+        logger.debug(f"File {fname} already exists! Not re-downloading")
         return
     url = raw_subject["location"]["contours"]
     response = requests.get(url)
@@ -420,7 +431,7 @@ def get_contours(
             coords = wcs.all_pix2world(np.vstack([xs, ys]).T, 0) * u.deg
             coords = [(x.value, y.value) for x, y in coords]
             contours.append(coords)
-    island_contours.append(contours)
+        island_contours.append(contours)
     if len(island_contours) == 0:
         raise ContoursNotFoundError(f"Contour data not found for subject {sid}!")
     return island_contours
