@@ -1,4 +1,4 @@
-# """Handles RGZ radio islands."""
+"""Handles RGZ radio islands."""
 from collections.abc import Sequence
 from dataclasses import dataclass
 import json
@@ -47,7 +47,7 @@ class SpuriousBBoxError(ValueError):
 
 @dataclass(init=True, frozen=True)
 class BBox:
-    """Class for holding a bounding box in physical coordinates."""
+    """A bounding box in physical coordinates."""
     ra_min: Quantity[u.deg]
     dec_min: Quantity[u.deg]
     ra_max: Quantity[u.deg]
