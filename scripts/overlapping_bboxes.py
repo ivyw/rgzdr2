@@ -31,7 +31,7 @@ def has_overlapping(subject: rgz.subjects.Subject) -> bool:
     if len(subject.bboxes) <= 1:
         return False
 
-    # TODO(hzovaro): replace with [ri.bbox for ri in subject.radioislands]
+    # TODO(hzovaro): replace with [ri.bbox for ri in subject.radio_islands]
     for box_1, box_2 in itertools.combinations(subject.bboxes, r=2):
         if overlaps(box_1, box_2):
             return True

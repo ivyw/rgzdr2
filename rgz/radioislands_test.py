@@ -8,7 +8,7 @@ import numpy as np
 
 import rgz.consensus
 import rgz.constants
-import rgz.radioislands
+import rgz.radio_islands
 import rgz.units as u
 
 
@@ -22,7 +22,7 @@ def make_dummy_wcs():
 
 
 class TestFindPointsInBox(unittest.TestCase):
-    """Tests for rgz.radioislands.find_points_in_box."""
+    """Tests for rgz.radio_islands.find_points_in_box."""
 
     def test_simple(self):
         lower_ra = lower_dec = 0.0 * u.deg
@@ -40,7 +40,7 @@ class TestFindPointsInBox(unittest.TestCase):
             * u.deg
         )
         want = [0, 1]
-        got = rgz.radioislands.find_points_in_box(
+        got = rgz.radio_islands.find_points_in_box(
             points, lower_ra, upper_ra, lower_dec, upper_dec
         )
         self.assertSetEqual(set(got), set(want))
@@ -60,7 +60,7 @@ class TestFindPointsInBox(unittest.TestCase):
             * u.deg
         )
         want = [0]
-        got = rgz.radioislands.find_points_in_box(
+        got = rgz.radio_islands.find_points_in_box(
             points, lower_ra, upper_ra, lower_dec, upper_dec
         )
         self.assertSetEqual(set(got), set(want))
@@ -103,24 +103,24 @@ class TestTransformBboxPxToPhys(unittest.TestCase):
         w = make_dummy_wcs()
         want = np.concatenate(
             [
-                rgz.radioislands.transform_coord_radio(
+                rgz.radio_islands.transform_coord_radio(
                     coord=np.array([xmin - 1, 131 - (ymin - 1)]),
                     wcs=w,  # = 131 - 1 = 130
                 ),
-                rgz.radioislands.transform_coord_radio(
+                rgz.radio_islands.transform_coord_radio(
                     coord=np.array([xmax - 1, 131 - (ymax - 1)]),
                     wcs=w,  # = 131 - 0 = 131
                 ),
             ]
         )
-        want = rgz.radioislands.BBox(
+        want = rgz.radio_islands.BBox(
             xmin=want[0],
             ymin=want[1],
             xmax=want[2],
             ymax=want[3],
         )
 
-        got = rgz.radioislands.transform_rgzbbox_to_phys(bbox=bbox, wcs=w)
+        got = rgz.radio_islands.transform_rgzbbox_to_phys(bbox=bbox, wcs=w)
         self.assertEqual(want, got)
 
 
@@ -142,10 +142,10 @@ class TestBBox(unittest.TestCase):
                 [-0.1 * u.deg, 1.2 * u.deg, 50 * u.deg, 55 * u.deg],
                 [359.8 * u.deg, 361.2 * u.deg, 50 * u.deg, 55 * u.deg],
             ):
-                rgz.radioislands.BBox(*args)
+                rgz.radio_islands.BBox(*args)
 
         # Test width, height and centre attributes are correctly populated
-        bbox = rgz.radioislands.BBox(
+        bbox = rgz.radio_islands.BBox(
             ra_min=59.8 * u.deg,
             ra_max=62.1 * u.deg,
             dec_min=-3.5 * u.deg,
@@ -163,7 +163,7 @@ class TestBBox(unittest.TestCase):
         dec_min = 5
         ra_max = 12
         dec_max = 8
-        bbox = rgz.radioislands.BBox(
+        bbox = rgz.radio_islands.BBox(
             ra_min=ra_min * u.deg,
             ra_max=ra_max * u.deg,
             dec_min=dec_min * u.deg,
@@ -189,7 +189,7 @@ class TestBBox(unittest.TestCase):
 
         # Test deserialisation
         want = bbox
-        got = rgz.radioislands.BBox.from_json(bbox_dict)
+        got = rgz.radio_islands.BBox.from_json(bbox_dict)
         self.assertEqual(want, got)
 
 class TestRadioIsland(unittest.TestCase):
@@ -206,7 +206,7 @@ class TestRadioIsland(unittest.TestCase):
         dec_min_1 = 5
         ra_max_1 = 12
         dec_max_1 = 8
-        bbox_1 = rgz.radioislands.BBox(
+        bbox_1 = rgz.radio_islands.BBox(
             ra_min=ra_min_1 * u.deg,
             ra_max=ra_max_1 * u.deg,
             dec_min=dec_min_1 * u.deg,
@@ -223,7 +223,7 @@ class TestRadioIsland(unittest.TestCase):
                 rng.uniform(low=-45, high=-44, size=25))],
         ]
 
-        ri_1 = rgz.radioislands.RadioIsland(
+        ri_1 = rgz.radio_islands.RadioIsland(
             bbox=bbox_1, rgzbbox=rgzbbox_1, contours=contours_1, firsts=firsts_1
         )
         
@@ -231,7 +231,7 @@ class TestRadioIsland(unittest.TestCase):
         dec_min_2 = 16
         ra_max_2 = 33.5
         dec_max_2 = 25
-        bbox_2 = rgz.radioislands.BBox(
+        bbox_2 = rgz.radio_islands.BBox(
             ra_min=ra_min_2 * u.deg,
             ra_max=ra_max_2 * u.deg,
             dec_min=dec_min_2 * u.deg,
@@ -244,7 +244,7 @@ class TestRadioIsland(unittest.TestCase):
             [(0.1, np.nan), (0.2, 1.3), (0.05, 0.9), (0.5, 1.5), (0.1, np.inf),],
         ]
 
-        ri_2 = rgz.radioislands.RadioIsland(
+        ri_2 = rgz.radio_islands.RadioIsland(
             bbox=bbox_2, rgzbbox=rgzbbox_2, contours=contours_2, firsts=firsts_2
         )
 
@@ -260,7 +260,7 @@ class TestRadioIsland(unittest.TestCase):
         dec_min = 5
         ra_max = 12
         dec_max = 8
-        bbox = rgz.radioislands.BBox(
+        bbox = rgz.radio_islands.BBox(
             ra_min=ra_min * u.deg,
             ra_max=ra_max * u.deg,
             dec_min=dec_min * u.deg,
@@ -277,7 +277,7 @@ class TestRadioIsland(unittest.TestCase):
                 rng.uniform(low=-45, high=-44, size=25))],
         ]
 
-        ri = rgz.radioislands.RadioIsland(
+        ri = rgz.radio_islands.RadioIsland(
             bbox=bbox, rgzbbox=rgzbbox, contours=contours, firsts=firsts
         )
         ri_dict = dict(
@@ -294,7 +294,7 @@ class TestRadioIsland(unittest.TestCase):
         
         # Deserialisation
         want = ri 
-        got = rgz.radioislands.RadioIsland.from_json(ri_dict)
+        got = rgz.radio_islands.RadioIsland.from_json(ri_dict)
         self.assertEqual(want.bbox, got.bbox)
         self.assertEqual(want.rgzbbox, got.rgzbbox)
         self.assertEqual(want.firsts, got.firsts)

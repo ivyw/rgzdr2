@@ -5,7 +5,7 @@ import numpy.typing as npt
 from pathlib import Path
 
 from rgz import subjects
-from rgz import radioislands
+from rgz import radio_islands
 from rgz import constants
 from rgz import classifications
 from rgz.plot import classifications as plot_classifications
@@ -35,8 +35,8 @@ id = s["id"]
 wcs = WCS(s["wcs"])
 
 # xmin, ymin, xmax, ymax
-bboxes = radioislands.get_bboxes(id, wcs=wcs, cache=cache_path)
-contours = radioislands.get_contours(id, wcs=wcs, cache=cache_path)
+bboxes = radio_islands.get_bboxes(id, wcs=wcs, cache=cache_path)
+contours = radio_islands.get_contours(id, wcs=wcs, cache=cache_path)
 
 # Plot 
 fig, ax = plt.subplots()

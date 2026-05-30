@@ -18,7 +18,7 @@ import pyvo
 from tqdm import tqdm
 
 from rgz import constants
-from rgz import radioislands
+from rgz import radio_islands
 from rgz import rgz
 from rgz import subjects
 from rgz import units as u
@@ -56,20 +56,20 @@ def get_classifications(path: Path) -> Generator[rgz.JSON]:
             yield js
 
 
-class RadioSource(tuple[radioislands.FIRSTID]):
+class RadioSource(tuple[radio_islands.FIRSTID]):
     """Represents a unique set of radio components.
 
     Invariant: Always sorted, unique entries.
     """
 
-    def __new__(cls, radio_source: Iterable[radioislands.FIRSTID]) -> Self:
+    def __new__(cls, radio_source: Iterable[radio_islands.FIRSTID]) -> Self:
         return super().__new__(cls, sorted(set(radio_source)))
 
     def __repr__(self) -> str:
         tuple_repr = super().__repr__()
         return f"RadioSource({tuple_repr})"
 
-    def components(self) -> frozenset[radioislands.FIRSTID]:
+    def components(self) -> frozenset[radio_islands.FIRSTID]:
         """Gets radio components in this source."""
         return frozenset(self)
 
@@ -81,7 +81,7 @@ class RadioSourceCombination(tuple[RadioSource]):
     """
 
     def __new__(
-        cls: type[Self], radio_combinations: Iterable[Iterable[radioislands.FIRSTID]]
+        cls: type[Self], radio_combinations: Iterable[Iterable[radio_islands.FIRSTID]]
     ) -> Self:
         representations = []
         for radios in radio_combinations:
@@ -311,7 +311,7 @@ def process_classification(
             )
             ir = rgz.coord_to_string(ir_coord)
         first_ids = []
-        for ri in subject.radioislands:
+        for ri in subject.radio_islands:
             if tuple(ri.rgzbbox) in boxes:
                 first_ids += ri.firsts
         matches.append((ir, set(first_ids)))

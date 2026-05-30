@@ -5,7 +5,7 @@ import numpy.typing as npt
 from pathlib import Path
 
 from rgz import subjects
-from rgz import radioislands
+from rgz import radio_islands
 from rgz import constants
 from rgz import classifications
 from rgz.plot import classifications as plot_classifications
@@ -38,9 +38,9 @@ physical coordinates.
 # make a radiosiland class instance 
 cache = cache_path
 sid = "52af7eb58c51f405a60012e6"
-wcs = radioislands.get_wcs(sid, cache)
-bboxes = radioislands.get_bboxes(sid, wcs=wcs, cache=cache)
-contours_list = radioislands.get_contours(sid, wcs=wcs, cache=cache)
+wcs = radio_islands.get_wcs(sid, cache)
+bboxes = radio_islands.get_bboxes(sid, wcs=wcs, cache=cache)
+contours_list = radio_islands.get_contours(sid, wcs=wcs, cache=cache)
 
 
 sys.exit()
@@ -50,13 +50,13 @@ sys.exit()
 for s in subject_instances[:1]:
 
     # Plot the FIRST image 
-    hdulist = radioislands.load_first_image(s.id, cache=cache_path)
+    hdulist = radio_islands.load_first_image(s.id, cache=cache_path)
     im = hdulist[0].data 
     fig, ax = plt.subplots(subplot_kw={"projection": s.wcs})
     ax.imshow(im)
 
     # Get the raw bbox directly from the file 
-    js = radioislands.load_contour_data(s.id, cache_path)
+    js = radio_islands.load_contour_data(s.id, cache_path)
     bboxes = []
     for contour in js["contours"]:
         bbox = contour[0]["bbox"]
