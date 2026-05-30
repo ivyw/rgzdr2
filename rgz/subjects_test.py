@@ -51,6 +51,9 @@ class TestProcess(unittest.TestCase):
 
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
+        
+        self.assertEqual(want, got)
+        return 
 
         subject_ids_old = [s["id"] for s in want]
         subject_ids_new = [s["id"] for s in got]
@@ -72,6 +75,7 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(subject_old["wcs"], subject_new["wcs"])
 
             # Check same number of radioislands
+            breakpoint()
             if not (len(subject_old["bboxes"]) == len(subject_new["radioislands"])):
                 breakpoint()
             self.assertEqual(
@@ -98,8 +102,6 @@ class TestProcess(unittest.TestCase):
             logger.warning(f"Test passed for subject {ii}!")
             ii += 1
 
-        # TODO(hzovaro) uncomment once testing is finished.
-        # self.assertEqual(want, got)
 
 
 if __name__ == "__main__":
