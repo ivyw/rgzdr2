@@ -74,19 +74,19 @@ class TestProcess(unittest.TestCase):
             self.assertEqual(subject_old["coords"], subject_new["coords"])
             self.assertEqual(subject_old["wcs"], subject_new["wcs"])
 
-            # Check same number of radioislands
+            # Check same number of radio_islands
             breakpoint()
-            if not (len(subject_old["bboxes"]) == len(subject_new["radioislands"])):
+            if not (len(subject_old["bboxes"]) == len(subject_new["radio_islands"])):
                 breakpoint()
             self.assertEqual(
                 len(subject_old["bboxes"]),
-                len(subject_new["radioislands"])
+                len(subject_new["radio_islands"])
             )
 
             # Check firsts are the same
             for bbox_old, ri_new in zip(
                 subject_old["bboxes"],
-                subject_new["radioislands"],
+                subject_new["radio_islands"],
             ):
                 self.assertEqual(
                     bbox_old["bbox"],

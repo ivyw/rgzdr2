@@ -12,7 +12,7 @@ from astropy.wcs import WCS
 import attr
 from tqdm import tqdm
 
-from rgz import radioislands  # TODO(hzovaro): consider renaming to first or something similar.
+from rgz import radio_islands  # TODO(hzovaro): consider renaming to first or something similar.
 from rgz import rgz
 from rgz import units as u
 
@@ -46,7 +46,7 @@ class Subject:
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    radioislands: list = attr.ib()  # TODO why doesn't list[radioislands.RadioIsland] = attr.ib() work here>?
+    radio_islands: list = attr.ib()  # TODO why doesn't list[radio_islands.RadioIsland] = attr.ib() work here>?
     wcs: WCS = attr.ib()
 
     def to_json(self) -> rgz.JSON:
@@ -55,7 +55,7 @@ class Subject:
             "id": self.id,
             "zid": self.zid,
             "coords": self.coords,
-            "radioislands": [ri.to_json() for ri in self.radioislands],
+            "radio_islands": [ri.to_json() for ri in self.radio_islands],
             "wcs": self.wcs.to_header_string(),
         }
 
@@ -66,9 +66,9 @@ class Subject:
             subject["id"],
             subject["zid"],
             subject["coords"],
-            # radioislands.from_dict(ri) needs to retrn a radioisland, because 
-            # the below line needs to be a list of radioislands.
-            [radioislands.RadioIsland.from_json(ri) for ri in subject["radioislands"]],
+            # radio_islands.from_dict(ri) needs to retrn a radioisland, because 
+            # the below line needs to be a list of radio_islands.
+            [radio_islands.RadioIsland.from_json(ri) for ri in subject["radio_islands"]],
             WCS(subject["wcs"]),
         )
     
@@ -76,7 +76,7 @@ class Subject:
 def process_subject(
     raw_subject: rgz.JSON,
     cache: Path,
-    first_tree: radioislands.FIRSTTree,
+    first_tree: radio_islands.FIRSTTree,
 ) -> Subject:
     """Reduces a JSON subject into a nice, value-added format."""
     sid = raw_subject["_id"]["$oid"]
@@ -85,14 +85,14 @@ def process_subject(
     # TODO(hzovaro): Everything below is defined on a per-subject basis,
     # not a per-radio-island basis, so maybe it would be better 
     # to store these in subjects.
-    radioislands.download_contour_data(raw_subject, cache)
-    radioislands.download_first_image(raw_subject, cache)
-    wcs = radioislands.get_wcs(sid, cache)
+    radio_islands.download_contour_data(raw_subject, cache)
+    radio_islands.download_first_image(raw_subject, cache)
+    wcs = radio_islands.get_wcs(sid, cache)
     
     # NOTE: both of these are in physical units already.
-    bboxes = radioislands.get_bboxes(sid, wcs=wcs, cache=cache)
-    rgzbboxes = radioislands.__get_rgzbboxes(sid, wcs=wcs, cache=cache)
-    contours_list = radioislands.get_contours(sid, wcs=wcs, cache=cache)
+    bboxes = radio_islands.get_bboxes(sid, wcs=wcs, cache=cache)
+    rgzbboxes = radio_islands.__get_rgzbboxes(sid, wcs=wcs, cache=cache)
+    contours_list = radio_islands.get_contours(sid, wcs=wcs, cache=cache)
     
     # TODO(hzovaro): get_wcs is specific to FIRST so this should be 
     # where the rest of the FIRST-related utilities are.
@@ -103,7 +103,7 @@ def process_subject(
     for bbox, rgzbbox, contours in zip(bboxes, rgzbboxes, contours_list):
         # TODO(hzovaro): implement some kind of "invalid bbox" flag for dodgy
         # bboxes.
-        risland = radioislands.RadioIsland(
+        risland = radio_islands.RadioIsland(
             bbox=bbox,
             rgzbbox=rgzbbox,
             contours=contours[0], # For now just store the zeroth contour
@@ -112,15 +112,15 @@ def process_subject(
         risland_list.append(risland)
     return Subject(
         id=sid, zid=zid, coords=raw_subject["coords"], 
-        radioislands=risland_list, 
+        radio_islands=risland_list, 
         wcs=wcs
     )
 
 
 def process(subjects_path: Path, cache: Path, output_path: Path):
     """Processes subjects from raw to reduced JSON."""
-    first_catalogue = radioislands.fetch_first_catalogue_from_server_or_cache(cache)
-    first_tree = radioislands.build_first_tree(first_catalogue)
+    first_catalogue = radio_islands.fetch_first_catalogue_from_server_or_cache(cache)
+    first_tree = radio_islands.build_first_tree(first_catalogue)
 
     subjects = []
     failures = set()
