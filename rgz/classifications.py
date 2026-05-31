@@ -19,7 +19,7 @@ import pyvo
 from tqdm import tqdm
 
 from rgz import constants
-from rgz import radio_islands
+from rgz import first
 from rgz import rgz
 from rgz import subjects
 from rgz import units as u
@@ -57,20 +57,20 @@ def get_classifications(path: Path) -> Generator[rgz.JSON]:
             yield js
 
 
-class RadioSource(tuple[radio_islands.FIRSTID]):
+class RadioSource(tuple[first.FIRSTID]):
     """Represents a unique set of radio components.
 
     Invariant: Always sorted, unique entries.
     """
 
-    def __new__(cls, radio_source: Iterable[radio_islands.FIRSTID]) -> Self:
+    def __new__(cls, radio_source: Iterable[first.FIRSTID]) -> Self:
         return super().__new__(cls, sorted(set(radio_source)))
 
     def __repr__(self) -> str:
         tuple_repr = super().__repr__()
         return f"RadioSource({tuple_repr})"
 
-    def components(self) -> frozenset[radio_islands.FIRSTID]:
+    def components(self) -> frozenset[first.FIRSTID]:
         """Gets radio components in this source."""
         return frozenset(self)
 
@@ -82,7 +82,7 @@ class RadioSourceCombination(tuple[RadioSource]):
     """
 
     def __new__(
-        cls: type[Self], radio_combinations: Iterable[Iterable[radio_islands.FIRSTID]]
+        cls: type[Self], radio_combinations: Iterable[Iterable[first.FIRSTID]]
     ) -> Self:
         representations = []
         for radios in radio_combinations:

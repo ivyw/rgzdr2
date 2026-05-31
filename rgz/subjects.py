@@ -5,16 +5,15 @@ import logging
 from pathlib import Path
 from typing import Self, Iterable
 
-from astroquery.image_cutouts.first import First
 from astropy.io import fits
-from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 import attr
 from tqdm import tqdm
 
-from rgz import radio_islands  # TODO(hzovaro): consider renaming to first or something similar.
+from rgz import bboxes
+from rgz import first
+from rgz import radio_islands
 from rgz import rgz
-from rgz import units as u
 
 # Indent of output JSON files.
 _JSON_INDENT = 2
@@ -66,8 +65,6 @@ class Subject:
             subject["id"],
             subject["zid"],
             subject["coords"],
-            # radio_islands.from_dict(ri) needs to retrn a radioisland, because 
-            # the below line needs to be a list of radio_islands.
             [radio_islands.RadioIsland.from_json(ri) for ri in subject["radio_islands"]],
             WCS(subject["wcs"]),
         )
@@ -76,31 +73,23 @@ class Subject:
 def process_subject(
     raw_subject: rgz.JSON,
     cache: Path,
-    first_tree: radio_islands.FIRSTTree,
+    first_tree: first.FIRSTTree,
 ) -> Subject:
     """Reduces a JSON subject into a nice, value-added format."""
     sid = raw_subject["_id"]["$oid"]
     zid = raw_subject["zooniverse_id"]
 
-    # TODO(hzovaro): Everything below is defined on a per-subject basis,
-    # not a per-radio-island basis, so maybe it would be better 
-    # to store these in subjects.
-    radio_islands.download_contour_data(raw_subject, cache)
-    radio_islands.download_first_image(raw_subject, cache)
-    wcs = radio_islands.get_wcs(sid, cache)
+    first.download_contour_data(raw_subject, cache)
+    first.download_first_image(raw_subject, cache)
+    wcs = first.get_first_wcs(sid, cache)
+    bbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache)
+    rgzbbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache, units="RGZ")
+    contours_list = first.get_contours(sid, wcs=wcs, cache=cache)
     
-    # NOTE: both of these are in physical units already.
-    bboxes = radio_islands.get_bboxes(sid, wcs=wcs, cache=cache)
-    rgzbboxes = radio_islands.__get_rgzbboxes(sid, wcs=wcs, cache=cache)
-    contours_list = radio_islands.get_contours(sid, wcs=wcs, cache=cache)
-    
-    # TODO(hzovaro): get_wcs is specific to FIRST so this should be 
-    # where the rest of the FIRST-related utilities are.
-
     risland_list = []
-    assert len(bboxes) == len(rgzbboxes)
-    assert len(contours_list) == len(rgzbboxes)
-    for bbox, rgzbbox, contours in zip(bboxes, rgzbboxes, contours_list):
+    assert len(bbox_list) == len(rgzbbox_list)
+    assert len(contours_list) == len(rgzbbox_list)
+    for bbox, rgzbbox, contours in zip(bbox_list, rgzbbox_list, contours_list):
         # TODO(hzovaro): implement some kind of "invalid bbox" flag for dodgy
         # bboxes.
         risland = radio_islands.RadioIsland(
@@ -119,8 +108,8 @@ def process_subject(
 
 def process(subjects_path: Path, cache: Path, output_path: Path):
     """Processes subjects from raw to reduced JSON."""
-    first_catalogue = radio_islands.fetch_first_catalogue_from_server_or_cache(cache)
-    first_tree = radio_islands.build_first_tree(first_catalogue)
+    first_catalogue = first.fetch_first_catalogue_from_server_or_cache(cache)
+    first_tree = first.build_first_tree(first_catalogue)
 
     subjects = []
     failures = set()

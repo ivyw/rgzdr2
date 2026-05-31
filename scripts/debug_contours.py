@@ -4,12 +4,8 @@ import numpy as np
 import numpy.typing as npt
 from pathlib import Path
 
-from rgz import subjects
-from rgz import radio_islands
-from rgz import constants
-from rgz import classifications
-from rgz.plot import classifications as plot_classifications
-from rgz.plot import subject as plot_subject
+from rgz import first
+from rgz import bboxes
 
 from astropy.wcs import WCS
 import matplotlib
@@ -35,8 +31,8 @@ id = s["id"]
 wcs = WCS(s["wcs"])
 
 # xmin, ymin, xmax, ymax
-bboxes = radio_islands.get_bboxes(id, wcs=wcs, cache=cache_path)
-contours = radio_islands.get_contours(id, wcs=wcs, cache=cache_path)
+bbox_list = bboxes.get_bboxes(id, wcs=wcs, cache=cache_path)
+contours = first.get_contours(id, wcs=wcs, cache=cache_path)
 
 # Plot 
 fig, ax = plt.subplots()
@@ -50,7 +46,7 @@ for island in contours:
                 matplotlib.patheffects.withStroke(linewidth=2, foreground="red")
             ],
         )
-for bbox in bboxes:
+for bbox in bbox_list:
     xmin, ymin, xmax, ymax = bbox
     ax.plot(
         [xmin, xmax, xmax, xmin, xmin],
