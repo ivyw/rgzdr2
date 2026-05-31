@@ -34,9 +34,9 @@ def main(first_path: Path, output_path: Path, processed_subjects_path: Path):
 
     first_ids = set()
     for subject in processed_subjects:
-        bboxes = subject["bboxes"]
-        for bbox in bboxes:
-            first_ids |= set(bbox["first"])
+        rislands = subject["radio_islands"]
+        for risland in rislands:
+            first_ids |= set(risland["firsts"])
 
     first_ids = {f[len("FIRST_") :] for f in first_ids if f.startswith("FIRST")}
 
