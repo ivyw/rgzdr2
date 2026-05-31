@@ -22,11 +22,15 @@ def make_dummy_wcs():
 
 
 class TestFindPointsInBox(unittest.TestCase):
-    """Tests for rgz.bboxes.find_points_in_box."""
+    """Tests for rgz.bboxes.BBox.get_points_in_box."""
 
     def test_simple(self):
         lower_ra = lower_dec = 0.0 * u.deg
         upper_ra = upper_dec = 1.0 * u.deg
+        bbox = rgz.bboxes.BBox(
+            ra_min=lower_ra, ra_max=upper_ra,
+            dec_min=lower_dec, dec_max=upper_dec
+        )
         points = (
             np.array(
                 [
@@ -40,9 +44,7 @@ class TestFindPointsInBox(unittest.TestCase):
             * u.deg
         )
         want = [0, 1]
-        got = rgz.bboxes.find_points_in_box(
-            points, lower_ra, upper_ra, lower_dec, upper_dec
-        )
+        got = bbox.get_points_in_box(points)
         self.assertSetEqual(set(got), set(want))
 
     def test_ra_boundary(self):
@@ -50,6 +52,10 @@ class TestFindPointsInBox(unittest.TestCase):
         upper_dec = 1.0 * u.deg
         lower_ra = 359.9 * u.deg
         upper_ra = 0.1 * u.deg
+        bbox = rgz.bboxes.BBox(
+            ra_min=lower_ra, ra_max=upper_ra,
+            dec_min=lower_dec, dec_max=upper_dec
+        )
         points = (
             np.array(
                 [
@@ -60,9 +66,7 @@ class TestFindPointsInBox(unittest.TestCase):
             * u.deg
         )
         want = [0]
-        got = rgz.bboxes.find_points_in_box(
-            points, lower_ra, upper_ra, lower_dec, upper_dec
-        )
+        got = bbox.get_points_in_box(points)
         self.assertSetEqual(set(got), set(want))
 
     def test_all_pix2world(self):
