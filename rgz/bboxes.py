@@ -22,6 +22,11 @@ logger = logging.getLogger(__name__)
 type RGZBBox = tuple[float, float, float, float]
 
 
+class SpuriousBBoxError(ValueError):
+    """Raised when an input bounding box has invalid dimensions."""
+    pass
+
+
 @dataclass(init=True, frozen=True)
 class BBox:
     """A bounding box in physical coordinates."""
@@ -47,37 +52,40 @@ class BBox:
             raise SpuriousBBoxError("'ra_max' must be between -90 and 90 degrees!")
         if (self.ra_min > 360.0 * u.deg) or (self.ra_min < 0.0 * u.deg):
             raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees!")
-        if (self.ra_max <= self.ra_min):
-            logger.warning("'ra_max' is less than 'ra_min'!")
-            # TODO(hzovaro): change back
-            # raise SpuriousBBoxError("'ra_max' must be greater than 'ra_min'!")
+        if (self.ra_max == self.ra_min):
+            raise SpuriousBBoxError(f"'ra_max' ({self.ra_max}) must not be the same as 'ra_min' ({self.ra_min})!")
+        elif (self.ra_max < self.ra_min):
+            # Raise a warning rather than an error because RAs can wrap.
+            logger.warning(f"'ra_max' {self.ra_max} is less than 'ra_min' {self.ra_min}!")
         if (self.dec_max <= self.dec_min):
             logger.warning("'dec_max' is less than 'dec_min'!")
             # TODO(hzovaro): change back
             # raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
         
     @property
-    def width(self):
-        return self.ra_max - self.ra_min
+    def width(self) -> Quantity[u.deg]:
+        # Use np.mod here to correctly calculate the width in cases where the 
+        # BBox crosses an RA of 0.
+        return np.mod(self.ra_max.value - self.ra_min.value, 360) * u.deg
         
     @property
-    def height(self):
+    def height(self) -> Quantity[u.deg]:
         return self.dec_max - self.dec_min
         
     @property
-    def centre(self):
+    def centre(self) -> SkyCoord:
         return SkyCoord(0.5 * (self.ra_min + self.ra_max),
                         0.5 * (self.dec_min + self.dec_max))
 
     def to_json(self) -> rgz.JSON:
         return {
-            "ra_min": self.ra_min.value,
-            "ra_max": self.ra_max.value,
-            "dec_min": self.dec_min.value,
-            "dec_max": self.dec_max.value,
-            "width": self.width.value,
-            "height": self.height.value,
-            "centre": [self.centre.ra.value, self.centre.dec.value],
+            "ra_min": self.ra_min.to(u.deg).value,
+            "ra_max": self.ra_max.to(u.deg).value,
+            "dec_min": self.dec_min.to(u.deg).value,
+            "dec_max": self.dec_max.to(u.deg).value,
+            "width": self.width.to(u.deg).value,
+            "height": self.height.to(u.deg).value,
+            "centre": [self.centre.ra.to(u.deg).value, self.centre.dec.to(u.deg).value],
         }
     
     @classmethod
@@ -88,11 +96,25 @@ class BBox:
             ra_max=bbox_dict["ra_max"] * u.deg,
             dec_max=bbox_dict["dec_max"] * u.deg,
         )
-
-
-class SpuriousBBoxError(ValueError):
-    """Raised when an input bounding box has invalid dimensions."""
-    pass
+    
+    def get_points_in_box(self, points: npt.NDArray,
+    ) -> list[int]:
+        """Returns the subset of points that lie within the BBox."""
+        if self.ra_max > self.ra_min:
+            mask = (
+                (points[:, 0] <= self.ra_max)
+                & (points[:, 0] >= self.ra_min)
+                & (points[:, 1] <= self.dec_max)
+                & (points[:, 1] >= self.dec_min)
+            )
+        else:
+            mask = (
+                (points[:, 0] <= self.ra_max)
+                & (points[:, 0] >= (self.ra_min - 360 * u.deg))
+                & (points[:, 1] <= self.dec_max)
+                & (points[:, 1] >= self.dec_min)
+            )
+        return list(mask.nonzero()[0])    
 
 
 def get_bboxes(
@@ -142,28 +164,3 @@ def transform_rgzbbox_to_phys(
                 dec_min=dec_min,
                 ra_max=ra_max,
                 dec_max=dec_max)
-
-
-def find_points_in_box(
-    points: npt.NDArray,
-    lower_ra: u.Quantity[u.deg],
-    upper_ra: u.Quantity[u.deg],
-    lower_dec: u.Quantity[u.deg],
-    upper_dec: u.Quantity[u.deg],
-) -> list[int]:
-    """Finds points that are within a box."""
-    # TODO(hzovaro): make this a method of BBox
-    if upper_ra < lower_ra:
-        # Edge case at RA = 0.
-        # Left side:
-        return find_points_in_box(
-            points, lower_ra, 360.0 * u.deg, lower_dec, upper_dec
-        ) + find_points_in_box(points, 0 * u.deg, upper_ra, lower_dec, upper_dec)
-    # We need to have <= or we would fail on the boundary.
-    mask = (
-        (points[:, 0] <= upper_ra)
-        & (points[:, 0] >= lower_ra)
-        & (points[:, 1] <= upper_dec)
-        & (points[:, 1] >= lower_dec)
-    )
-    return list(mask.nonzero()[0])    
