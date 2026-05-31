@@ -4,6 +4,8 @@ import numpy as np
 import numpy.typing as npt
 from pathlib import Path
 
+from rgz import bboxes
+from rgz import first
 from rgz import subjects
 from rgz import radio_islands
 from rgz import constants
@@ -38,9 +40,9 @@ physical coordinates.
 # make a radiosiland class instance 
 cache = cache_path
 sid = "52af7eb58c51f405a60012e6"
-wcs = radio_islands.get_wcs(sid, cache)
-bboxes = radio_islands.get_bboxes(sid, wcs=wcs, cache=cache)
-contours_list = radio_islands.get_contours(sid, wcs=wcs, cache=cache)
+wcs = first.get_first_wcs(sid, cache)
+bbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache)
+contours_list = first.get_contours(sid, wcs=wcs, cache=cache)
 
 
 sys.exit()
@@ -56,7 +58,9 @@ for s in subject_instances[:1]:
     ax.imshow(im)
 
     # Get the raw bbox directly from the file 
-    js = radio_islands.load_contour_data(s.id, cache_path)
+    fname = cache / f'{sid}.json'
+    with open(fname) as f:
+        js = json.load(f)  
     bboxes = []
     for contour in js["contours"]:
         bbox = contour[0]["bbox"]
