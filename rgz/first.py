@@ -1,4 +1,5 @@
 """Utilities for handling FIRST data."""
+
 from collections.abc import Sequence
 import json
 import logging
@@ -36,7 +37,7 @@ class ContoursNotFoundError(Exception):
     """Raised when the contours list in the raw subject JSON file is empty."""
 
 
-# Sticking with a simple tuple instead of a class since we don't really 
+# Sticking with a simple tuple instead of a class since we don't really
 # use these anywhere
 @backoff.on_exception(
     backoff.expo,
@@ -95,10 +96,9 @@ def load_first_image(
     sid: str,
     cache: Path,
 ) -> fits.HDUList:
-    """Fetches FIRST image data for a subject.
-    """
+    """Fetches FIRST image data for a subject."""
     # TODO(hzovaro): this should be a method of radioisland
-    fname = cache / f'{sid}.fits'
+    fname = cache / f"{sid}.fits"
     return fits.open(fname)
 
 
@@ -208,18 +208,26 @@ def get_contours(
     Raises:
         FileNotFoundError if the file containing the contour data cannot be
         found.
-        
+
     """
-    fname = cache / f'{sid}.json'
+    fname = cache / f"{sid}.json"
     with open(fname) as f:
-        js = json.load(f)  
+        js = json.load(f)
         island_contours = []
         for island in js["contours"]:
             contours = []
             for contour in island:
-                xs = [(coord["x"] - 1) * 100 / constants.RADIO_MAX_PX for coord in contour["arr"]]
-                ys = [(constants.RADIO_MAX_PX - 1 - (coord["y"] - 1)) * 100 / constants.RADIO_MAX_PX for coord in contour["arr"]]
-                # transform 
+                xs = [
+                    (coord["x"] - 1) * 100 / constants.RADIO_MAX_PX
+                    for coord in contour["arr"]
+                ]
+                ys = [
+                    (constants.RADIO_MAX_PX - 1 - (coord["y"] - 1))
+                    * 100
+                    / constants.RADIO_MAX_PX
+                    for coord in contour["arr"]
+                ]
+                # transform
                 coords = wcs.all_pix2world(np.vstack([xs, ys]).T, 0) * u.deg
                 coords = [(x.value, y.value) for x, y in coords]
                 contours.append(coords)

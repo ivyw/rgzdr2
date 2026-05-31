@@ -36,18 +36,26 @@ class TestRadioIsland(unittest.TestCase):
         rgzbbox_1 = [1, 2, 3, 4]
         firsts_1 = ["FIRST1", "FIRST2", "FIRST3"]
         contours_1 = [
-            [(ra, dec) for ra, dec in zip(
-                rng.uniform(low=50, high=51, size=25),
-                rng.uniform(low=-45, high=-44, size=25))],
-            [(ra, dec) for ra, dec in zip(
-                rng.uniform(low=50, high=51, size=25),
-                rng.uniform(low=-45, high=-44, size=25))],
+            [
+                (ra, dec)
+                for ra, dec in zip(
+                    rng.uniform(low=50, high=51, size=25),
+                    rng.uniform(low=-45, high=-44, size=25),
+                )
+            ],
+            [
+                (ra, dec)
+                for ra, dec in zip(
+                    rng.uniform(low=50, high=51, size=25),
+                    rng.uniform(low=-45, high=-44, size=25),
+                )
+            ],
         ]
 
         ri_1 = rgz.radio_islands.RadioIsland(
             bbox=bbox_1, rgzbbox=rgzbbox_1, contours=contours_1, firsts=firsts_1
         )
-        
+
         ra_min_2 = 25
         dec_min_2 = 16
         ra_max_2 = 33.5
@@ -61,8 +69,20 @@ class TestRadioIsland(unittest.TestCase):
         rgzbbox_2 = [1, 2, 3, 4]
         firsts_2 = ["FIRST1", "FIRST2", None]
         contours_2 = [
-            [(0.1, 1.3), (0.2, 1.3), (0.05, 0.9), (0.5, 1.5), (0.1, np.nan),],
-            [(0.1, np.nan), (0.2, 1.3), (0.05, 0.9), (0.5, 1.5), (0.1, np.inf),],
+            [
+                (0.1, 1.3),
+                (0.2, 1.3),
+                (0.05, 0.9),
+                (0.5, 1.5),
+                (0.1, np.nan),
+            ],
+            [
+                (0.1, np.nan),
+                (0.2, 1.3),
+                (0.05, 0.9),
+                (0.5, 1.5),
+                (0.1, np.inf),
+            ],
         ]
 
         ri_2 = rgz.radio_islands.RadioIsland(
@@ -72,7 +92,6 @@ class TestRadioIsland(unittest.TestCase):
         self.assertTrue(ri_1 == ri_1)
         self.assertTrue(ri_2 == ri_2)
         self.assertFalse(ri_1 == ri_2)
-
 
     def test_serialisation(self):
         """Tests for the to_json() and from_json() methods."""
@@ -90,12 +109,20 @@ class TestRadioIsland(unittest.TestCase):
         rgzbbox = [1, 2, 3, 4]
         firsts = ["FIRST1", "FIRST2", "FIRST3"]
         contours = [
-            [(ra, dec) for ra, dec in zip(
-                rng.uniform(low=50, high=51, size=25),
-                rng.uniform(low=-45, high=-44, size=25))],
-            [(ra, dec) for ra, dec in zip(
-                rng.uniform(low=50, high=51, size=25),
-                rng.uniform(low=-45, high=-44, size=25))],
+            [
+                (ra, dec)
+                for ra, dec in zip(
+                    rng.uniform(low=50, high=51, size=25),
+                    rng.uniform(low=-45, high=-44, size=25),
+                )
+            ],
+            [
+                (ra, dec)
+                for ra, dec in zip(
+                    rng.uniform(low=50, high=51, size=25),
+                    rng.uniform(low=-45, high=-44, size=25),
+                )
+            ],
         ]
 
         ri = rgz.radio_islands.RadioIsland(
@@ -109,12 +136,12 @@ class TestRadioIsland(unittest.TestCase):
         )
 
         # Serialisation
-        want = ri_dict 
+        want = ri_dict
         got = ri.to_json()
         self.assertEqual(want, got)
-        
+
         # Deserialisation
-        want = ri 
+        want = ri
         got = rgz.radio_islands.RadioIsland.from_json(ri_dict)
         self.assertEqual(want.bbox, got.bbox)
         self.assertEqual(want.rgzbbox, got.rgzbbox)

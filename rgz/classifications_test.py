@@ -47,11 +47,11 @@ class TestProcess(unittest.TestCase):
             # drop NOFIRSTS as these will never be the same due to rounding changes
             for cm in ww["coord_matches"]:
                 cm["radio"] = [
-                    "NOFIRST" for r in cm["radio"] if r.startswith("NOFIRST") 
+                    "NOFIRST" for r in cm["radio"] if r.startswith("NOFIRST")
                 ]
             for cm in gg["coord_matches"]:
                 cm["radio"] = [
-                    "NOFIRST" for r in cm["radio"] if r.startswith("NOFIRST") 
+                    "NOFIRST" for r in cm["radio"] if r.startswith("NOFIRST")
                 ]
         self.assertEqual(want, got)
 

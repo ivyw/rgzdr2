@@ -28,8 +28,7 @@ class TestFindPointsInBox(unittest.TestCase):
         lower_ra = lower_dec = 0.0 * u.deg
         upper_ra = upper_dec = 1.0 * u.deg
         bbox = rgz.bboxes.BBox(
-            ra_min=lower_ra, ra_max=upper_ra,
-            dec_min=lower_dec, dec_max=upper_dec
+            ra_min=lower_ra, ra_max=upper_ra, dec_min=lower_dec, dec_max=upper_dec
         )
         points = (
             np.array(
@@ -53,8 +52,7 @@ class TestFindPointsInBox(unittest.TestCase):
         lower_ra = 359.9 * u.deg
         upper_ra = 0.1 * u.deg
         bbox = rgz.bboxes.BBox(
-            ra_min=lower_ra, ra_max=upper_ra,
-            dec_min=lower_dec, dec_max=upper_dec
+            ra_min=lower_ra, ra_max=upper_ra, dec_min=lower_dec, dec_max=upper_dec
         )
         points = (
             np.array(
@@ -142,7 +140,7 @@ class TestBBox(unittest.TestCase):
             ra_min=ra_min,
             ra_max=ra_max,
             dec_min=dec_min,
-             dec_max=dec_max,
+            dec_max=dec_max,
             width=ra_max - ra_min,
             height=dec_max - dec_min,
             centre=[

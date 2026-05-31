@@ -45,7 +45,9 @@ class Subject:
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    radio_islands: list = attr.ib()  # TODO why doesn't list[radio_islands.RadioIsland] = attr.ib() work here>?
+    radio_islands: list = (
+        attr.ib()
+    )  # TODO why doesn't list[radio_islands.RadioIsland] = attr.ib() work here>?
     wcs: WCS = attr.ib()
 
     def to_json(self) -> rgz.JSON:
@@ -65,10 +67,13 @@ class Subject:
             subject["id"],
             subject["zid"],
             subject["coords"],
-            [radio_islands.RadioIsland.from_json(ri) for ri in subject["radio_islands"]],
+            [
+                radio_islands.RadioIsland.from_json(ri)
+                for ri in subject["radio_islands"]
+            ],
             WCS(subject["wcs"]),
         )
-    
+
 
 def process_subject(
     raw_subject: rgz.JSON,
@@ -85,7 +90,7 @@ def process_subject(
     bbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache)
     rgzbbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache, units="RGZ")
     contours_list = first.get_contours(sid, wcs=wcs, cache=cache)
-    
+
     risland_list = []
     assert len(bbox_list) == len(rgzbbox_list)
     assert len(contours_list) == len(rgzbbox_list)
@@ -95,14 +100,16 @@ def process_subject(
         risland = radio_islands.RadioIsland(
             bbox=bbox,
             rgzbbox=rgzbbox,
-            contours=contours[0], # For now just store the zeroth contour
+            contours=contours[0],  # For now just store the zeroth contour
             first_tree=first_tree,
         )
         risland_list.append(risland)
     return Subject(
-        id=sid, zid=zid, coords=raw_subject["coords"], 
-        radio_islands=risland_list, 
-        wcs=wcs
+        id=sid,
+        zid=zid,
+        coords=raw_subject["coords"],
+        radio_islands=risland_list,
+        wcs=wcs,
     )
 
 
