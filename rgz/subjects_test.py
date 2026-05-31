@@ -51,9 +51,9 @@ class TestProcess(unittest.TestCase):
 
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
-        
+
         self.assertEqual(want, got)
-        return 
+        return
 
         subject_ids_old = [s["id"] for s in want]
         subject_ids_new = [s["id"] for s in got]
@@ -79,8 +79,7 @@ class TestProcess(unittest.TestCase):
             if not (len(subject_old["bboxes"]) == len(subject_new["radio_islands"])):
                 breakpoint()
             self.assertEqual(
-                len(subject_old["bboxes"]),
-                len(subject_new["radio_islands"])
+                len(subject_old["bboxes"]), len(subject_new["radio_islands"])
             )
 
             # Check firsts are the same
@@ -90,18 +89,23 @@ class TestProcess(unittest.TestCase):
             ):
                 self.assertEqual(
                     bbox_old["bbox"],
-                    [c - 1 for c in ri_new["rgzbbox"]]  # NOTE: need to subtract 1 from these since in the code that produced the test data these coords had already been shifted so that the origin was (0, 0).
+                    [
+                        c - 1 for c in ri_new["rgzbbox"]
+                    ],  # NOTE: need to subtract 1 from these since in the code that produced the test data these coords had already been shifted so that the origin was (0, 0).
                 )
                 # We don't try to compare NOFIRSTs since we've changed the string
                 # formatting so the comparison will always fail
-                old_firsts = set([f for f in bbox_old["first"] if not f.startswith("NOFIRST")])
-                new_firsts = set([f for f in ri_new["firsts"] if not f.startswith("NOFIRST")])
+                old_firsts = set(
+                    [f for f in bbox_old["first"] if not f.startswith("NOFIRST")]
+                )
+                new_firsts = set(
+                    [f for f in ri_new["firsts"] if not f.startswith("NOFIRST")]
+                )
                 # print("Old: "); print(old_firsts); print("New: "); print(new_firsts)
                 self.assertEqual(old_firsts, new_firsts)
 
             logger.warning(f"Test passed for subject {ii}!")
             ii += 1
-
 
 
 if __name__ == "__main__":
