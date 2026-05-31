@@ -61,7 +61,9 @@ class Subject:
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
     coords: tuple[float, float] = attr.ib()
-    bboxes: dict[BBox, list[FIRSTID]] = attr.ib()
+    bbox_list: list[BBox] = attr.ib()
+    phys_bbox_list: list[BBox] = attr.ib()
+    bboxes: dict[BBox, list[FIRSTID]] = attr.ib()  # TODO consider renaming
     wcs: WCS = attr.ib()
 
     def to_json(self) -> rgz.JSON:
@@ -70,6 +72,8 @@ class Subject:
             "id": self.id,
             "zid": self.zid,
             "coords": self.coords,
+            "bbox_list": self.bbox_list,
+            "phys_bbox_list": [[c.value for c in bbox] for bbox in self.phys_bbox_list],
             "wcs": self.wcs.to_header_string(),
             "bboxes": [{"bbox": list(k), "first": v} for k, v in self.bboxes.items()],
         }
@@ -81,6 +85,8 @@ class Subject:
             subject["id"],
             subject["zid"],
             subject["coords"],
+            subject["bbox_list"],
+            subject["phys_bbox_list"],
             {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
             WCS(subject["wcs"]),
         )
@@ -328,6 +334,13 @@ def process_subject(
     sid = raw_subject["_id"]["$oid"]
     zid = raw_subject["zooniverse_id"]
     bboxes = get_bboxes(raw_subject, cache)
+
+    # Get bboxes in physical coordinates
+    phys_bboxes = [
+        transform_bbox_px_to_phys(bbox, raw_subject, cache) for bbox in bboxes
+    ]
+
+    # Construct dict mapping bboxes to FIRST IDs
     bbox_to_firsts = {}
 
     with fetch_first_image_from_server_or_cache(
@@ -339,8 +352,15 @@ def process_subject(
         firsts = get_first_from_bbox(bbox, wcs, first_tree)
         bbox_to_firsts[bbox] = firsts
 
+    # Create class instance
     return Subject(
-        id=sid, zid=zid, coords=raw_subject["coords"], bboxes=bbox_to_firsts, wcs=wcs
+        id=sid,
+        zid=zid,
+        coords=raw_subject["coords"],
+        bbox_list=bboxes,
+        phys_bbox_list=phys_bboxes,
+        bboxes=bbox_to_firsts,
+        wcs=wcs,
     )
 
 
