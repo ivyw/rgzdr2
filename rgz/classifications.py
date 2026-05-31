@@ -2,12 +2,11 @@
 
 import collections
 from collections.abc import Generator, Iterable
-import functools
 import json
 import logging
 import multiprocessing
 from pathlib import Path
-from typing import Self
+from typing import Self, override
 
 import attr
 import numpy as np
@@ -131,10 +130,6 @@ class Classification:
     # Additional notes about this classification accumulated during
     # processing.
     notes: list[str] = attr.ib()
-    # IR cross-match -> radio names.
-    ir_matches: list[tuple[ALLWISEID, RadioSource]] = attr.ib(
-        default=attr.Factory(list)
-    )
 
     def to_json(self) -> rgz.JSON:
         """Converts a Classification into a JSON-serialisable dictionary.
@@ -162,10 +157,6 @@ class Classification:
             ),
             "username": self.username or "",
             "notes": self.notes,
-            "ir_matches": sorted(
-                [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
-                key=dict_key,
-            ),
         }
 
     @classmethod
@@ -187,72 +178,93 @@ class Classification:
                 (m["ir"], RadioSource(m["radio"]))
                 for m in classification["coord_matches"]
             ],
-            ir_matches=[
-                (m["ir"], RadioSource(m["radio"])) for m in classification["ir_matches"]
-            ],
         )
 
     def radio_combinations(
         self,
     ) -> RadioSourceCombination:
         """Gets the combination of radio sources present in this classification."""
-        if self.ir_matches:
-            radios = (radio for _, radio in self.ir_matches)
-        else:
-            radios = (radio for _, radio in self.coord_matches)
-        return RadioSourceCombination(radios)
+        return RadioSourceCombination((radio for _, radio in self.coord_matches))
+
+
+class CrossMatchedClassification(Classification):
+    # IR cross-match -> radio names.
+    ir_matches: list[tuple[ALLWISEID, RadioSource]] = attr.ib(
+        default=attr.Factory(list)
+    )
+
+    @classmethod
+    def from_classification(cls, classification: Classification) -> Self:
+        """Converts from a Classification."""
+        return cls(**attr.asdict(classification))
+
+    @override
+    def to_json(self) -> rgz.JSON:
+        j = super().to_json()
+
+        def dict_key(d):
+            return (d["ir"], d["radio"])
+
+        j["ir_matches"] = sorted(
+            [{"ir": ir, "radio": sorted(radio)} for ir, radio in self.ir_matches],
+            key=dict_key,
+        )
+        return j
+
+    @override
+    def radio_combinations(
+        self,
+    ) -> RadioSourceCombination:
+        """Gets the combination of radio sources present in this classification."""
+        return RadioSourceCombination((radio for _, radio in self.ir_matches))
+
+    @override
+    @classmethod
+    def from_json(cls, classification: rgz.JSON) -> Self:
+        """Reads a CrossMatchedClassification from a JSON dict.
+
+        Args:
+            classification: Classification dict to deserialise.
+
+        Returns:
+            CrossMatchedClassification.
+        """
+        c = super().from_json(classification)
+        c.ir_matches = [
+            (m["ir"], RadioSource(m["radio"])) for m in classification["ir_matches"]
+        ]
+        return c
 
 
 def transform_coord_ir(
     coord: npt.NDArray[np.float64],
-    raw_subject: rgz.JSON | None = None,
-    cache: Path | None = None,
-    wcs: astropy.wcs.WCS | None = None,
+    wcs: astropy.wcs.WCS,
 ) -> u.Quantity[u.deg, u.deg]:
-    """Transforms a coordinate from raw classifications to physical.
-
-    You can pass a subject and cache, or a WCS.
+    """Transforms a WISE image pixel coordinate into RA/Dec.
 
     Args:
         coord: Coord to transform, in px coordinates (0, IR_MAX_PX).
-        raw_subject: Raw JSON subject.
-        cache: Path to the subject data location.
-        wcs: WCS of the subject being classified.
+        wcs: WCS of the FIRST image of the subject being classified.
 
     Returns:
         Transformed coordinate RA/dec in deg.
     """
-    # TODO: We should use subjects here, not raw subjects.
-    if not raw_subject and not wcs:
-        raise ValueError()
-    if raw_subject and not cache:
-        raise ValueError()
-    if raw_subject:
-        assert cache
-        assert not wcs
-        im = subjects.fetch_first_image_from_server_or_cache(
-            raw_subject=raw_subject, cache=cache
-        )
-        wcs = rgz.get_wcs(im)
-    assert wcs
     # Coord in 424x424 -> 100x100
     px_coord = np.array(coord) * 100 / constants.IR_MAX_PX
     # Flip y axis.
-    px_coord[1] = 100 - px_coord[1]
+    px_coord[1] = 100 - 1 - px_coord[1]
     return wcs.all_pix2world([px_coord], 0)[0] * u.deg
 
 
 def process_classification(
     raw_classification: rgz.JSON,
     subject: subjects.Subject,
-    wcs: astropy.wcs.WCS,
 ) -> Classification:
     """Reduces a JSON classification into a nice, value-added format.
 
     Args:
         raw_classification: JSON classification.
         subject: Subject being classified.
-        wcs: WCS of the subject image.
 
     Returns:
         Reduced classification.
@@ -272,10 +284,11 @@ def process_classification(
             continue
         for radio in anno["radio"].values():
             box = (
-                round(float(radio["xmax"]), 1),
-                round(float(radio["ymax"]), 1),
-                round(float(radio["xmin"]), 1),
-                round(float(radio["ymin"]), 1),
+                # Bboxes in the source are 1-indexed.
+                round(float(radio["xmax"]), 1) - 1,
+                round(float(radio["ymax"]), 1) - 1,
+                round(float(radio["xmin"]), 1) - 1,
+                round(float(radio["ymin"]), 1) - 1,
             )
             boxes.add(box)
 
@@ -283,10 +296,11 @@ def process_classification(
             ir = "NOSOURCE"
         else:
             if len(anno["ir"]) != 1:
+                # TODO(MatthewJA): Should we handle this differently?
                 notes.append("MULTISOURCE")
             ir_coord = transform_coord_ir(
                 np.array([float(anno["ir"]["0"]["x"]), float(anno["ir"]["0"]["y"])]),
-                wcs=wcs,
+                wcs=subject.wcs,
             )
             ir_ra, ir_dec = ir_coord
             ir_coord = SkyCoord(
@@ -308,9 +322,7 @@ def process_classification(
     )
 
 
-def process(
-    classifications_path: Path, subjects_path: Path, cache: Path, output_path: Path
-):
+def process(classifications_path: Path, subjects_path: Path, output_path: Path):
     """Processes classifications from raw to reduced JSON."""
     # Get classifications count for progress bar.
     with open(classifications_path, encoding="utf-8") as f:
@@ -335,13 +347,10 @@ def process(
     bar = tqdm(total=n_classifications, desc="Processing classifications...")
     for subject in subjects_:
         raw_classifications_for_subject = subject_to_classifications[subject.id]
-        im = subjects.read_subject_image_from_file(subject, cache)
-        wcs = rgz.get_wcs(im)
         for raw_classification in raw_classifications_for_subject:
             classification = process_classification(
                 raw_classification,
                 subject,
-                wcs,
             )
             classifications.append(classification)
             bar.update(1)
@@ -397,7 +406,8 @@ def host_lookup(
 
     # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
     # multiple values at once.
-    for c in tqdm(classifications, desc="Reprocessing classifications..."):
+    for i in tqdm(range(len(classifications)), desc="Reprocessing classifications..."):
+        c = CrossMatchedClassification.from_classification(classifications[i])
         ir_matches = []
         for ir, radio in c.coord_matches:
             if ir == "NOSOURCE":
@@ -422,7 +432,10 @@ def host_lookup(
         )
 
 
-def query_irsa(radius, coordinates_to_lookup) -> astropy.table.Table:
+def query_irsa(
+    radius: u.Quantity[u.deg],
+    coordinates_to_lookup: list[tuple[float, float]],
+) -> astropy.table.Table:
     """Queries IRSA for the given coordinates."""
     logging.info("Sorting classifications into SkyCoords...")
     sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))

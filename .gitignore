@@ -10,3 +10,4 @@ cutouts/*
 **/.ipynb_checkpoints/*
 .venv/*
 full_data/*
+**/*.DS_Store

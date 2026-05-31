@@ -1,6 +1,7 @@
 # rgzdr2
 
 [![Lint](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml/badge.svg)](https://github.com/ivyw/rgzdr2/actions/workflows/lint.yml)
+[![Test](https://github.com/ivyw/rgzdr2/actions/workflows/test.yml/badge.svg)](https://github.com/ivyw/rgzdr2/actions/workflows/test.yml)
 
 Code Repository for RGZ DR2 pipeline
 

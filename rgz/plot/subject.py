@@ -80,7 +80,7 @@ def plot_single_subject(
         px_coords=False,
     )
     # We need the WISE image to get the WCS.
-    wise_image = wise.get_wise_image(subject.coords)
+    wise_image = wise.get_wise_image(subject.coords, cache, subject_name=subject.id)
     fig, ax = plotting.maybe_create_axes(ax, wcs=wise_image.wcs)
     wise.imshow(wise_image.data, ax)
     plot_contours.plot(island_contours, ax)

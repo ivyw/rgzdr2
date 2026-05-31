@@ -22,6 +22,12 @@ CLASSIFICATIONS_MATCHED_FILENAME = "classifications_matched.json"
 # Test consensus JSON filename.
 CONSENSUS_FILENAME = "consensus.json"
 
+# Test WISE SIA filename.
+WISE_SIA_FILENAME = "wise.fits"
+
+# Test WISE image filename.
+WISE_IMAGE_FILENAME = "wise_image.fits"
+
 
 def get_test_data_dir() -> Path:
     """Gets the directory that test data is held in."""
@@ -31,3 +37,13 @@ def get_test_data_dir() -> Path:
     else:
         current_file_path = __file__
     return Path(os.path.dirname(current_file_path)) / "testdata"
+
+
+def get_wise_sia_file() -> bytes:
+    with open(get_test_data_dir() / WISE_SIA_FILENAME, 'rb') as f:
+        return f.read()
+
+
+def get_wise_image_file() -> bytes:
+    with open(get_test_data_dir() / WISE_IMAGE_FILENAME, 'rb') as f:
+        return f.read()

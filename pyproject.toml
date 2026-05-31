@@ -48,3 +48,6 @@ rgz = { editable = true, path = "rgz"}
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["rgz"]
+
+[tool.pytest.ini_options]
+addopts = "--tb=short"

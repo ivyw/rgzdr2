@@ -69,12 +69,13 @@ def get_contours(
         contours = []
         for contour in island:
             xs = [coord["x"] for coord in contour["arr"]]
-            ys = [constants.RADIO_MAX_PX - coord["y"] for coord in contour["arr"]]
+            ys = [constants.RADIO_MAX_PX - 1 - coord["y"] for coord in contour["arr"]]
             coords = np.stack([xs, ys]).T
             if not px_coords:
                 coords = [
                     subjects.transform_coord_radio(
-                        coord=c, subject=subject, raw_subject=None, cache=cache
+                        coord=c,
+                        wcs=subject.wcs,
                     )
                     for c in coords
                 ]

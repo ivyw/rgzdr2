@@ -1,26 +1,12 @@
 """Tests for processing RGZ classifications."""
 
-import inspect
 import json
-import os
 from pathlib import Path
 import tempfile
 import unittest
 
 import rgz.classifications
 import rgz.testutils
-
-# "Cache" data filename.
-_TEST_CACHE_DATA_FILENAME = "first"
-
-# Test (processed) subjects JSON filename.
-_TEST_SUBJECTS_PROCESSED_FILENAME = "subjects_processed.json"
-
-# Test (raw) classifications JSON filename.
-_TEST_CLASSIFICATIONS_FILENAME = "classifications.json"
-
-# Test (processed) classifications JSON filename.
-_TEST_CLASSIFICATIONS_PROCESSED_FILENAME = "classifications_processed.json"
 
 
 class TestProcess(unittest.TestCase):
@@ -34,20 +20,26 @@ class TestProcess(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_regression(self):
+    def test_regression(self, update: bool = False):
         """Tests behaviour consistency in processing classifications."""
         output_path = self.temp_dir_path / "out.json"
         rgz.classifications.process(
             self.test_data_path / rgz.testutils.CLASSIFICATIONS_FILENAME,
             self.test_data_path / rgz.testutils.SUBJECTS_PROCESSED_FILENAME,
-            self.test_data_path / rgz.testutils.CACHE_DATA_FILENAME,
             output_path,
         )
         with open(output_path) as f:
             got = json.load(f)
-        with open(
+
+        want_path = (
             self.test_data_path / rgz.testutils.CLASSIFICATIONS_PROCESSED_FILENAME
-        ) as f:
+        )
+
+        if update:
+            with open(want_path, "w") as f:
+                json.dump(got, f)
+
+        with open(want_path) as f:
             want = json.load(f)
         self.assertEqual(want, got)
 

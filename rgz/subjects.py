@@ -13,6 +13,7 @@ from astropy.io import fits
 import astropy.table
 from astropy.units import Quantity
 from astroquery.vizier import Vizier
+from astropy.wcs import WCS
 import attr
 import backoff
 import numpy as np
@@ -51,7 +52,11 @@ class Subject:
         bboxes: Bounding boxes for the radio islands in the subject.
                 This is defined per Radio Galaxy Zoo, so
                 (xmin, ymin, xmax, ymax).
+        wcs: astropy World Coordinate System extracted from FIRST image centred
+                on this subject.
     """
+
+    # TODO(hzovaro): should we also store the WISE wcs?
 
     id: str = attr.ib()
     zid: ZooniverseID = attr.ib()
@@ -59,6 +64,7 @@ class Subject:
     bbox_list: list[BBox] = attr.ib()
     phys_bbox_list: list[BBox] = attr.ib()
     bboxes: dict[BBox, list[FIRSTID]] = attr.ib()  # TODO consider renaming
+    wcs: WCS = attr.ib()
 
     def to_json(self) -> rgz.JSON:
         """Converts a Subject into a JSON-compatible dictionary."""
@@ -68,6 +74,7 @@ class Subject:
             "coords": self.coords,
             "bbox_list": self.bbox_list,
             "phys_bbox_list": [[c.value for c in bbox] for bbox in self.phys_bbox_list],
+            "wcs": self.wcs.to_header_string(),
             "bboxes": [{"bbox": list(k), "first": v} for k, v in self.bboxes.items()],
         }
 
@@ -81,6 +88,7 @@ class Subject:
             subject["bbox_list"],
             subject["phys_bbox_list"],
             {tuple(b["bbox"]): b["first"] for b in subject["bboxes"]},
+            WCS(subject["wcs"]),
         )
 
 
@@ -99,15 +107,8 @@ def download_first(coord: SkyCoord, image_size: Quantity[u.arcmin]) -> fits.HDUL
     raise TypeError(f"Expected HDUList; got {type(ims)}")
 
 
-def read_subject_image_from_file(subject: Subject, cache: Path) -> fits.HDUList:
-    """Reads a FIRST image from the cache."""
-    fname = cache / f"{subject.id}.fits"
-    return fits.open(fname)
-
-
 def fetch_first_image_from_server_or_cache(
     raw_subject: rgz.JSON | None,
-    subject: Subject | None,
     cache: Path,
 ) -> fits.HDUList:
     """Fetches a FIRST image from the FIRST server or cache given a subject.
@@ -139,17 +140,9 @@ def fetch_first_image_from_server_or_cache(
 
     """
     # TODO(hzovaro): write tests for this
-    if ((raw_subject is None) and (subject is None)) or (
-        (raw_subject is not None) and (subject is not None)
-    ):
-        raise ValueError(f"You must specify either a raw_subject or a subject!")
-    elif raw_subject is not None:
-        coord = raw_subject["coords"]
-        coord = SkyCoord(ra=coord[0], dec=coord[1], unit="deg")
-        fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
-    elif subject is not None:
-        coord = subject.coords
-        fname = cache / f"{subject.id}.fits"
+    ra, dec = raw_subject["coords"]
+    coord = SkyCoord(ra=ra, dec=dec, unit="deg")
+    fname = cache / f'{raw_subject["_id"]["$oid"]}.fits'
     try:
         return fits.open(fname)
     except FileNotFoundError:
@@ -192,45 +185,41 @@ def fetch_first_catalogue_from_server_or_cache(
 
 def transform_coord_radio(
     coord: npt.NDArray[np.float64],
-    raw_subject: rgz.JSON | None,
-    subject: Subject | None,
-    cache: Path,
+    wcs: WCS,
 ) -> Quantity[u.deg, u.deg]:
-    """Transforms a radio image pixel coordinate into RA/dec.
-
-    Note that this uses the WCS of the subject image, and can be slow!
-
-    """
-    # TODO(MatthewJA): Speed this up by avoiding the image reload whenever
-    # possible, e.g. by passing in the image.
-    with fetch_first_image_from_server_or_cache(
-        raw_subject=raw_subject, subject=subject, cache=cache
-    ) as im:
-        wcs = rgz.get_wcs(im)
-
+    """Transforms a radio image pixel coordinate into RA/dec."""
     # Coord in 132x132 -> 100x100.
+    # TODO(hzovaro): are coords indexed from 1 or zero? Change the below to
+    # reflect this.
+    if np.any(coord < 0) or np.any(coord >= constants.RADIO_MAX_PX):
+        raise ValueError(
+            f"pixel coordinates {coord} "
+            "are outside of range "
+            f"[0, {constants.RADIO_MAX_PX})!"
+        )
     coord = coord * 100 / constants.RADIO_MAX_PX
-
     return wcs.all_pix2world([coord], 0)[0] * u.deg
 
 
 def transform_bbox_px_to_phys(
-    px_bbox: BBox, raw_subject: rgz.JSON, cache: Path
+    px_bbox: BBox,
+    wcs: WCS,
 ) -> npt.NDArray[np.float64]:
     """Transforms a bbox from pixel coordinates to RA/dec."""
     xmin, ymin, xmax, ymax = px_bbox
     # Flip vertically.
     phys_bbox = np.array(
-        [xmin, constants.RADIO_MAX_PX - ymax, xmax, constants.RADIO_MAX_PX - ymin]
+        [
+            xmin,
+            constants.RADIO_MAX_PX - 1 - ymax,
+            xmax,
+            constants.RADIO_MAX_PX - 1 - ymin,
+        ]
     )
     return np.concatenate(
         [
-            transform_coord_radio(
-                coord=phys_bbox[:2], raw_subject=raw_subject, subject=None, cache=cache
-            ),
-            transform_coord_radio(
-                coord=phys_bbox[2:], raw_subject=raw_subject, subject=None, cache=cache
-            ),
+            transform_coord_radio(coord=phys_bbox[:2], wcs=wcs),
+            transform_coord_radio(coord=phys_bbox[2:], wcs=wcs),
         ]
     )
 
@@ -261,13 +250,12 @@ def find_points_in_box(
 
 def get_first_from_bbox(
     px_bbox: BBox,
-    raw_subject: rgz.JSON,
-    cache: Path,
+    wcs: WCS,
     first_tree: FIRSTTree,
 ) -> list[FIRSTID]:
     """Finds FIRST components within a bounding box."""
     # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
-    phys_bbox = transform_bbox_px_to_phys(px_bbox, raw_subject, cache)
+    phys_bbox = transform_bbox_px_to_phys(px_bbox, wcs)
     # Find the centre...
     centre = (phys_bbox[::2].mean(), phys_bbox[1::2].mean())
     # ...and the width and height.
@@ -324,7 +312,7 @@ def get_bboxes(
                 raise FileNotFoundError(f"HTTP 404: {url}")
             raise RuntimeError("Error:", response.status_code)
         js = response.json()
-        assert abs(js["width"] - 132) <= 1
+        assert abs(js["width"] - constants.RADIO_MAX_PX) <= 1
         with open(fname, "w") as f:
             # Don't indent here to keep the filesize down.
             # These don't need to be human-readable.
@@ -332,7 +320,8 @@ def get_bboxes(
     bboxes = []
     for contour in js["contours"]:
         assert contour[0]["k"] == 0
-        bboxes.append(tuple([round(c, 1) for c in contour[0]["bbox"]]))
+        # Bboxes are 1-indexed...
+        bboxes.append(tuple([round(c, 1) - 1 for c in contour[0]["bbox"]]))
     return tuple(bboxes)
 
 
@@ -353,20 +342,26 @@ def process_subject(
 
     # Construct dict mapping bboxes to FIRST IDs
     bbox_to_firsts = {}
+
+    with fetch_first_image_from_server_or_cache(
+        raw_subject=raw_subject, cache=cache
+    ) as im:
+        wcs = rgz.get_wcs(im)
+
     for bbox in bboxes:
-        firsts = get_first_from_bbox(bbox, raw_subject, cache, first_tree)
+        firsts = get_first_from_bbox(bbox, wcs, first_tree)
         bbox_to_firsts[bbox] = firsts
 
     # Create class instance
-    s = Subject(
+    return Subject(
         id=sid,
         zid=zid,
         coords=raw_subject["coords"],
         bbox_list=bboxes,
         phys_bbox_list=phys_bboxes,
         bboxes=bbox_to_firsts,
+        wcs=wcs,
     )
-    return s
 
 
 def build_first_tree(first_catalogue: astropy.table.table.Table) -> FIRSTTree:
