@@ -67,23 +67,13 @@ class RadioIsland:
         """Finds FIRST components within a bounding box."""
         # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
 
-        # Round widths and heights up to nearest arcsec plus two.
-        width = np.ceil(self.bbox.width.to(u.arcsec)) + 2 * u.arcsec
-        height = np.ceil(self.bbox.height.to(u.arcsec)) + 2 * u.arcsec
-        logger.debug("get_firsts: %s %s %s", self.bbox.centre, width, height)
-
-        # TODO(MatthewJA): Speed this up using some kind of tree.
-        ra = self.bbox.centre.ra.value
-        dec = self.bbox.centre.dec.value
-        width_deg = width.to(u.deg).value
-        height_deg = height.to(u.deg).value
-        upper_ra = ra + width_deg / 2
-        lower_ra = ra - width_deg / 2
-        upper_dec = dec + height_deg / 2
-        lower_dec = dec - height_deg / 2
-        matching_indices = bboxes.find_points_in_box(
-            first_tree[0], lower_ra, upper_ra, lower_dec, upper_dec
+        padded_bbox = bboxes.BBox(
+            ra_min=np.ceil(self.bbox.ra_min.to(u.arcsec)) - 1 * u.arcsec,
+            ra_max=np.ceil(self.bbox.ra_max.to(u.arcsec)) + 1 * u.arcsec,
+            dec_min=np.ceil(self.bbox.dec_min.to(u.arcsec)) - 1 * u.arcsec,
+            dec_max=np.ceil(self.bbox.dec_max.to(u.arcsec)) + 1 * u.arcsec,
         )
+        matching_indices = padded_bbox.get_points_in_box(first_tree[0] * u.deg)
         if not matching_indices:
             coord_str = rgz.coord_to_string(self.bbox.centre)
             ra_hh, ra_mm, ra_ss, dec_dd, dec_mm, dec_ss = [float(s) for s in coord_str.split(" ")]
