@@ -10,10 +10,11 @@ from rgz import bboxes
 from astropy.wcs import WCS
 import matplotlib
 import matplotlib.pyplot as plt
+
 plt.ion()
 plt.close("all")
 
-# Paths 
+# Paths
 cache_path = Path("data") / "cache"
 testdata_path = Path("rgz") / "testdata"
 raw_subjects_path = testdata_path / "subjects.json"
@@ -34,7 +35,7 @@ wcs = WCS(s["wcs"])
 bbox_list = bboxes.get_bboxes(id, wcs=wcs, cache=cache_path)
 contours = first.get_contours(id, wcs=wcs, cache=cache_path)
 
-# Plot 
+# Plot
 fig, ax = plt.subplots()
 contour_colour = "white"
 for island in contours:
@@ -48,8 +49,4 @@ for island in contours:
         )
 for bbox in bbox_list:
     xmin, ymin, xmax, ymax = bbox
-    ax.plot(
-        [xmin, xmax, xmax, xmin, xmin],
-        [ymin, ymin, ymax, ymax, ymin],
-        color="k"
-    )
+    ax.plot([xmin, xmax, xmax, xmin, xmin], [ymin, ymin, ymax, ymax, ymin], color="k")
