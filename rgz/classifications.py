@@ -475,3 +475,11 @@ def query_irsa(
 
     results = astropy.table.unique(q.to_table())
     return results
+
+
+def read(classifications_path: Path) -> Iterable[Classification]:
+    """Reads classifications from a JSON file."""
+    with open(classifications_path) as f:
+        json_classifications = json.load(f)
+    for c in json_classifications:
+        yield Classification.from_json(c)
