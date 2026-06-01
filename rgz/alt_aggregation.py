@@ -48,5 +48,5 @@ def aggregate_subset(classifications: Sequence[Classification]):
     for i in range(clusters):
         in_cluster = (consensus == i).nonzero()[0]
         results.append([all_names[j] for j in in_cluster])
-    
+
     return results

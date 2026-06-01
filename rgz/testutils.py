@@ -40,10 +40,10 @@ def get_test_data_dir() -> Path:
 
 
 def get_wise_sia_file() -> bytes:
-    with open(get_test_data_dir() / WISE_SIA_FILENAME, 'rb') as f:
+    with open(get_test_data_dir() / WISE_SIA_FILENAME, "rb") as f:
         return f.read()
 
 
 def get_wise_image_file() -> bytes:
-    with open(get_test_data_dir() / WISE_IMAGE_FILENAME, 'rb') as f:
+    with open(get_test_data_dir() / WISE_IMAGE_FILENAME, "rb") as f:
         return f.read()
