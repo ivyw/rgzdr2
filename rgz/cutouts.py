@@ -201,6 +201,84 @@ def get_allwise_cutout(
     return hdulist
 
 
+def get_first_cutout(
+    coords: SkyCoord,
+    size: u.Quantity[u.arcmin] = 3 * u.arcmin,
+    save_fits: bool = False,
+    cutout_path: Path | None = None,
+) -> fits.HDUList:
+    """Returns a FITS HDUList of a FIRST cutout, optionally saving to file.
+
+    Args:
+        coords: Requested cutout coordinates.
+        size: Requested cutout size in arcminutes.
+        save_fits: If True, saves the downloaded cutout to path specified by
+            cutout_path. Otherwise, the FITS file is saved to a temporary file.
+        cutout_path: If save_fits is True, specifies the path where the image
+            is saved; this argument is ignored otherwise. If save_fits is True
+            and cutout_path is unspecified, the file is saved to
+                f"first_{ra_deg:.4f}_{dec_deg:.4f}.fits"
+            where ra_deg and dec_deg are the RA and dec respectively.
+
+    Returns:
+        If a valid cutout is found, returns an astropy.io.fits.HDUList
+        containing the FITS header and image.
+        
+    Raises:
+        NegativeImageSizeError: the cutout image size is negative.
+        CutoutDownloadError: an error occurred during the download.
+    """
+    size_arcmin = size.to(u.arcmin).value
+    if size_arcmin < 0:
+        raise NegativeImageSizeError(f"Cutout size {size_arcmin} < 0!")
+
+    ra_deg = coords.ra.value
+    dec_deg = coords.dec.value
+    
+    if cutout_path is None:
+        cutout_path = Path(f"first_{ra_deg:.4f}_{dec_deg:.4f}.fits")
+    else:
+        if not save_fits:
+            logger.warning(
+                "You have specified a cutout_path but I am not saving the "
+                "result to file!"
+            )
+        if not cutout_path.suffix:
+            cutout_path = cutout_path.with_suffix(".fits")
+
+    ra_str_format = coords.ra.to_string(unit='hour', sep=' ', precision=3)
+    dec_str_format = coords.dec.to_string(unit='degree', sep=' ', precision=3, alwayssign=True)
+    query_str = f"{ra_str_format} {dec_str_format}"
+
+    url = "https://sundog.stsci.edu/cgi-bin/firstcutout"
+    params = {
+        'RA': query_str,
+        'Dec': '',  # yes, really
+        'Equinox': 'J2000',
+        'ImageSize': f"{size_arcmin:.5f}",
+        'ImageType': 'FITS File',
+        'MaxInt': '10',
+        'Epochs': '',
+        'Fieldname': '',
+        '.submit': 'Extract the Cutout',
+        '.cgifields': 'ImageType'
+    }
+
+    try:
+        r = requests.post(url, data=params)
+        r.raise_for_status()
+        
+        hdulist = fits.open(BytesIO(r.content), ignore_missing_simple=True)
+    except Exception as e:
+        raise CutoutDownloadError(str(e)) from e
+
+    # Save to file if requested
+    if save_fits:
+        hdulist.writeto(cutout_path, overwrite=True)
+
+    return hdulist
+
+
 if __name__ == "__main__":
     from astropy.wcs import WCS
     import matplotlib.pyplot as plt

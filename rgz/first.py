@@ -29,7 +29,12 @@ logger = logging.getLogger(__name__)
 
 
 type HDU = fits.hdu.base.ExtensionHDU  # should be in top-level rgz
+
+# FIRSTID is a name of the form FIRST_J165755.4+232223 or
+# NOFIRST_J165754.6666501+232332.16033738. The coordinate is
+# HHMMSS[+-]DDMMSS, with any fractional part belonging to the second (SS).
 type FIRSTID = str
+
 type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
 
 

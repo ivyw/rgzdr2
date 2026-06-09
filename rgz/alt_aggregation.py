@@ -5,7 +5,7 @@ import dataclasses
 import functools
 import itertools
 
-import ClusterEnsembles as cluster_ensembles
+# import ClusterEnsembles as cluster_ensembles
 import disjoint_set
 import numpy as np
 
@@ -39,9 +39,16 @@ def powerset[T](iterable: Iterable[T]) -> frozenset[frozenset[T]]:
     )
 
 
+@dataclasses.dataclass
+class Aggregation:
+    aggregation: frozenset[frozenset[FIRSTID]]
+    scores: dict[frozenset[FIRSTID], float]
+    probability: float
+
+
 def aggregate_subset_dp(
     classifications: Sequence[Classification],
-) -> Collection[Collection[FIRSTID]]:
+) -> Aggregation:
     """Aggregates a subset of classifications using dynamic programming.
 
     Args:
@@ -142,9 +149,22 @@ def aggregate_subset_dp(
 
         return PartitionProduct(max_product, sum_product, maximiser)
 
-    pp = compute_partition_product(frozenset(all_names))
-    # pp.max_product / pp.partition_function gives the score of this partitioning.
-    return pp.best_partition
+    elements = frozenset(all_names)
+    pp = compute_partition_product(elements)
+
+    block_probabilities = {}
+    for block in pp.best_partition:
+        block_probabilities[block] = (
+            weight_product(block)
+            * compute_partition_product(elements - block).partition_function
+            / pp.partition_function
+        )
+
+    return Aggregation(
+        aggregation=pp.best_partition,
+        scores=block_probabilities,
+        probability=pp.maximum_product / pp.partition_function,
+    )
 
 
 def aggregate_subset_ensembles(classifications: Sequence[Classification]):

@@ -63,16 +63,9 @@ def subjects(in_: Path, out: Path, cache: Path):
     type=click.Path(resolve_path=True, path_type=Path),
     help="JSON file to write reduced classifications to.",
 )
-@click.option(
-    "--cache",
-    type=click.Path(
-        resolve_path=True, dir_okay=True, file_okay=False, exists=True, path_type=Path
-    ),
-    help="Where to download files to.",
-)
-def classifications(in_: Path, subjects: Path, out: Path, cache: Path):
+def classifications(in_: Path, subjects: Path, out: Path):
     """Processes RGZ classifications."""
-    rgz.classifications.process(in_, subjects, cache, out)
+    rgz.classifications.process(in_, subjects, out)
 
 
 @cli.command()
