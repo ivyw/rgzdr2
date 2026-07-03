@@ -5,7 +5,6 @@ import dataclasses
 import functools
 import itertools
 
-# import ClusterEnsembles as cluster_ensembles
 import disjoint_set
 import numpy as np
 
@@ -46,7 +45,7 @@ class Aggregation:
     probability: float
 
 
-def aggregate_subset_dp(
+def aggregate_subset(
     classifications: Sequence[Classification],
 ) -> Aggregation:
     """Aggregates a subset of classifications using dynamic programming.
@@ -114,6 +113,7 @@ def aggregate_subset_dp(
     #       Store the biggest
 
     def weight_product(subset: Iterable[FIRSTID]) -> float:
+        """∏_{ij} w_{ij}"""
         p = 1
         for i, j in itertools.combinations(subset, 2):
             p *= weights[name_to_index[i], name_to_index[j]]
@@ -165,41 +165,3 @@ def aggregate_subset_dp(
         scores=block_probabilities,
         probability=pp.maximum_product / pp.partition_function,
     )
-
-
-def aggregate_subset_ensembles(classifications: Sequence[Classification]):
-    """Aggregates a subset of classifications using cluster ensembles.
-
-    The subset should be a clique, i.e. these classifications
-    should all be (transitively) in the same subjects. That's not
-    a hard constraint but the bigger the size of the problem the
-    worse it'll be computationally.
-
-    Args:
-        classifications: Subset of classifications.
-
-    Returns:
-        Consensus.
-    """
-    # Convert FIRST IDs into indices.
-    all_names = sorted(get_all_first_ids(classifications))
-    name_to_index = {name: i for i, name in enumerate(all_names)}
-
-    labellings = []
-    # Convert classifications into labellings.
-    for c in classifications:
-        labelling = np.zeros(len(all_names))
-        for i, (_, radios) in enumerate(c.coord_matches):
-            for r in radios:
-                labelling[name_to_index[r]] = i
-        labellings.append(labelling)
-    labellings = np.array(labellings)
-
-    consensus = cluster_ensembles.cluster_ensembles(labellings)
-    clusters = max(consensus) + 1
-    results = []
-    for i in range(clusters):
-        in_cluster = (consensus == i).nonzero()[0]
-        results.append([all_names[j] for j in in_cluster])
-
-    return results
