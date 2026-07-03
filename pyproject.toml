@@ -16,7 +16,6 @@ dependencies = [
     "black",
     "ipympl",
     "scipy",      # Needed for astropy.
-    "clusterensembles",
 ]
 
 [dependency-groups]
@@ -45,7 +44,6 @@ module-root = ""
 
 [tool.uv.sources]
 rgz = { editable = true, path = "rgz"}
-clusterensembles = { git = "https://github.com/ehvr20/ClusterEnsembles", rev = "cd844f0" }
 
 [tool.setuptools.packages.find]
 where = ["."]
