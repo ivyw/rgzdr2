@@ -411,6 +411,7 @@ def host_lookup(
 
     # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
     # multiple values at once.
+    matched_classifications = []
     for i in tqdm(range(len(classifications)), desc="Reprocessing classifications..."):
         c = CrossMatchedClassification.from_classification(classifications[i])
         ir_matches = []
@@ -428,10 +429,11 @@ def host_lookup(
             designation = results["designation"][idx]
             ir_matches.append((designation, radio))
         c.ir_matches = ir_matches
+        matched_classifications.append(c)
 
     with open(output_path, "w") as f:
         json.dump(
-            [c.to_json() for c in classifications],
+            [c.to_json() for c in matched_classifications],
             f,
             indent=_JSON_INDENT,
         )
