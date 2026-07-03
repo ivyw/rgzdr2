@@ -223,7 +223,7 @@ def get_first_cutout(
     Returns:
         If a valid cutout is found, returns an astropy.io.fits.HDUList
         containing the FITS header and image.
-        
+
     Raises:
         NegativeImageSizeError: the cutout image size is negative.
         CutoutDownloadError: an error occurred during the download.
@@ -234,7 +234,7 @@ def get_first_cutout(
 
     ra_deg = coords.ra.value
     dec_deg = coords.dec.value
-    
+
     if cutout_path is None:
         cutout_path = Path(f"first_{ra_deg:.4f}_{dec_deg:.4f}.fits")
     else:
@@ -246,28 +246,30 @@ def get_first_cutout(
         if not cutout_path.suffix:
             cutout_path = cutout_path.with_suffix(".fits")
 
-    ra_str_format = coords.ra.to_string(unit='hour', sep=' ', precision=3)
-    dec_str_format = coords.dec.to_string(unit='degree', sep=' ', precision=3, alwayssign=True)
+    ra_str_format = coords.ra.to_string(unit="hour", sep=" ", precision=3)
+    dec_str_format = coords.dec.to_string(
+        unit="degree", sep=" ", precision=3, alwayssign=True
+    )
     query_str = f"{ra_str_format} {dec_str_format}"
 
     url = "https://sundog.stsci.edu/cgi-bin/firstcutout"
     params = {
-        'RA': query_str,
-        'Dec': '',  # yes, really
-        'Equinox': 'J2000',
-        'ImageSize': f"{size_arcmin:.5f}",
-        'ImageType': 'FITS File',
-        'MaxInt': '10',
-        'Epochs': '',
-        'Fieldname': '',
-        '.submit': 'Extract the Cutout',
-        '.cgifields': 'ImageType'
+        "RA": query_str,
+        "Dec": "",  # yes, really
+        "Equinox": "J2000",
+        "ImageSize": f"{size_arcmin:.5f}",
+        "ImageType": "FITS File",
+        "MaxInt": "10",
+        "Epochs": "",
+        "Fieldname": "",
+        ".submit": "Extract the Cutout",
+        ".cgifields": "ImageType",
     }
 
     try:
         r = requests.post(url, data=params)
         r.raise_for_status()
-        
+
         hdulist = fits.open(BytesIO(r.content), ignore_missing_simple=True)
     except Exception as e:
         raise CutoutDownloadError(str(e)) from e
