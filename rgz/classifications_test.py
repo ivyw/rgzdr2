@@ -12,7 +12,6 @@ from astropy.coordinates import SkyCoord
 import rgz.classifications
 import rgz.testutils
 
-
 class TestProcess(unittest.TestCase):
     """Tests for rgz.classifications.process."""
 
@@ -180,18 +179,7 @@ class TestHostLookup(unittest.TestCase):
         self.mock_query_irsa = self.patcher_query_irsa.start()
 
         def fake_query_irsa(radius, coordinates_to_lookup):
-            sc = SkyCoord(coordinates_to_lookup, unit=("hourangle", "deg"))
-            designations = [
-                f"WISE{idx:07d}" for idx in range(len(coordinates_to_lookup))
-            ]
-            ret = astropy.table.Table(
-                {
-                    "designation": designations,
-                    "ra": sc.ra,
-                    "dec": sc.dec,
-                }
-            )
-            return ret
+            return rgz.testutils.get_wise_irsa_query_result()
 
         self.mock_query_irsa.side_effect = fake_query_irsa
 
@@ -235,6 +223,32 @@ class TestHostLookup(unittest.TestCase):
             )
             del got_classification["ir_matches"]
             self.assertEqual(got_classification, want_classification)
+
+    def test_regression(self, update: bool = False):
+        """Tests behaviour consistency in matching classifications."""
+        output_path = self.temp_dir_path / "out.json"
+        rgz.classifications.host_lookup(
+            self.test_data_path / rgz.testutils.CLASSIFICATIONS_PROCESSED_FILENAME,
+            output_path,
+        )
+        with open(output_path) as f:
+            got = json.load(f)
+
+        want_path = (
+            self.test_data_path / rgz.testutils.CLASSIFICATIONS_MATCHED_FILENAME
+        )
+
+        if update:
+            with open(want_path, "w") as f:
+                json.dump(got, f)
+
+        with open(want_path) as f:
+            want = json.load(f)
+        
+        self.assertEqual(len(got), len(want))
+        for got_, want_ in zip(got, want):
+            # Improve error messages by checking each entry individually.
+            rgz.testutils.assert_json_almost_equal(self, want_, got_)
 
 
 if __name__ == "__main__":

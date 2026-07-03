@@ -52,7 +52,8 @@ class TestAggregate(unittest.TestCase):
         got_hosts = [c["host_name"] for c in got]
         self.assertEqual(want_hosts, got_hosts)
 
-        self.assertEqual(want, got)
+        for want_, got_ in zip(want, got):
+            self.assertEqual(want_, got_)
 
 
 if __name__ == "__main__":

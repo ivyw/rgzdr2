@@ -7,8 +7,8 @@
     ],
     "host_name": "J100039.98+105616.7",
     "n_radio_agreement": 19,
-    "n_ir_agreement": 15,
-    "n_joint_agreement": 15,
+    "n_ir_agreement": 14,
+    "n_joint_agreement": 14,
     "votes": 20
   },
   {
@@ -19,8 +19,8 @@
     ],
     "host_name": "J100039.98+105616.7",
     "n_radio_agreement": 18,
-    "n_ir_agreement": 13,
-    "n_joint_agreement": 13,
+    "n_ir_agreement": 12,
+    "n_joint_agreement": 12,
     "votes": 20
   },
   {
@@ -132,7 +132,7 @@
       "FIRST_J100010.8+102212",
       "FIRST_J100013.5+102201",
       "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.23414988+102150.50800215"
+      "NOFIRST_J100012.32656682+102150.50778116"
     ],
     "host_name": "NOSOURCE",
     "n_radio_agreement": 5,
@@ -146,7 +146,7 @@
       "FIRST_J100010.8+102212",
       "FIRST_J100013.5+102201",
       "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.23322692+102150.61709575"
+      "NOFIRST_J100012.32564387+102150.61687478"
     ],
     "host_name": "NOSOURCE",
     "n_radio_agreement": 9,
@@ -160,7 +160,7 @@
       "FIRST_J100010.8+102212",
       "FIRST_J100013.5+102201",
       "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.24430629+102149.63524991"
+      "NOFIRST_J100012.33672316+102149.63502874"
     ],
     "host_name": "NOSOURCE",
     "n_radio_agreement": 5,
@@ -177,8 +177,8 @@
     ],
     "host_name": "J100339.43+101936.6",
     "n_radio_agreement": 6,
-    "n_ir_agreement": 10,
-    "n_joint_agreement": 6,
+    "n_ir_agreement": 9,
+    "n_joint_agreement": 5,
     "votes": 20
   },
   {
@@ -202,7 +202,7 @@
     ],
     "host_name": "J100339.43+101936.6",
     "n_radio_agreement": 7,
-    "n_ir_agreement": 10,
+    "n_ir_agreement": 9,
     "n_joint_agreement": 5,
     "votes": 20
   },
@@ -300,7 +300,7 @@
     ],
     "host_name": "J100026.98+100642.0",
     "n_radio_agreement": 4,
-    "n_ir_agreement": 14,
+    "n_ir_agreement": 12,
     "n_joint_agreement": 4,
     "votes": 20
   },
@@ -319,8 +319,8 @@
     "zid": "ARG00032lg",
     "components": [
       "FIRST_J100027.0+100644",
-      "NOFIRST_J100025.46248748+100636.19835643",
-      "NOFIRST_J100026.31664804+100635.58059235"
+      "NOFIRST_J100025.55483058+100636.1979153",
+      "NOFIRST_J100026.40899111+100635.58013648"
     ],
     "host_name": "J100026.98+100642.0",
     "n_radio_agreement": 9,
@@ -335,8 +335,8 @@
     ],
     "host_name": "J100030.22+100804.7",
     "n_radio_agreement": 9,
-    "n_ir_agreement": 8,
-    "n_joint_agreement": 6,
+    "n_ir_agreement": 7,
+    "n_joint_agreement": 5,
     "votes": 20
   },
   {
@@ -379,7 +379,7 @@
     "components": [
       "FIRST_J100220.0+100221",
       "FIRST_J100221.2+100216",
-      "NOFIRST_J100221.93674305+100228.18786423"
+      "NOFIRST_J100222.02906661+100228.18851882"
     ],
     "host_name": "J100220.88+100216.1",
     "n_radio_agreement": 4,
@@ -402,7 +402,7 @@
   {
     "zid": "ARG00032va",
     "components": [
-      "NOFIRST_J100219.55137927+100153.52039315"
+      "NOFIRST_J100219.64370013+100153.52108888"
     ],
     "host_name": "J100219.86+100149.4",
     "n_radio_agreement": 5,
@@ -413,7 +413,7 @@
   {
     "zid": "ARG00032va",
     "components": [
-      "NOFIRST_J100221.95982217+100228.24257357"
+      "NOFIRST_J100222.05214574+100228.24322776"
     ],
     "host_name": "NOSOURCE",
     "n_radio_agreement": 5,

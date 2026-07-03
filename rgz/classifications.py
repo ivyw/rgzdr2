@@ -475,8 +475,9 @@ def query_irsa(
     if q.query_status != "OK":
         raise NotImplementedError(f"Unimplemented query status: {q.query_status}")
 
-    results = astropy.table.unique(q.to_table())
-    return results
+    r = astropy.table.unique(q.to_table())
+    r.write('/tmp/values.ecsv', overwrite=True)
+    return astropy.table.unique(q.to_table())
 
 
 def read(classifications_path: Path) -> Iterable[Classification]:

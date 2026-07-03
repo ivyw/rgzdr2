@@ -53,7 +53,10 @@ class TestProcess(unittest.TestCase):
         with open(_TEST_SUBJECTS_PROCESSED_PATH) as f:
             want = json.load(f)
 
-        testutils.assert_json_almost_equal(self, want, got)
+        self.assertEqual(len(got), len(want))
+        for got_, want_ in zip(got, want):
+            # Improve error messages by checking each entry individually.
+            testutils.assert_json_almost_equal(self, want_, got_)
 
 
 if __name__ == "__main__":

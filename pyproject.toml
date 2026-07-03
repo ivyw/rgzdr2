@@ -16,6 +16,7 @@ dependencies = [
     "black",
     "ipympl",
     "scipy",      # Needed for astropy.
+    "frozendict>=2.4.7",
 ]
 
 [dependency-groups]
