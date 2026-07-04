@@ -20,7 +20,7 @@ _JSON_INDENT = 2
 
 
 @attr.s
-class ConsensusSource:
+class DR1ConsensusSource:
     """A radio source with a cross-identified IR host galaxy.
 
     Attributes:
@@ -63,7 +63,7 @@ class ConsensusSource:
         )
 
     def to_json(self) -> rgz.JSON:
-        """Converts the ConsensusSource to a JSON-compatible dict."""
+        """Converts the DR1ConsensusSource to a JSON-compatible dict."""
         return {
             "zid": self.zid,
             "components": sorted(self.components),
@@ -74,11 +74,50 @@ class ConsensusSource:
             "votes": self.n_votes,
         }
 
+@attr.s
+class PartitionConsensusSource:
+    """A radio source with a cross-identified IR host galaxy.
+
+    Attributes:
+        zids: Zooniverse IDs of the subjects containing this source.
+        components: FIRST components of the source.
+        host_name: Name of the AllWISE host if it exists.
+        radio_score: Partition probability of the radio partition.
+        ir_score: Agreement on the IR host. TODO.
+    """
+
+    zids: set[subjects.ZooniverseID] = attr.ib(order=sorted)
+    components: set[first.FIRSTID] = attr.ib(order=sorted)
+    host_name: classifications.ALLWISEID | None = attr.ib()
+    radio_score: float
+    ir_score: float
+
+    @classmethod
+    def from_json(cls, obj: rgz.JSON) -> Self:
+        """Reads a JSON dict."""
+        return cls(
+            zids=set(obj["zids"]),
+            components=set(obj["components"]),
+            host_name=obj["host_name"],
+            radio_score=obj['radio_score'],
+            ir_score=obj['ir_score']
+        )
+
+    def to_json(self) -> rgz.JSON:
+        """Converts the PartitionConsensusSource to a JSON-compatible dict."""
+        return {
+            "zids": sorted(self.zids),
+            "components": sorted(self.components),
+            "host_name": self.host_name,
+            "radio_score": self.radio_score,
+            "ir_score": self.ir_score,
+        }
+
 
 def aggregate_subject(
     subject: subjects.Subject,
     classifications: list[classifications.CrossMatchedClassification],
-) -> list[ConsensusSource]:
+) -> list[DR1ConsensusSource]:
     """Aggregates classifications into consensus sources for a single subject."""
     # Confirm every classification is of the subject.
     for classification in classifications:
@@ -118,7 +157,7 @@ def aggregate_subject(
             sorted(irs)
         ).most_common(1)
         matches.append(
-            ConsensusSource(
+            DR1ConsensusSource(
                 zid=classifications[0].zid,
                 components=set(radio_source),
                 host_name=consensus_ir,
