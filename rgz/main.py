@@ -103,9 +103,20 @@ def host_lookup(classifications: Path, out: Path):
     type=click.Path(resolve_path=True, path_type=Path),
     help=("JSON file to output the aggregated RGZ classifications."),
 )
-def aggregate(subjects: Path, classifications: Path, out: Path):
+@click.option(
+    "--method",
+    type=click.Choice(rgz.consensus.AggregationMethod, case_sensitive=False),
+    default=rgz.consensus.AggregationMethod.DR1,
+    help="Aggregation method to use.",
+)
+def aggregate(
+    subjects: Path,
+    classifications: Path,
+    out: Path,
+    method: rgz.consensus.AggregationMethod,
+):
     """Aggregates classifications into a consensus for each subject."""
-    rgz.consensus.aggregate(subjects, classifications, out)
+    rgz.consensus.aggregate(subjects, classifications, out, method)
 
 
 if __name__ == "__main__":

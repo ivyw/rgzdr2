@@ -38,6 +38,16 @@ def powerset[T](iterable: Iterable[T]) -> frozenset[frozenset[T]]:
     )
 
 
+def deterministic_powerset[T](iterable: Iterable[T]) -> list[frozenset[T]]:
+    """Yields all subsets of an iterable in a deterministic, sorted order."""
+    elements = sorted(iterable)
+    return [
+        frozenset(subset)
+        for r in range(len(elements) + 1)
+        for subset in itertools.combinations(elements, r)
+    ]
+
+
 @dataclasses.dataclass
 class Aggregation:
     aggregation: frozenset[frozenset[FIRSTID]]
@@ -134,7 +144,7 @@ def aggregate_subset(
         sum_product = 0
         maximiser = frozenset()
         element = min(s)
-        for subset in powerset(s - {element}):
+        for subset in deterministic_powerset(s - {element}):
             subset = subset | {element}
             pp = compute_partition_product(s - subset)
             wp = weight_product(subset)

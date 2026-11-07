@@ -1,0 +1,257 @@
+[
+  {
+    "zids": [
+      "ARG0002zwe",
+      "ARG0002zwm"
+    ],
+    "components": [
+      "FIRST_J100040.0+105612",
+      "FIRST_J100040.0+105620"
+    ],
+    "host_name": null,
+    "radio_score": 0.9999999999,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG000307k"
+    ],
+    "components": [
+      "FIRST_J100308.6+105048"
+    ],
+    "host_name": null,
+    "radio_score": 1.0,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00030wk"
+    ],
+    "components": [
+      "FIRST_J100121.5+103749"
+    ],
+    "host_name": null,
+    "radio_score": 1.0,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00030wl",
+      "ARG00030wn"
+    ],
+    "components": [
+      "FIRST_J100219.8+103749",
+      "FIRST_J100220.3+103748"
+    ],
+    "host_name": null,
+    "radio_score": 0.9999999999,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031ek",
+      "ARG00031go"
+    ],
+    "components": [
+      "FIRST_J100343.5+102737",
+      "FIRST_J100345.7+102837"
+    ],
+    "host_name": null,
+    "radio_score": 0.71875,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031r7",
+      "ARG00031ro",
+      "ARG00031t1"
+    ],
+    "components": [
+      "FIRST_J100010.8+102212",
+      "NOFIRST_J100012.32656682+102150.50778116"
+    ],
+    "host_name": null,
+    "radio_score": 0.23187936878446042,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031r7",
+      "ARG00031ro",
+      "ARG00031t1"
+    ],
+    "components": [
+      "FIRST_J100013.5+102201",
+      "FIRST_J100015.5+102124",
+      "NOFIRST_J100012.32564387+102150.61687478"
+    ],
+    "host_name": null,
+    "radio_score": 0.17068146495133266,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031t1"
+    ],
+    "components": [
+      "NOFIRST_J100012.33672316+102149.63502874"
+    ],
+    "host_name": null,
+    "radio_score": 0.5715446876498601,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031ui",
+      "ARG00031w6",
+      "ARG00031w8",
+      "ARG00031wp"
+    ],
+    "components": [
+      "FIRST_J100339.0+101931",
+      "FIRST_J100339.4+101936",
+      "FIRST_J100340.3+101945"
+    ],
+    "host_name": null,
+    "radio_score": 0.7328281527348476,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00031ui",
+      "ARG00031w6",
+      "ARG00031w8",
+      "ARG00031wp"
+    ],
+    "components": [
+      "FIRST_J100342.0+101946",
+      "FIRST_J100342.8+102033"
+    ],
+    "host_name": null,
+    "radio_score": 0.5916604631805337,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG000321x",
+      "ARG0003229",
+      "ARG000322i"
+    ],
+    "components": [
+      "FIRST_J100322.1+101649",
+      "FIRST_J100322.2+101700",
+      "FIRST_J100322.4+101642"
+    ],
+    "host_name": null,
+    "radio_score": 1.0,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032im"
+    ],
+    "components": [
+      "NOFIRST_J100025.58901372+100636.92047951",
+      "NOFIRST_J100026.43854966+100635.96180893"
+    ],
+    "host_name": null,
+    "radio_score": 0.48389434917875973,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032im",
+      "ARG00032lg"
+    ],
+    "components": [
+      "FIRST_J100027.0+100644",
+      "NOFIRST_J100025.55483058+100636.1979153",
+      "NOFIRST_J100026.40899111+100635.58013648"
+    ],
+    "host_name": null,
+    "radio_score": 0.47161777511444924,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032im",
+      "ARG00032lg"
+    ],
+    "components": [
+      "FIRST_J100030.2+100804"
+    ],
+    "host_name": null,
+    "radio_score": 0.792946746853015,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032pj",
+      "ARG00032po"
+    ],
+    "components": [
+      "FIRST_J100108.7+100505",
+      "FIRST_J100110.3+100459"
+    ],
+    "host_name": null,
+    "radio_score": 0.9999999999,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032v2"
+    ],
+    "components": [
+      "NOFIRST_J100219.62985623+100153.39825728"
+    ],
+    "host_name": null,
+    "radio_score": 0.57184279442982,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032v2"
+    ],
+    "components": [
+      "NOFIRST_J100222.02906661+100228.18851882"
+    ],
+    "host_name": null,
+    "radio_score": 0.41005902951701917,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032v2",
+      "ARG00032va"
+    ],
+    "components": [
+      "FIRST_J100220.0+100221",
+      "FIRST_J100221.2+100216"
+    ],
+    "host_name": null,
+    "radio_score": 0.2906585256443173,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032va"
+    ],
+    "components": [
+      "NOFIRST_J100219.64370013+100153.52108888"
+    ],
+    "host_name": null,
+    "radio_score": 0.8645637845290217,
+    "ir_score": NaN
+  },
+  {
+    "zids": [
+      "ARG00032va"
+    ],
+    "components": [
+      "NOFIRST_J100222.05214574+100228.24322776"
+    ],
+    "host_name": null,
+    "radio_score": 0.8074493842399132,
+    "ir_score": NaN
+  }
+]

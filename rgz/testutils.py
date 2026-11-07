@@ -28,6 +28,9 @@ CLASSIFICATIONS_MATCHED_FILENAME = "classifications_matched.json"
 # Test consensus JSON filename.
 CONSENSUS_FILENAME = "consensus.json"
 
+# Test partition consensus JSON filename.
+CONSENSUS_PARTITION_FILENAME = "consensus_partition.json"
+
 # Test WISE (IRSA) query results table filename.
 WISE_LOOKUP_FILENAME = "wise_lookup.ecsv"
 
