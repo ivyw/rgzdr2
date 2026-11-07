@@ -64,9 +64,11 @@ class BBox:
                 f"'ra_max' {self.ra_max} is less than 'ra_min' {self.ra_min}!"
             )
         if self.dec_max <= self.dec_min:
-            logger.warning("'dec_max' is less than 'dec_min'!")
-            # TODO(hzovaro): change back
-            # raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
+            raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
+        if self.width < 1 * u.arcsec or self.height < 1 * u.arcsec:
+            raise SpuriousBBoxError(
+                f"BBox dimensions ({self.width.to(u.arcsec)}, {self.height.to(u.arcsec)}) must be at least 1 arcsec!"
+            )
 
     @property
     def width(self) -> Quantity[u.deg]:

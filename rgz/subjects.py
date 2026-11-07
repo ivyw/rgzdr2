@@ -87,16 +87,16 @@ def process_subject(
     first.download_contour_data(raw_subject, cache)
     first.download_first_image(raw_subject, cache)
     wcs = first.get_first_wcs(sid, cache)
-    bbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache)
     rgzbbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache, units="RGZ")
     contours_list = first.get_contours(sid, wcs=wcs, cache=cache)
 
     risland_list = []
-    assert len(bbox_list) == len(rgzbbox_list)
     assert len(contours_list) == len(rgzbbox_list)
-    for bbox, rgzbbox, contours in zip(bbox_list, rgzbbox_list, contours_list):
-        # TODO(hzovaro): implement some kind of "invalid bbox" flag for dodgy
-        # bboxes.
+    for rgzbbox, contours in zip(rgzbbox_list, contours_list):
+        try:
+            bbox = bboxes.transform_rgzbbox_to_phys(bbox=rgzbbox, wcs=wcs)
+        except bboxes.SpuriousBBoxError:
+            continue
         risland = radio_islands.RadioIsland(
             bbox=bbox,
             rgzbbox=rgzbbox,
