@@ -1,4 +1,4 @@
-"""Other aggregation strategies for classifications."""
+"""Partition aggregation strategies for classifications."""
 
 from collections.abc import Collection, Iterable, Sequence
 import dataclasses
