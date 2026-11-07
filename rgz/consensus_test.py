@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import MagicMock
 
 from rgz import consensus
 from rgz import testutils
@@ -99,6 +100,36 @@ class TestAggregate(unittest.TestCase):
                     self.assertAlmostEqual(want_val, got_val)
                 else:
                     self.assertEqual(want_val, got_val)
+
+    def test_partition_max_subset_size_exceeded(self):
+        """Tests that partition consensus errors when a clique is too big."""
+        output_path = self.temp_dir_path / "out.json"
+        with self.assertRaises(ValueError):
+            consensus.aggregate(
+                self.test_data_path / testutils.SUBJECTS_PROCESSED_FILENAME,
+                self.test_data_path / testutils.CLASSIFICATIONS_MATCHED_FILENAME,
+                output_path,
+                method=consensus.AggregationMethod.PARTITION,
+                max_subset_size=1,
+            )
+
+    def test_map_components_to_islands(self):
+        """Tests that components in the same radio island are mapped to the same representatives."""
+        subject1 = MagicMock(
+            radio_islands=[
+                MagicMock(firsts=["A", "B"]),
+                MagicMock(firsts=["C"]),
+            ]
+        )
+        subject2 = MagicMock(
+            radio_islands=[
+                MagicMock(firsts=["B", "D"]),
+            ]
+        )
+        component_to_island = consensus.map_components_to_islands([subject1, subject2])
+        self.assertEqual(component_to_island["A"], component_to_island["B"])
+        self.assertEqual(component_to_island["A"], component_to_island["D"])
+        self.assertNotEqual(component_to_island["A"], component_to_island["C"])
 
 
 if __name__ == "__main__":

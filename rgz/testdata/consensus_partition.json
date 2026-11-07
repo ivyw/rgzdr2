@@ -9,7 +9,7 @@
       "FIRST_J100040.0+105620"
     ],
     "host_name": null,
-    "radio_score": 0.9999999999,
+    "radio_score": 1.0,
     "ir_score": NaN
   },
   {
@@ -44,7 +44,7 @@
       "FIRST_J100220.3+103748"
     ],
     "host_name": null,
-    "radio_score": 0.9999999999,
+    "radio_score": 1.0,
     "ir_score": NaN
   },
   {
@@ -71,7 +71,7 @@
       "NOFIRST_J100012.32656682+102150.50778116"
     ],
     "host_name": null,
-    "radio_score": 0.23187936878446042,
+    "radio_score": 0.23187936878446044,
     "ir_score": NaN
   },
   {
@@ -86,7 +86,7 @@
       "NOFIRST_J100012.32564387+102150.61687478"
     ],
     "host_name": null,
-    "radio_score": 0.17068146495133266,
+    "radio_score": 0.17068146495133263,
     "ir_score": NaN
   },
   {
@@ -97,7 +97,7 @@
       "NOFIRST_J100012.33672316+102149.63502874"
     ],
     "host_name": null,
-    "radio_score": 0.5715446876498601,
+    "radio_score": 0.5715446876498603,
     "ir_score": NaN
   },
   {
@@ -113,7 +113,7 @@
       "FIRST_J100340.3+101945"
     ],
     "host_name": null,
-    "radio_score": 0.7328281527348476,
+    "radio_score": 0.5047302265189912,
     "ir_score": NaN
   },
   {
@@ -128,7 +128,7 @@
       "FIRST_J100342.8+102033"
     ],
     "host_name": null,
-    "radio_score": 0.5916604631805337,
+    "radio_score": 0.49144785213691256,
     "ir_score": NaN
   },
   {
@@ -194,7 +194,7 @@
       "FIRST_J100110.3+100459"
     ],
     "host_name": null,
-    "radio_score": 0.9999999999,
+    "radio_score": 1.0,
     "ir_score": NaN
   },
   {

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 _JSON_INDENT = 2
 _NAN = float("nan")
+_MAX_SUBSET_SIZE = 10
 
 
 class AggregationMethod(enum.StrEnum):
@@ -200,51 +201,132 @@ def _dr1_consensus(
     return consensuses
 
 
+def map_components_to_islands(
+    all_subjects: Iterable[subjects.Subject],
+) -> dict[first.FIRSTID, first.FIRSTID]:
+    """Finds components appearing in the same radio island.
+
+    Returns a mapping from each component to a representative.
+    """
+    islands = disjoint_set.DisjointSet()
+    all_components = set()
+
+    for subject in all_subjects:
+        for radio_island in subject.radio_islands:
+            for component in radio_island.firsts:
+                all_components.add(component)
+            if len(radio_island.firsts) > 1:
+                first_component, *other_components = radio_island.firsts
+                for other_component in other_components:
+                    islands.union(first_component, other_component)
+
+    return {
+        component: islands.find(component) if component in islands else component
+        for component in all_components
+    }
+
+
 def _partition_consensus(
+    all_subjects: Sequence[subjects.Subject],
     all_classifications: Sequence[classifications.CrossMatchedClassification],
+    max_subset_size: int = _MAX_SUBSET_SIZE,
 ) -> list[PartitionConsensusSource]:
-    """Aggregates classifications across subjects using the partition strategy."""
-    # Build cliques based on which components were grouped together by
+    """Aggregates classifications across subjects using a partitioning strategy.
+
+    Args:
+        all_subjects: RGZ subjects.
+        all_classifications: Cross-matched classifications.
+        max_subset_size: Maximum allowable radio islands in a connected clique.
+
+    Returns:
+        Consensus radio sources with partition agreement scores.
+
+    Raises:
+        ValueError: If a connected clique contains more than `max_subset_size` islands.
+    """
+    component_to_island = map_components_to_islands(all_subjects)
+    island_to_components = collections.defaultdict(set)
+    for component, island in component_to_island.items():
+        island_to_components[island].add(component)
+
+    # Build cliques based on which radio islands were grouped together by
     # any citizen scientist.
     cliques = disjoint_set.DisjointSet()
     component_to_zids = collections.defaultdict(set)
-    component_to_classification_indices = collections.defaultdict(set)
+    representative_to_classification_indices = collections.defaultdict(set)
 
     for i, classification in enumerate(all_classifications):
-        components: list[first.FIRSTID] = []
+        representatives: list[first.FIRSTID] = []
         for _, radio_source in classification.coord_matches:
             for component in radio_source:
-                components.append(component)
+                representative = component_to_island.get(component, component)
+                representatives.append(representative)
                 component_to_zids[component].add(classification.zid)
-                component_to_classification_indices[component].add(i)
+                representative_to_classification_indices[representative].add(i)
 
-        if components:
-            first_component, *other_components = components
-            for other_component in other_components:
-                cliques.union(first_component, other_component)
+        if representatives:
+            first_representative, *other_representatives = representatives
+            for other_representative in other_representatives:
+                cliques.union(first_representative, other_representative)
 
     # For each clique, aggregate a consensus with the partition strategy.
     consensuses: list[PartitionConsensusSource] = []
-    for clique_components in cliques.itersets():
+    for clique_representatives in cliques.itersets():
+        if len(clique_representatives) > max_subset_size:
+            raise ValueError(
+                f"Too many islands in clique: {len(clique_representatives)} > {max_subset_size}: "
+                f"{sorted(clique_representatives)}"
+            )
+
         subset_indices = {
             i
-            for component in clique_components
-            for i in component_to_classification_indices[component]
+            for representative in clique_representatives
+            for i in representative_to_classification_indices[representative]
         }
         subset_classifications = [all_classifications[i] for i in subset_indices]
 
+        # Map components to radio islands in each classification.
+        island_classifications = []
+        for classification in subset_classifications:
+            island_coord_matches = []
+            for ir, radio_source in classification.coord_matches:
+                island_radio = {
+                    component_to_island.get(component, component)
+                    for component in radio_source
+                }
+                island_coord_matches.append((ir, list(island_radio)))
+
+            island_classifications.append(
+                classifications.Classification(
+                    cid=classification.cid,
+                    zid=classification.zid,
+                    username=classification.username,
+                    notes=classification.notes,
+                    coord_matches=island_coord_matches,
+                )
+            )
+
         aggregation_result = partition_aggregation.aggregate_subset(
-            subset_classifications
+            island_classifications
         )
 
         for block in aggregation_result.aggregation:
+            block_components = {
+                component
+                for representative in block
+                for component in island_to_components.get(
+                    representative, {representative}
+                )
+            }
             block_zids = {
-                zid for component in block for zid in component_to_zids[component]
+                zid
+                for component in block_components
+                for zid in component_to_zids[component]
             }
             consensuses.append(
                 PartitionConsensusSource(
                     zids=block_zids,
-                    components=set(block),
+                    components=block_components,
                     host_name=None,
                     radio_score=aggregation_result.scores.get(block, 0.0),
                     ir_score=_NAN,
@@ -259,6 +341,7 @@ def aggregate(
     classifications_path: Path,
     out_path: Path,
     method: AggregationMethod = AggregationMethod.DR1,
+    max_subset_size: int = _MAX_SUBSET_SIZE,
 ) -> None:
     """Aggregates classifications into a consensus for each subject.
 
@@ -267,6 +350,7 @@ def aggregate(
         classifications_path: Path to reduced, cross-matched subjects JSON.
         out_path: Path to output the consensus JSON.
         method: Aggregation strategy to apply.
+        max_subset_size: Maximum radio islands allowed in a subset for partition aggregation.
     """
     with open(subjects_path) as f:
         all_subjects = [subjects.Subject.from_json(j) for j in json.load(f)]
@@ -281,7 +365,9 @@ def aggregate(
         case AggregationMethod.DR1:
             consensuses = _dr1_consensus(all_subjects, all_classifications)
         case AggregationMethod.PARTITION:
-            consensuses = _partition_consensus(all_classifications)
+            consensuses = _partition_consensus(
+                all_subjects, all_classifications, max_subset_size=max_subset_size
+            )
 
     jsons = [c.to_json() for c in sorted(consensuses)]
     with open(out_path, "w") as f:

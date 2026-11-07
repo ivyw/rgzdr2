@@ -109,14 +109,24 @@ def host_lookup(classifications: Path, out: Path):
     default=rgz.consensus.AggregationMethod.DR1,
     help="Aggregation method to use.",
 )
+@click.option(
+    "--max-subset-size",
+    type=int,
+    default=rgz.consensus._MAX_SUBSET_SIZE,
+    show_default=True,
+    help="Maximum number of radio islands allowed in a partition subset.",
+)
 def aggregate(
     subjects: Path,
     classifications: Path,
     out: Path,
     method: rgz.consensus.AggregationMethod,
+    max_subset_size: int,
 ):
     """Aggregates classifications into a consensus for each subject."""
-    rgz.consensus.aggregate(subjects, classifications, out, method)
+    rgz.consensus.aggregate(
+        subjects, classifications, out, method, max_subset_size=max_subset_size
+    )
 
 
 if __name__ == "__main__":
