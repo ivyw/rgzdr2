@@ -14,7 +14,6 @@ from astroquery.vizier import Vizier
 from astropy.wcs import WCS
 import backoff
 import numpy as np
-import numpy.typing as npt
 import requests
 
 from rgz import constants
@@ -35,7 +34,14 @@ type HDU = fits.hdu.base.ExtensionHDU  # should be in top-level rgz
 # HHMMSS[+-]DDMMSS, with any fractional part belonging to the second (SS).
 type FIRSTID = str
 
-type FIRSTTree = tuple[npt.NDArray[np.float64], list[str]]
+type FIRSTTree = tuple[u.Quantity[u.deg], list[str]]
+
+# Length of a FITS header card.
+_FITS_CARD_LENGTH = 80
+# Number of bytes in a 36-card FITS header block.
+_FITS_BLOCK_SIZE = 36 * _FITS_CARD_LENGTH
+# Length of the FITS header keywords.
+_FITS_KEYWORD_LENGTH = 8
 
 
 class ContoursNotFoundError(Exception):
@@ -97,13 +103,51 @@ def download_first_image(
     ims.writeto(fname)
 
 
+def fast_fits_open(fname: Path) -> fits.HDUList:
+    """Opens a FITS header without HISTORY or COMMENT cards.
+
+    Args:
+        fname: Path to the FITS file.
+
+    Returns:
+        HDUList containing a PrimaryHDU with the parsed header.
+
+    Raises:
+        ValueError: If no END card is found in the FITS file.
+    """
+    cards = []
+    with open(fname, "rb") as f:
+        while block := f.read(_FITS_BLOCK_SIZE).decode("ascii", errors="replace"):
+            for i in range(0, len(block), _FITS_CARD_LENGTH):
+                card = block[i : i + _FITS_CARD_LENGTH]
+                keyword = card[:_FITS_KEYWORD_LENGTH].rstrip()
+                if keyword == "END":
+                    header = fits.Header.fromstring("".join(cards))
+                    return fits.HDUList([fits.PrimaryHDU(header=header)])
+                if keyword and keyword not in ("HISTORY", "COMMENT"):
+                    cards.append(card)
+    raise ValueError(f"No END card found in FITS header: {fname}")
+
+
 def load_first_image(
     sid: str,
     cache: Path,
+    header_only: bool = True
 ) -> fits.HDUList:
-    """Fetches FIRST image data for a subject."""
+    """Fetches FIRST image data for a subject.
+    
+    Args:
+        sid: Subject ID.
+        cache: Path to FIRST cache.
+        header_only: Whether to only read the header.
+    
+    Returns:
+        FITS HDUList.
+    """
     # TODO(hzovaro): this should be a method of radioisland
     fname = cache / f"{sid}.fits"
+    if header_only:
+        return fast_fits_open(fname)
     return fits.open(fname)
 
 
@@ -149,7 +193,7 @@ def fetch_first_catalogue_from_server_or_cache(
 
 def build_first_tree(first_catalogue: astropy.table.table.Table) -> FIRSTTree:
     """Build a spatial index for FIRST component centres."""
-    coords = np.stack([first_catalogue["RA_DEG"], first_catalogue["DE_DEG"]]).T  # type: ignore
+    coords = np.stack([first_catalogue["RA_DEG"], first_catalogue["DE_DEG"]]).T * u.deg  # type: ignore
     return (coords, list(first_catalogue["FIRST"]))  # type: ignore
 
 
@@ -233,8 +277,8 @@ def get_contours(
                     for coord in contour["arr"]
                 ]
                 # transform
-                coords = wcs.all_pix2world(np.vstack([xs, ys]).T, 0) * u.deg
-                coords = [(x.value, y.value) for x, y in coords]
+                coords = wcs.all_pix2world(np.vstack([xs, ys]).T, 0)
+                coords = [(x, y) for x, y in coords.tolist()]
                 contours.append(coords)
             island_contours.append(contours)
         if len(island_contours) == 0:

@@ -206,7 +206,11 @@ def map_components_to_islands(
 ) -> dict[first.FIRSTID, first.FIRSTID]:
     """Finds components appearing in the same radio island.
 
-    Returns a mapping from each component to a representative.
+    Args:
+        all_subjects: RGZ subjects.
+
+    Returns:
+        Mapping from each component ID to a representative component ID for its island.
     """
     islands = disjoint_set.DisjointSet()
     all_components = set()
@@ -290,11 +294,11 @@ def _partition_consensus(
         for classification in subset_classifications:
             island_coord_matches = []
             for ir, radio_source in classification.coord_matches:
-                island_radio = {
+                island_radio = classifications.RadioSource(
                     component_to_island.get(component, component)
                     for component in radio_source
-                }
-                island_coord_matches.append((ir, list(island_radio)))
+                )
+                island_coord_matches.append((ir, island_radio))
 
             island_classifications.append(
                 classifications.Classification(

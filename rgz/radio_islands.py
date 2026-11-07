@@ -1,9 +1,8 @@
 """Handles RGZ radio islands."""
 
 import logging
+import math
 from typing import Self
-
-import numpy as np
 
 from rgz import bboxes
 from rgz import first
@@ -73,19 +72,19 @@ class RadioIsland:
         # TODO(MatthewJA): Also use the contours to ensure that they really are within the boxes.
 
         padded_bbox = bboxes.BBox(
-            ra_min=np.ceil(self.bbox.ra_min.to(u.arcsec)) - 1 * u.arcsec,
-            ra_max=np.ceil(self.bbox.ra_max.to(u.arcsec)) + 1 * u.arcsec,
-            dec_min=np.ceil(self.bbox.dec_min.to(u.arcsec)) - 1 * u.arcsec,
-            dec_max=np.ceil(self.bbox.dec_max.to(u.arcsec)) + 1 * u.arcsec,
+            ra_min=(math.ceil(self.bbox.ra_min.to_value(u.arcsec)) - 1.0) * u.arcsec,
+            ra_max=(math.ceil(self.bbox.ra_max.to_value(u.arcsec)) + 1.0) * u.arcsec,
+            dec_min=(math.ceil(self.bbox.dec_min.to_value(u.arcsec)) - 1.0) * u.arcsec,
+            dec_max=(math.ceil(self.bbox.dec_max.to_value(u.arcsec)) + 1.0) * u.arcsec,
         )
-        matching_indices = padded_bbox.get_points_in_box(first_tree[0] * u.deg)
+        matching_indices = padded_bbox.get_points_in_box(first_tree[0])
         if not matching_indices:
             coord_str = rgz.coord_to_string(self.bbox.centre)
             ra_hh, ra_mm, ra_ss, dec_dd, dec_mm, dec_ss = [
                 float(s) for s in coord_str.split(" ")
             ]
             coord_str = f"NOFIRST_J{ra_hh:02.0f}{ra_mm:02.0f}{ra_ss:0.1f}{dec_dd:+02.0f}{dec_mm:02.0f}{dec_ss:02.0f}"
-            return [f'NOFIRST_J{coord_str.replace(" ", "")}']
+            return [coord_str.replace(" ", "")]
 
         names = []
         for index in matching_indices:

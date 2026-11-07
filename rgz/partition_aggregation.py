@@ -39,7 +39,14 @@ def powerset[T](iterable: Iterable[T]) -> frozenset[frozenset[T]]:
 
 
 def deterministic_powerset[T](iterable: Iterable[T]) -> list[frozenset[T]]:
-    """Yields all subsets of an iterable in a deterministic, sorted order."""
+    """Returns all subsets of an iterable in a deterministic order.
+
+    Args:
+        iterable: Elements to generate the powerset from.
+
+    Returns:
+        Sorted powerset.
+    """
     elements = sorted(iterable)
     return [
         frozenset(subset)

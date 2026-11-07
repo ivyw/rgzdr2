@@ -40,19 +40,19 @@ def get_deg(coord: SkyCoord) -> tuple[np.float64, np.float64]:
 
 
 def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
-    header = im[0].header  # type: ignore[reportAttributeAccessIssue]
-    # WCS.dropaxis doesn't seem to work on these images.
-    # Drop these: CTYPE3 CRVAL3 CDELT3 CRPIX3 CROTA3...
-    # TODO(hzovaro): should update function name to make it clear that
-    # this is designed for FIRST images and not WISE ones
-    for key in ["CTYPE", "CRVAL", "CDELT", "CRPIX", "CROTA"]:
-        for i in [3, 4]:
-            del header[key + str(i)]
+    """Extracts the 2D WCS from a FITS HDUList.
 
+    Args:
+        im: FITS HDUList whose primary HDU contains the image header.
+
+    Returns:
+        2D WCS.
+    """
+    header = im[0].header  # type: ignore[reportAttributeAccessIssue]
     with warnings.catch_warnings(
         action="ignore", category=astropy.wcs.FITSFixedWarning
     ):
-        return WCS(header)
+        return WCS(header, naxis=2)
 
 
 def coord_to_string(coord: SkyCoord) -> HMSDMS:

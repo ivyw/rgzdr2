@@ -90,25 +90,27 @@ def process_subject(
     rgzbbox_list = bboxes.get_bboxes(sid, wcs=wcs, cache=cache, units="RGZ")
     contours_list = first.get_contours(sid, wcs=wcs, cache=cache)
 
-    risland_list = []
+    islands = []
     assert len(contours_list) == len(rgzbbox_list)
     for rgzbbox, contours in zip(rgzbbox_list, contours_list):
         try:
             bbox = bboxes.transform_rgzbbox_to_phys(bbox=rgzbbox, wcs=wcs)
         except bboxes.SpuriousBBoxError:
             continue
-        risland = radio_islands.RadioIsland(
+        island = radio_islands.RadioIsland(
             bbox=bbox,
             rgzbbox=rgzbbox,
             contours=contours[0],  # For now just store the zeroth contour
             first_tree=first_tree,
         )
-        risland_list.append(risland)
+        islands.append(island)
+    if not islands:
+        raise ValueError(f"No valid radio islands found for subject {sid}.")
     return Subject(
         id=sid,
         zid=zid,
         coords=raw_subject["coords"],
-        radio_islands=risland_list,
+        radio_islands=islands,
         wcs=wcs,
     )
 

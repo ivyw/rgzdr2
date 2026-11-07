@@ -3,21 +3,19 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 import json
-import logging
 from pathlib import Path
 
 from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
 from astropy.wcs import WCS
 import numpy as np
-import numpy.typing as npt
 
 from rgz import constants
 from rgz import rgz
 from rgz import units as u
 
-logger = logging.getLogger(__name__)
-
+_HALF_CIRCLE = 180 * u.deg
+_MIN_BBOX_SIZE = 1 * u.arcsec
 
 type RGZBBox = tuple[float, float, float, float]
 
@@ -56,15 +54,16 @@ class BBox:
             raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees!")
         # Allow ra_max < ra_min only when wrapping across RA = 0 (ra_min - ra_max >= 180 deg).
         # Otherwise, inverted or zero-width boxes wrap to ~360 deg in self.width.
-        if self.ra_max <= self.ra_min and (self.ra_min - self.ra_max) < 180 * u.deg:
+        if self.ra_max <= self.ra_min and (self.ra_min - self.ra_max) < _HALF_CIRCLE:
             raise SpuriousBBoxError(
                 f"'ra_max' ({self.ra_max}) must be greater than 'ra_min' ({self.ra_min})!"
             )
         if self.dec_max <= self.dec_min:
             raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
-        if self.width < 1 * u.arcsec or self.height < 1 * u.arcsec:
+        if self.width < _MIN_BBOX_SIZE or self.height < _MIN_BBOX_SIZE:
             raise SpuriousBBoxError(
-                f"BBox dimensions ({self.width.to(u.arcsec)}, {self.height.to(u.arcsec)}) must be at least 1 arcsec!"
+                f"BBox dimensions ({self.width.to(u.arcsec)}, {self.height.to(u.arcsec)})"
+                " must be at least 1 arcsec!"
             )
 
     @property
@@ -105,24 +104,34 @@ class BBox:
 
     def get_points_in_box(
         self,
-        points: npt.NDArray,
+        points: Quantity[u.deg],
     ) -> list[int]:
-        """Returns the subset of points that lie within the BBox."""
-        if self.ra_max > self.ra_min:
-            mask = (
-                (points[:, 0] <= self.ra_max)
-                & (points[:, 0] >= self.ra_min)
-                & (points[:, 1] <= self.dec_max)
-                & (points[:, 1] >= self.dec_min)
-            )
+        """Returns the indices of points that lie within the BBox.
+
+        Args:
+            points: (N, 2) array of (RA, Dec) coordinates.
+
+        Returns:
+            Indices of rows in `points` inside the bounding box.
+        """
+        # Convert out of Astropy Quantity _before_ comparisons,
+        # which saves function calls and a ton of time.
+        points_deg = points.to_value(u.deg)
+        ra_min = self.ra_min.to_value(u.deg)
+        ra_max = self.ra_max.to_value(u.deg)
+        dec_min = self.dec_min.to_value(u.deg)
+        dec_max = self.dec_max.to_value(u.deg)
+        # Check one axis first, rather than all axes at once.
+        # This also saves comparisons!
+        dec_idxs = (
+            (points_deg[:, 1] <= dec_max) & (points_deg[:, 1] >= dec_min)
+        ).nonzero()[0]
+        ras = points_deg[dec_idxs, 0]
+        if ra_max > ra_min:
+            ra_mask = (ras <= ra_max) & (ras >= ra_min)
         else:
-            mask = (
-                (points[:, 0] <= self.ra_max)
-                & (points[:, 0] >= (self.ra_min - 360 * u.deg))
-                & (points[:, 1] <= self.dec_max)
-                & (points[:, 1] >= self.dec_min)
-            )
-        return list(mask.nonzero()[0])
+            ra_mask = (ras <= ra_max) & (ras >= (ra_min - 360.0))
+        return list(dec_idxs[ra_mask])
 
 
 def get_bboxes(
