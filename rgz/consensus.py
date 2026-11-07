@@ -1,7 +1,8 @@
 """Aggregates classifications."""
 
 import collections
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
+import enum
 import json
 import logging
 from pathlib import Path
@@ -17,6 +18,11 @@ from rgz import subjects
 logger = logging.getLogger(__name__)
 
 _JSON_INDENT = 2
+
+
+class AggregationMethod(enum.StrEnum):
+    DR1 = "dr1"
+    PARTITION = "partition"
 
 
 @attr.s
@@ -74,6 +80,7 @@ class DR1ConsensusSource:
             "votes": self.n_votes,
         }
 
+
 @attr.s
 class PartitionConsensusSource:
     """A radio source with a cross-identified IR host galaxy.
@@ -99,8 +106,8 @@ class PartitionConsensusSource:
             zids=set(obj["zids"]),
             components=set(obj["components"]),
             host_name=obj["host_name"],
-            radio_score=obj['radio_score'],
-            ir_score=obj['ir_score']
+            radio_score=obj["radio_score"],
+            ir_score=obj["ir_score"],
         )
 
     def to_json(self) -> rgz.JSON:
@@ -171,13 +178,44 @@ def aggregate_subject(
     return matches
 
 
-def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -> None:
+def _dr1_consensus(
+    zid_to_subject: dict[subjects.ZooniverseID, subjects.Subject],
+    all_classifications: Sequence[classifications.CrossMatchedClassification],
+) -> list[DR1ConsensusSource]:
+    """Aggregates classifications across subjects using the DR1 strategy."""
+    zid_to_classifications = collections.defaultdict(list)
+    for classification in all_classifications:
+        zid_to_classifications[classification.zid].append(classification)
+
+    consensuses = []
+    for zid, zid_classifications in zid_to_classifications.items():
+        subject = zid_to_subject[zid]
+        consensuses.extend(aggregate_subject(subject, zid_classifications))
+
+    return consensuses
+
+
+def _partition_consensus(
+    zid_to_subject: dict[subjects.ZooniverseID, subjects.Subject],
+    all_classifications: Sequence[classifications.CrossMatchedClassification],
+) -> list[PartitionConsensusSource]:
+    """Aggregates classifications across subjects using the partition strategy."""
+    raise NotImplementedError("Partition aggregation method is not yet implemented.")
+
+
+def aggregate(
+    subjects_path: Path,
+    classifications_path: Path,
+    out_path: Path,
+    method: AggregationMethod = AggregationMethod.DR1,
+) -> None:
     """Aggregates classifications into a consensus for each subject.
 
     Args:
         subjects_path: Path to reduced subjects JSON.
         classifications_path: Path to reduced, cross-matched subjects JSON.
         out_path: Path to output the consensus JSON.
+        method: Aggregation strategy to apply.
     """
     with open(subjects_path) as f:
         all_subjects = [subjects.Subject.from_json(j) for j in json.load(f)]
@@ -190,15 +228,13 @@ def aggregate(subjects_path: Path, classifications_path: Path, out_path: Path) -
 
     zid_to_subject = {s.zid: s for s in all_subjects}
 
-    zid_to_classifications = collections.defaultdict(list)
-    for classification in all_classifications:
-        zid_to_classifications[classification.zid].append(classification)
-
-    consensuses = []
-    for zid, zid_classifications in zid_to_classifications.items():
-        subject = zid_to_subject[zid]
-        consensuses.extend(aggregate_subject(subject, zid_classifications))
+    match method:
+        case AggregationMethod.DR1:
+            consensuses = _dr1_consensus(zid_to_subject, all_classifications)
+        case AggregationMethod.PARTITION:
+            consensuses = _partition_consensus(zid_to_subject, all_classifications)
 
     jsons = [c.to_json() for c in sorted(consensuses)]
     with open(out_path, "w") as f:
         json.dump(jsons, f, indent=_JSON_INDENT)
+

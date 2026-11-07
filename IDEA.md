@@ -1,0 +1,1 @@
+Radio Galaxy Zoo (RGZ) is a citizen science project crowdsourcing radio/infrared imagery comparisons for extragalactic astrophysics. This repo implements a data reduction for RGZ raw data to produce a catalogue of radio sources.
