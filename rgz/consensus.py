@@ -9,15 +9,18 @@ from pathlib import Path
 from typing import Self
 
 import attr
+import disjoint_set
 
 from rgz import classifications
 from rgz import first
+from rgz import partition_aggregation
 from rgz import rgz
 from rgz import subjects
 
 logger = logging.getLogger(__name__)
 
 _JSON_INDENT = 2
+_NAN = float("nan")
 
 
 class AggregationMethod(enum.StrEnum):
@@ -95,9 +98,9 @@ class PartitionConsensusSource:
 
     zids: set[subjects.ZooniverseID] = attr.ib(order=sorted)
     components: set[first.FIRSTID] = attr.ib(order=sorted)
-    host_name: classifications.ALLWISEID | None = attr.ib()
-    radio_score: float
-    ir_score: float
+    host_name: classifications.ALLWISEID | None = attr.ib(default=None, order=False)
+    radio_score: float = attr.ib(default=_NAN, order=False)
+    ir_score: float = attr.ib(default=_NAN, order=False)
 
     @classmethod
     def from_json(cls, obj: rgz.JSON) -> Self:
@@ -179,13 +182,15 @@ def aggregate_subject(
 
 
 def _dr1_consensus(
-    zid_to_subject: dict[subjects.ZooniverseID, subjects.Subject],
+    all_subjects: Sequence[subjects.Subject],
     all_classifications: Sequence[classifications.CrossMatchedClassification],
 ) -> list[DR1ConsensusSource]:
     """Aggregates classifications across subjects using the DR1 strategy."""
     zid_to_classifications = collections.defaultdict(list)
     for classification in all_classifications:
         zid_to_classifications[classification.zid].append(classification)
+
+    zid_to_subject = {s.zid: s for s in all_subjects}
 
     consensuses = []
     for zid, zid_classifications in zid_to_classifications.items():
@@ -196,11 +201,57 @@ def _dr1_consensus(
 
 
 def _partition_consensus(
-    zid_to_subject: dict[subjects.ZooniverseID, subjects.Subject],
     all_classifications: Sequence[classifications.CrossMatchedClassification],
 ) -> list[PartitionConsensusSource]:
     """Aggregates classifications across subjects using the partition strategy."""
-    raise NotImplementedError("Partition aggregation method is not yet implemented.")
+    # Build cliques based on which components were grouped together by
+    # any citizen scientist.
+    cliques = disjoint_set.DisjointSet()
+    component_to_zids = collections.defaultdict(set)
+    component_to_classification_indices = collections.defaultdict(set)
+
+    for i, classification in enumerate(all_classifications):
+        components: list[first.FIRSTID] = []
+        for _, radio_source in classification.coord_matches:
+            for component in radio_source:
+                components.append(component)
+                component_to_zids[component].add(classification.zid)
+                component_to_classification_indices[component].add(i)
+
+        if components:
+            first_component, *other_components = components
+            for other_component in other_components:
+                cliques.union(first_component, other_component)
+
+    # For each clique, aggregate a consensus with the partition strategy.
+    consensuses: list[PartitionConsensusSource] = []
+    for clique_components in cliques.itersets():
+        subset_indices = {
+            i
+            for component in clique_components
+            for i in component_to_classification_indices[component]
+        }
+        subset_classifications = [all_classifications[i] for i in subset_indices]
+
+        aggregation_result = partition_aggregation.aggregate_subset(
+            subset_classifications
+        )
+
+        for block in aggregation_result.aggregation:
+            block_zids = {
+                zid for component in block for zid in component_to_zids[component]
+            }
+            consensuses.append(
+                PartitionConsensusSource(
+                    zids=block_zids,
+                    components=set(block),
+                    host_name=None,
+                    radio_score=aggregation_result.scores.get(block, 0.0),
+                    ir_score=_NAN,
+                )
+            )
+
+    return consensuses
 
 
 def aggregate(
@@ -226,15 +277,12 @@ def aggregate(
             for j in json.load(f)
         ]
 
-    zid_to_subject = {s.zid: s for s in all_subjects}
-
     match method:
         case AggregationMethod.DR1:
-            consensuses = _dr1_consensus(zid_to_subject, all_classifications)
+            consensuses = _dr1_consensus(all_subjects, all_classifications)
         case AggregationMethod.PARTITION:
-            consensuses = _partition_consensus(zid_to_subject, all_classifications)
+            consensuses = _partition_consensus(all_classifications)
 
     jsons = [c.to_json() for c in sorted(consensuses)]
     with open(out_path, "w") as f:
         json.dump(jsons, f, indent=_JSON_INDENT)
-
