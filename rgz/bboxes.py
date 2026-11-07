@@ -54,14 +54,11 @@ class BBox:
             raise SpuriousBBoxError("'ra_max' must be between -90 and 90 degrees!")
         if (self.ra_min > 360.0 * u.deg) or (self.ra_min < 0.0 * u.deg):
             raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees!")
-        if self.ra_max == self.ra_min:
+        # Allow ra_max < ra_min only when wrapping across RA = 0 (ra_min - ra_max >= 180 deg).
+        # Otherwise, inverted or zero-width boxes wrap to ~360 deg in self.width.
+        if self.ra_max <= self.ra_min and (self.ra_min - self.ra_max) < 180 * u.deg:
             raise SpuriousBBoxError(
-                f"'ra_max' ({self.ra_max}) must not be the same as 'ra_min' ({self.ra_min})!"
-            )
-        elif self.ra_max < self.ra_min:
-            # Raise a warning rather than an error because RAs can wrap.
-            logger.warning(
-                f"'ra_max' {self.ra_max} is less than 'ra_min' {self.ra_min}!"
+                f"'ra_max' ({self.ra_max}) must be greater than 'ra_min' ({self.ra_min})!"
             )
         if self.dec_max <= self.dec_min:
             raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
