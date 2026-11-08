@@ -322,41 +322,46 @@ def process_classification(
 
 def process(classifications_path: Path, subjects_path: Path, output_path: Path):
     """Processes classifications from raw to reduced JSON."""
-    # Get classifications count for progress bar.
-    with open(classifications_path, encoding="utf-8") as f:
-        n_classifications = len(f.readlines())
-    raw_classifications = []
-    with open(classifications_path, encoding="utf-8") as f:
-        # Each row is a JSON document.
-        for row in tqdm(f, desc="Reading classifications...", total=n_classifications):
-            raw_classifications.append(json.loads(row))
+    # Load reduced subjects, popping raw JSON dicts so both representations do
+    # not coexist in memory.
+    with open(subjects_path, "r", encoding="utf-8") as f:
+        raw_subjects = json.load(f)
 
-    # Batch classifications by subject to minimise IO.
+    subjects_by_id: dict[str, subjects.Subject] = {}
+    while raw_subjects:
+        subject = subjects.Subject.from_json(raw_subjects.pop())
+        subjects_by_id[subject.id] = subject
+
+    # Get classifications count for progress bar without loading all lines into memory.
+    with open(classifications_path, encoding="utf-8") as f:
+        n_classifications = sum(1 for _ in f)
+
+    # Stream raw classifications line-by-line and retain only reduced JSON dicts.
     subject_to_classifications = collections.defaultdict(list)
-    for classification in raw_classifications:
-        sid = classification["subject_ids"][0]["$oid"]
-        subject_to_classifications[sid].append(classification)
-
-    # Load all reduced subjects.
-    with open(subjects_path, "r") as f:
-        subjects_ = [subjects.Subject.from_json(js) for js in json.load(f)]
-
-    classifications = []
-    bar = tqdm(total=n_classifications, desc="Processing classifications...")
-    for subject in subjects_:
-        raw_classifications_for_subject = subject_to_classifications[subject.id]
-        for raw_classification in raw_classifications_for_subject:
+    with open(classifications_path, encoding="utf-8") as f:
+        for row in tqdm(
+            f, desc="Processing classifications...", total=n_classifications
+        ):
+            raw_classification = json.loads(row)
+            sid = raw_classification["subject_ids"][0]["$oid"]
+            subject = subjects_by_id.get(sid)
+            if subject is None:
+                continue
             classification = process_classification(
                 raw_classification,
                 subject,
             )
-            classifications.append(classification)
-            bar.update(1)
+            subject_to_classifications[sid].append(classification.to_json())
+
+    # Preserve original subject ordering and free subjects before serialising.
+    subject_ids = list(reversed(subjects_by_id))
+    del subjects_by_id
 
     json_classifications = []
-    for classification in tqdm(classifications, desc="Serialising subjects..."):
-        json_classifications.append(classification.to_json())
-    with open(output_path, "w") as f:
+    for sid in subject_ids:
+        json_classifications.extend(subject_to_classifications.pop(sid, ()))
+
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(json_classifications, f, indent=_JSON_INDENT)
 
 
