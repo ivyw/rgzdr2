@@ -15,6 +15,8 @@ from rgz import rgz
 from rgz import units as u
 
 _HALF_CIRCLE = 180 * u.deg
+_FULL_CIRCLE = 360 * u.deg
+_MAX_DEC = 90 * u.deg
 _MIN_BBOX_SIZE = 1 * u.arcsec
 
 type RGZBBox = tuple[float, float, float, float]
@@ -22,8 +24,6 @@ type RGZBBox = tuple[float, float, float, float]
 
 class SpuriousBBoxError(ValueError):
     """Raised when an input bounding box has invalid dimensions."""
-
-    pass
 
 
 @dataclass(init=True, frozen=True)
@@ -37,30 +37,41 @@ class BBox:
 
     def __post_init__(self):
         if not isinstance(self.ra_min, Quantity):
-            raise ValueError("'ra_min' must be an astropy Quantity!")
+            raise ValueError("'ra_min' must be an astropy Quantity.")
         if not isinstance(self.ra_max, Quantity):
-            raise ValueError("'ra_max' must be an astropy Quantity!")
+            raise ValueError("'ra_max' must be an astropy Quantity.")
         if not isinstance(self.dec_min, Quantity):
-            raise ValueError("'dec_min' must be an astropy Quantity!")
+            raise ValueError("'dec_min' must be an astropy Quantity.")
         if not isinstance(self.dec_max, Quantity):
-            raise ValueError("'dec_max' must be an astropy Quantity!")
-        if (self.dec_max > 90.0 * u.deg) or (self.dec_max < -90.0 * u.deg):
-            raise SpuriousBBoxError("'dec_max' must be between -90 and 90 degrees!")
-        if (self.dec_min > 90.0 * u.deg) or (self.dec_min < -90.0 * u.deg):
-            raise SpuriousBBoxError("'dec_min' must be between -90 and 90 degrees!")
-        if (self.ra_max > 360.0 * u.deg) or (self.ra_max < 0.0 * u.deg):
-            raise SpuriousBBoxError("'ra_max' must be between -90 and 90 degrees!")
-        if (self.ra_min > 360.0 * u.deg) or (self.ra_min < 0.0 * u.deg):
-            raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees!")
+            raise ValueError("'dec_max' must be an astropy Quantity.")
+        # Convert out of Quantity _once_ before comparisons. Much faster.
+        ra_min_deg = self.ra_min.to_value(u.deg)
+        ra_max_deg = self.ra_max.to_value(u.deg)
+        dec_min_deg = self.dec_min.to_value(u.deg)
+        dec_max_deg = self.dec_max.to_value(u.deg)
+        max_dec_deg = _MAX_DEC.to_value(u.deg)
+        full_circle_deg = _FULL_CIRCLE.to_value(u.deg)
+        half_circle_deg = _HALF_CIRCLE.to_value(u.deg)
+        min_bbox_size_deg = _MIN_BBOX_SIZE.to_value(u.deg)
+        if (dec_max_deg > max_dec_deg) or (dec_max_deg < -max_dec_deg):
+            raise SpuriousBBoxError("'dec_max' must be between -90 and 90 degrees.")
+        if (dec_min_deg > max_dec_deg) or (dec_min_deg < -max_dec_deg):
+            raise SpuriousBBoxError("'dec_min' must be between -90 and 90 degrees.")
+        if (ra_max_deg > full_circle_deg) or (ra_max_deg < 0.0):
+            raise SpuriousBBoxError("'ra_max' must be between -90 and 90 degrees.")
+        if (ra_min_deg > full_circle_deg) or (ra_min_deg < 0.0):
+            raise SpuriousBBoxError("'ra_min' must be between -90 and 90 degrees.")
         # Allow ra_max < ra_min only when wrapping across RA = 0 (ra_min - ra_max >= 180 deg).
         # Otherwise, inverted or zero-width boxes wrap to ~360 deg in self.width.
-        if self.ra_max <= self.ra_min and (self.ra_min - self.ra_max) < _HALF_CIRCLE:
+        if ra_max_deg <= ra_min_deg and (ra_min_deg - ra_max_deg) < half_circle_deg:
             raise SpuriousBBoxError(
-                f"'ra_max' ({self.ra_max}) must be greater than 'ra_min' ({self.ra_min})!"
+                f"'ra_max' ({self.ra_max}) must be greater than 'ra_min' ({self.ra_min})."
             )
-        if self.dec_max <= self.dec_min:
-            raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'!")
-        if self.width < _MIN_BBOX_SIZE or self.height < _MIN_BBOX_SIZE:
+        if dec_max_deg <= dec_min_deg:
+            raise SpuriousBBoxError("'dec_max' must be greater than 'dec_min'.")
+        width_deg = (ra_max_deg - ra_min_deg) % full_circle_deg
+        height_deg = dec_max_deg - dec_min_deg
+        if width_deg < min_bbox_size_deg or height_deg < min_bbox_size_deg:
             raise SpuriousBBoxError(
                 f"BBox dimensions ({self.width.to(u.arcsec)}, {self.height.to(u.arcsec)})"
                 " must be at least 1 arcsec!"
@@ -68,9 +79,12 @@ class BBox:
 
     @property
     def width(self) -> Quantity[u.deg]:
-        # Use np.mod here to correctly calculate the width in cases where the
-        # BBox crosses an RA of 0.
-        return np.mod(self.ra_max.value - self.ra_min.value, 360) * u.deg
+        # Use % to handle width when BBox crosses RA = 0.
+        full_circle_deg = _FULL_CIRCLE.to_value(u.deg)
+        return (
+            (self.ra_max.to_value(u.deg) - self.ra_min.to_value(u.deg))
+            % full_circle_deg
+        ) * u.deg
 
     @property
     def height(self) -> Quantity[u.deg]:

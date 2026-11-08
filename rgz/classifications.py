@@ -83,9 +83,11 @@ class RadioSourceCombination(tuple[RadioSource]):
     def __new__(
         cls: type[Self], radio_combinations: Iterable[Iterable[first.FIRSTID]]
     ) -> Self:
-        representations = []
-        for radios in radio_combinations:
-            representations.append(RadioSource(radios))
+        # Avoid double-wrapping in RadioSource, which happens in practice.
+        representations = [
+            radios if isinstance(radios, RadioSource) else RadioSource(radios)
+            for radios in radio_combinations
+        ]
         return super().__new__(cls, sorted(representations))
 
     def __repr__(self) -> str:
@@ -497,7 +499,8 @@ def query_irsa(
 
 def read(classifications_path: Path) -> Iterable[Classification]:
     """Reads classifications from a JSON file."""
-    with open(classifications_path) as f:
+    with open(classifications_path, encoding="utf-8") as f:
         json_classifications = json.load(f)
-    for c in json_classifications:
-        yield Classification.from_json(c)
+    json_classifications.reverse()
+    while json_classifications:
+        yield Classification.from_json(json_classifications.pop())

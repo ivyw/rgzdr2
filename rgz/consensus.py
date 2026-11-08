@@ -194,7 +194,8 @@ def _dr1_consensus(
     zid_to_subject = {s.zid: s for s in all_subjects}
 
     consensuses = []
-    for zid, zid_classifications in zid_to_classifications.items():
+    while zid_to_classifications:
+        zid, zid_classifications = zid_to_classifications.popitem()
         subject = zid_to_subject[zid]
         consensuses.extend(aggregate_subject(subject, zid_classifications))
 
@@ -287,7 +288,9 @@ def _partition_consensus(
             for representative in clique_representatives
             for i in representative_to_classification_indices[representative]
         }
-        subset_classifications = [all_classifications[i] for i in subset_indices]
+        subset_classifications = [
+            all_classifications[i] for i in subset_indices
+        ]
 
         # Map components to radio islands in each classification.
         island_classifications = []

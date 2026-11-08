@@ -1,16 +1,21 @@
 """Tests for aggregating RGZ classifications."""
 
-import inspect
+import datetime
 import json
+import logging
 import math
-import os
 from pathlib import Path
 import tempfile
+import time
 import unittest
 from unittest.mock import MagicMock
 
 from rgz import consensus
 from rgz import testutils
+
+logger = logging.getLogger(__name__)
+
+_MAX_RUNTIME_PER_DR1_CLASSIFICATION = datetime.timedelta(microseconds=50)
 
 
 class TestAggregate(unittest.TestCase):
@@ -130,6 +135,57 @@ class TestAggregate(unittest.TestCase):
         self.assertEqual(component_to_island["A"], component_to_island["B"])
         self.assertEqual(component_to_island["A"], component_to_island["D"])
         self.assertNotEqual(component_to_island["A"], component_to_island["C"])
+
+    def test_runtime(self):
+        """Performance test for DR1 consensus aggregation."""
+        n_copies = 20
+        with open(
+            self.test_data_path / testutils.SUBJECTS_PROCESSED_FILENAME,
+            encoding="utf-8",
+        ) as f:
+            base_subjects = json.load(f)
+        with open(
+            self.test_data_path / testutils.CLASSIFICATIONS_MATCHED_FILENAME,
+            encoding="utf-8",
+        ) as f:
+            base_classifications = json.load(f)
+
+        subjects_data = [
+            {**s, "zid": f"{s['zid']}_{i}"}
+            for i in range(n_copies)
+            for s in base_subjects
+        ]
+        classifications_data = [
+            {**c, "zid": f"{c['zid']}_{i}"}
+            for i in range(n_copies)
+            for c in base_classifications
+        ]
+
+        subjects_path = self.temp_dir_path / "subjects_20x.json"
+        classifications_path = self.temp_dir_path / "classifications_20x.json"
+        output_path = self.temp_dir_path / "consensus_runtime_out.json"
+        with open(subjects_path, "w", encoding="utf-8") as f:
+            json.dump(subjects_data, f)
+        with open(classifications_path, "w", encoding="utf-8") as f:
+            json.dump(classifications_data, f)
+
+        now = time.perf_counter()
+        consensus.aggregate(subjects_path, classifications_path, output_path)
+        elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
+        elapsed_per_classification = elapsed / len(classifications_data)
+        logger.info(
+            "consensus.aggregate (DR1): %.2f us/classification (%d classifications in %.3fs)",
+            elapsed_per_classification / datetime.timedelta(microseconds=1),
+            len(classifications_data),
+            elapsed.total_seconds(),
+        )
+
+        self.assertLess(
+            elapsed_per_classification,
+            _MAX_RUNTIME_PER_DR1_CLASSIFICATION,
+            f"consensus.aggregate took {elapsed_per_classification} per classification "
+            f"(> {_MAX_RUNTIME_PER_DR1_CLASSIFICATION})",
+        )
 
 
 if __name__ == "__main__":

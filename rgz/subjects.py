@@ -48,16 +48,31 @@ class Subject:
     radio_islands: list = (
         attr.ib()
     )  # TODO why doesn't list[radio_islands.RadioIsland] = attr.ib() work here>?
-    wcs: WCS = attr.ib()
+    # Store raw FITS header strings on deserialisation and lazily construct
+    # WCS on first access, as WCS parsing is slow and many callers (e.g.
+    # consensus aggregation) never touch .wcs.
+    _wcs: WCS | str = attr.ib()
+
+    @property
+    def wcs(self) -> WCS:
+        """World Coordinate System extracted from the FIRST image."""
+        if isinstance(self._wcs, str):
+            self._wcs = WCS(self._wcs)
+        return self._wcs
 
     def to_json(self) -> rgz.JSON:
         """Converts a Subject into a JSON-compatible dictionary."""
+        wcs_str = (
+            self._wcs
+            if isinstance(self._wcs, str)
+            else self._wcs.to_header_string()
+        )
         return {
             "id": self.id,
             "zid": self.zid,
             "coords": self.coords,
             "radio_islands": [ri.to_json() for ri in self.radio_islands],
-            "wcs": self.wcs.to_header_string(),
+            "wcs": wcs_str,
         }
 
     @classmethod
@@ -71,7 +86,7 @@ class Subject:
                 radio_islands.RadioIsland.from_json(ri)
                 for ri in subject["radio_islands"]
             ],
-            WCS(subject["wcs"]),
+            subject["wcs"],
         )
 
 
@@ -152,7 +167,8 @@ def process(subjects_path: Path, cache: Path, output_path: Path):
 
 def read(subjects_path: Path) -> Iterable[Subject]:
     """Reads subjects from a JSON file."""
-    with open(subjects_path) as f:
+    with open(subjects_path, encoding="utf-8") as f:
         json_subjects = json.load(f)
-    for s in json_subjects:
-        yield Subject.from_json(s)
+    json_subjects.reverse()
+    while json_subjects:
+        yield Subject.from_json(json_subjects.pop())
