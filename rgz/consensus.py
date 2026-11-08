@@ -196,7 +196,7 @@ def _dr1_consensus(
     consensuses = []
     while zid_to_classifications:
         zid, zid_classifications = zid_to_classifications.popitem()
-        subject = zid_to_subject[zid]
+        subject = zid_to_subject.pop(zid)
         consensuses.extend(aggregate_subject(subject, zid_classifications))
 
     return consensuses

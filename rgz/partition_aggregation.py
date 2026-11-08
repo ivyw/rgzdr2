@@ -4,6 +4,7 @@ from collections.abc import Collection, Iterable, Sequence
 import dataclasses
 import functools
 import itertools
+import math
 
 import disjoint_set
 import numpy as np
@@ -79,29 +80,20 @@ def aggregate_subset(
 
     n = len(all_names)
     n_observed_same = np.zeros((n, n))
-    n_observed_different = np.zeros((n, n))
+    n_observed_total = np.zeros((n, n))
     for c in classifications:
-        observed = set()
         ds = disjoint_set.DisjointSet()
         for _, radios in c.coord_matches:
-            for r in radios:
-                observed.add(r)
-                for s in radios:
-                    if r != s:
-                        ds.union(r, s)
+            for r1, r2 in itertools.product(radios, radios):
+                ds.union(name_to_index[r1], name_to_index[r2])
 
-        # TODO: Don't double-count (the observation matrix is symmetric).
-        for a in observed:
-            for b in observed:
-                if a == b:
-                    continue
+        all_components = {i for component in ds.itersets() for i in component}
+        for i, j in itertools.permutations(all_components, 2):
+            n_observed_total[i, j] += 1
+        for component in ds.itersets():
+            for i, j in itertools.permutations(component, 2):
+                n_observed_same[i, j] += 1
 
-                if ds.connected(a, b):
-                    n_observed_same[name_to_index[a], name_to_index[b]] += 1
-                else:
-                    n_observed_different[name_to_index[a], name_to_index[b]] += 1
-
-    n_observed_total = n_observed_different + n_observed_same
     # TODO: Figure out how to handle unobserved pairs.
     # It'd be nice to use something other than a zero prior.
     # We could do a prior based on distance, perhaps.
@@ -114,71 +106,85 @@ def aggregate_subset(
 
     p_same_partition = n_observed_same / n_observed_total
     p_one = p_same_partition == 1
-    weights = np.where(~p_one, p_same_partition / (1 - p_same_partition), VERY_BIG)
+    with np.errstate(divide="ignore"):
+        log_weights = np.where(
+            ~p_one,
+            np.log(p_same_partition / (1 - p_same_partition)),
+            math.log(VERY_BIG),
+        )
 
-    # [Sum, max] for each partitioning in S: (sum = Z, max = solution)
-    #   Product for each partition in the partitioning:
-    #       Product for each unique pair of elements in the partition:
-    #           weights[i, j]
+    # [Logsumexp, max] for each partitioning in S: (logsumexp = log Z, max = solution)
+    #   Sum for each partition in the partitioning:
+    #       Sum for each unique pair of elements in the partition:
+    #           log_weights[i, j]
 
     # To find the max for a set S:
     #   Arbitrarily choose an element k from S
     #   For each possible subset T of S \ {k}:
     #       T = T | {k}
-    #       Compute the product for T
-    #       Multiply by the biggest product of S \ T
+    #       Compute the sum for T
+    #       Add to the biggest sum of S \ T
     #       Store the biggest
 
-    def weight_product(subset: Iterable[FIRSTID]) -> float:
-        """∏_{ij} w_{ij}"""
-        p = 1
+    @functools.cache
+    def log_weight_sum(subset: frozenset[FIRSTID]) -> float:
+        """∑_{ij} log(w_{ij})"""
+        total = 0.0
         for i, j in itertools.combinations(subset, 2):
-            p *= weights[name_to_index[i], name_to_index[j]]
-        return p
+            total += log_weights[name_to_index[i], name_to_index[j]]
+        return float(total)
 
     @dataclasses.dataclass
     class PartitionProduct:
-        maximum_product: float
-        partition_function: float
+        max_log_product: float
+        log_partition_function: float
         best_partition: frozenset[frozenset[FIRSTID]]
 
     @functools.cache
     def compute_partition_product(s: frozenset[FIRSTID]) -> PartitionProduct:
         if not s:
-            return PartitionProduct(1, 1, frozenset())
+            return PartitionProduct(0.0, 0.0, frozenset())
 
-        max_product = 0
-        sum_product = 0
+        max_log_product = -math.inf
+        log_z_terms: list[float] = []
         maximiser = frozenset()
         element = min(s)
         for subset in deterministic_powerset(s - {element}):
             subset = subset | {element}
+            lw = log_weight_sum(subset)
+            if lw == -math.inf:
+                continue
             pp = compute_partition_product(s - subset)
-            wp = weight_product(subset)
-            product = wp * pp.maximum_product
-            sum_product += wp * pp.partition_function
-            if product > max_product:
-                max_product = product
+            log_product = lw + pp.max_log_product
+            log_z_terms.append(lw + pp.log_partition_function)
+            if log_product > max_log_product:
+                max_log_product = log_product
                 maximiser = pp.best_partition | {subset}
 
         if not maximiser:
             raise RuntimeError()
 
-        return PartitionProduct(max_product, sum_product, maximiser)
+        max_log_z = max(log_z_terms)
+        log_partition_function = max_log_z + math.log(
+            sum(math.exp(term - max_log_z) for term in log_z_terms)
+        )
+
+        return PartitionProduct(max_log_product, log_partition_function, maximiser)
 
     elements = frozenset(all_names)
     pp = compute_partition_product(elements)
 
     block_probabilities = {}
     for block in pp.best_partition:
-        block_probabilities[block] = (
-            weight_product(block)
-            * compute_partition_product(elements - block).partition_function
-            / pp.partition_function
+        log_block_prob = (
+            log_weight_sum(block)
+            + compute_partition_product(elements - block).log_partition_function
+            - pp.log_partition_function
         )
+        block_probabilities[block] = math.exp(log_block_prob)
 
     return Aggregation(
         aggregation=pp.best_partition,
         scores=block_probabilities,
-        probability=pp.maximum_product / pp.partition_function,
+        probability=math.exp(pp.max_log_product - pp.log_partition_function),
     )
