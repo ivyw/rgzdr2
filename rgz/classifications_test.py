@@ -1,8 +1,11 @@
 """Tests for processing RGZ classifications."""
 
+import datetime
 import json
+import logging
 from pathlib import Path
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -10,7 +13,13 @@ import astropy.table
 from astropy.coordinates import SkyCoord
 
 import rgz.classifications
+import rgz.subjects
 import rgz.testutils
+
+logger = logging.getLogger(__name__)
+
+_MAX_RUNTIME_PER_PROCESS_CALL = datetime.timedelta(microseconds=125)
+
 
 class TestProcess(unittest.TestCase):
     """Tests for rgz.classifications.process."""
@@ -57,6 +66,49 @@ class TestProcess(unittest.TestCase):
                     "NOFIRST" for r in cm["radio"] if r.startswith("NOFIRST")
                 ]
         self.assertEqual(want, got)
+
+    def test_runtime(self):
+        """Performance test for processing classifications."""
+        classifications_path = (
+            self.test_data_path / rgz.testutils.CLASSIFICATIONS_FILENAME
+        )
+        subjects_path = self.test_data_path / rgz.testutils.SUBJECTS_PROCESSED_FILENAME
+
+        with open(classifications_path, encoding="utf-8") as f:
+            raw_classifications = [json.loads(row) for row in f]
+        with open(subjects_path) as f:
+            subjects_by_id = {
+                subject.id: subject
+                for subject in (
+                    rgz.subjects.Subject.from_json(js) for js in json.load(f)
+                )
+            }
+
+        pairs = [
+            (
+                raw_classification,
+                subjects_by_id[raw_classification["subject_ids"][0]["$oid"]],
+            )
+            for raw_classification in raw_classifications
+        ] * 10
+
+        now = time.perf_counter()
+        for raw_classification, subject in pairs:
+            rgz.classifications.process_classification(raw_classification, subject)
+        elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
+        elapsed_per_call = elapsed / len(pairs)
+        logger.info(
+            "process_classification: %.2f us/call (%d calls in %.3fs)",
+            elapsed_per_call / datetime.timedelta(microseconds=1),
+            len(pairs),
+            elapsed.total_seconds(),
+        )
+
+        self.assertLess(
+            elapsed_per_call,
+            _MAX_RUNTIME_PER_PROCESS_CALL,
+            f"Processing classifications took {elapsed_per_call} per call (> {_MAX_RUNTIME_PER_PROCESS_CALL})",
+        )
 
 
 class TestClassification(unittest.TestCase):
@@ -234,9 +286,7 @@ class TestHostLookup(unittest.TestCase):
         with open(output_path) as f:
             got = json.load(f)
 
-        want_path = (
-            self.test_data_path / rgz.testutils.CLASSIFICATIONS_MATCHED_FILENAME
-        )
+        want_path = self.test_data_path / rgz.testutils.CLASSIFICATIONS_MATCHED_FILENAME
 
         if update:
             with open(want_path, "w") as f:
@@ -244,7 +294,7 @@ class TestHostLookup(unittest.TestCase):
 
         with open(want_path) as f:
             want = json.load(f)
-        
+
         self.assertEqual(len(got), len(want))
         for got_, want_ in zip(got, want):
             # Improve error messages by checking each entry individually.

@@ -1,5 +1,6 @@
 """Tests for processing RGZ subjects."""
 
+import datetime
 import json
 import logging
 from pathlib import Path
@@ -27,6 +28,8 @@ _TEST_SUBJECTS_PATH = _TEST_DIR / "subjects.json"
 
 # Path to test (processed) subjects JSON.
 _TEST_SUBJECTS_PROCESSED_PATH = _TEST_DIR / testutils.SUBJECTS_PROCESSED_FILENAME
+
+_MAX_RUNTIME_PER_PROCESS_CALL = datetime.timedelta(milliseconds=6.5)
 
 
 class TestProcess(unittest.TestCase):
@@ -68,17 +71,24 @@ class TestProcess(unittest.TestCase):
         with open(_TEST_SUBJECTS_PATH, encoding="utf-8") as f:
             raw_subjects = [json.loads(row) for row in f] * 10
 
-        t0 = time.perf_counter()
+        now = time.perf_counter()
         for raw_subject in raw_subjects:
             rgz.subjects.process_subject(
                 raw_subject, _TEST_CACHE_DATA_PATH, first_tree
             )
-        elapsed = time.perf_counter() - t0
+        elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
+        elapsed_per_call = elapsed / len(raw_subjects)
+        logger.info(
+            "process_subject: %.2f ms/call (%d calls in %.3fs)",
+            elapsed_per_call / datetime.timedelta(milliseconds=1),
+            len(raw_subjects),
+            elapsed.total_seconds(),
+        )
 
         self.assertLess(
-            elapsed,
-            2.0,
-            f"Processing {len(raw_subjects)} subjects took {elapsed:.2f}s (> 2.0s)",
+            elapsed_per_call,
+            _MAX_RUNTIME_PER_PROCESS_CALL,
+            f"Processing subjects took {elapsed_per_call} per call (> {_MAX_RUNTIME_PER_PROCESS_CALL})",
         )
 
 
