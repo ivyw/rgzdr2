@@ -66,7 +66,7 @@ class TestProcess(unittest.TestCase):
         first_tree = rgz.first.build_first_tree(first_catalogue)
 
         with open(_TEST_SUBJECTS_PATH, encoding="utf-8") as f:
-            raw_subjects = [json.loads(row) for row in f]
+            raw_subjects = [json.loads(row) for row in f] * 10
 
         t0 = time.perf_counter()
         for raw_subject in raw_subjects:
@@ -77,8 +77,8 @@ class TestProcess(unittest.TestCase):
 
         self.assertLess(
             elapsed,
-            0.2,
-            f"Processing {len(raw_subjects)} subjects took {elapsed:.2f}s (> 0.2s)",
+            2.0,
+            f"Processing {len(raw_subjects)} subjects took {elapsed:.2f}s (> 2.0s)",
         )
 
 
