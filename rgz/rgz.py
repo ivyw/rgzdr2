@@ -1,8 +1,8 @@
 """Utilities for interacting with RGZ raw data."""
 
 from collections.abc import Iterator
-import json
 import logging
+import math
 from typing import Any
 import warnings
 
@@ -27,6 +27,10 @@ type HMSDMS = str
 
 # A JSON-serialisable dict.
 type JSON = dict[str, Any]
+
+
+# Default decimal precision used by astropy Angle.to_string when precision=None.
+_ASTROPY_PRECISION_DEFAULT = 8
 
 
 def safe_skycoord_iterable(coords: SkyCoord) -> Iterator[SkyCoord]:
@@ -55,10 +59,60 @@ def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
         return WCS(header, naxis=2)
 
 
-def coord_to_string(coord: SkyCoord) -> HMSDMS:
-    """Converts a SkyCoord to a string."""
-    coord_str = coord.to_string("hmsdms", sep=" ")
-    if not isinstance(coord_str, str):
-        # SkyCoord.to_string is not guaranteed to return a string.
-        raise TypeError(f"Expected str from SkyCoord.to_string; got {type(coord_str)}")
-    return coord_str
+def _angle_to_str(angle: float, *, always_sign: bool = False) -> str:
+    """Formats an angle (hours or degrees) as a space-separated sexagesimal string."""
+    # copysign handles negative zero, which does matter for consistent
+    # naming based on floats.
+    is_negative = math.copysign(1.0, angle) < 0
+
+    abs_angle = abs(angle)
+    integral_angle = int(abs_angle // 1)
+    total_minutes = (abs_angle % 1) * 60.0
+    minutes = int(total_minutes // 1)
+    seconds = (total_minutes % 1) * 60.0
+
+    # Carry over if seconds round up to 60 at precision limit.
+    if seconds >= 60.0 - 10.0**-_ASTROPY_PRECISION_DEFAULT:
+        seconds = 0.0
+        minutes += 1
+    if minutes >= 60:
+        minutes = 0
+        integral_angle += 1
+
+    if is_negative:
+        sign = "-"
+    elif always_sign:
+        sign = "+"
+    else:
+        sign = ""
+
+    seconds_width = _ASTROPY_PRECISION_DEFAULT + 3
+    seconds_str = (
+        f"{seconds:0{seconds_width}.{_ASTROPY_PRECISION_DEFAULT}f}"
+        .rstrip("0")
+        .rstrip(".")
+    )
+    return f"{sign}{integral_angle:02d} {minutes:02d} {seconds_str}"
+
+
+def coord_to_string(ra: u.Quantity[u.deg], dec: u.Quantity[u.deg]) -> HMSDMS:
+    """Formats RA and Dec quantities as an HMSDMS string.
+
+    Matches the output of `SkyCoord(ra, dec).to_string("hmsdms", sep=" ")`
+    without constructing a `SkyCoord`.
+
+    Args:
+        ra: Right ascension.
+        dec: Declination.
+
+    Returns:
+        Space-separated HMSDMS coordinate string.
+    """
+    ra_hours = float(ra.to_value(u.hourangle)) % 24.0
+    dec_deg = float(dec.to_value(u.deg))
+    return f"{_angle_to_str(ra_hours)} {_angle_to_str(dec_deg, always_sign=True)}"
+
+
+def skycoord_to_string(coord: SkyCoord) -> HMSDMS:
+    """Converts a SkyCoord to an HMSDMS string."""
+    return coord_to_string(coord.ra, coord.dec)  # type: ignore[reportArgumentType]

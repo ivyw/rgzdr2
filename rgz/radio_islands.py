@@ -79,7 +79,7 @@ class RadioIsland:
         )
         matching_indices = padded_bbox.get_points_in_box(first_tree[0])
         if not matching_indices:
-            coord_str = rgz.coord_to_string(self.bbox.centre)
+            coord_str = rgz.skycoord_to_string(self.bbox.centre)
             ra_hh, ra_mm, ra_ss, dec_dd, dec_mm, dec_ss = [
                 float(s) for s in coord_str.split(" ")
             ]
