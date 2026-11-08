@@ -256,6 +256,10 @@ def _partition_consensus(
 
     # Build cliques based on which radio islands were grouped together by
     # any citizen scientist.
+    # TODO(MatthewJA): Union only within each `radio_source` (and filter
+    # `island_classifications` to `clique_representatives`) rather than across
+    # the entire classification, as disjoint radio sources have zero pair
+    # weight (`w_ij = 0`) and factorise independently in the partition function.
     cliques = disjoint_set.DisjointSet()
     component_to_zids = collections.defaultdict(set)
     representative_to_classification_indices = collections.defaultdict(set)
@@ -330,6 +334,8 @@ def _partition_consensus(
                 for component in block_components
                 for zid in component_to_zids[component]
             }
+            # TODO(MatthewJA): Populate `host_name` and `ir_score` from
+            # `classification.ir_matches` for each consensus radio block.
             consensuses.append(
                 PartitionConsensusSource(
                     zids=block_zids,
