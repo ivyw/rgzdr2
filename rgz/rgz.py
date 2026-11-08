@@ -1,6 +1,6 @@
 """Utilities for interacting with RGZ raw data."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 import logging
 import math
 from typing import Any
@@ -31,6 +31,10 @@ type JSON = dict[str, Any]
 
 # Default decimal precision used by astropy Angle.to_string when precision=None.
 _ASTROPY_PRECISION_DEFAULT = 8
+_HOURS_PER_ROTATION = 24.0
+_MINUTES_PER_UNIT = 60
+_SECONDS_PER_MINUTE = 60
+_SECONDS_PER_UNIT = _MINUTES_PER_UNIT * _SECONDS_PER_MINUTE
 
 
 def safe_skycoord_iterable(coords: SkyCoord) -> Iterator[SkyCoord]:
@@ -67,15 +71,15 @@ def _angle_to_str(angle: float, *, always_sign: bool = False) -> str:
 
     abs_angle = abs(angle)
     integral_angle = int(abs_angle // 1)
-    total_minutes = (abs_angle % 1) * 60.0
+    total_minutes = (abs_angle % 1) * _MINUTES_PER_UNIT
     minutes = int(total_minutes // 1)
-    seconds = (total_minutes % 1) * 60.0
+    seconds = (total_minutes % 1) * _SECONDS_PER_MINUTE
 
     # Carry over if seconds round up to 60 at precision limit.
-    if seconds >= 60.0 - 10.0**-_ASTROPY_PRECISION_DEFAULT:
+    if seconds >= _SECONDS_PER_MINUTE - 10.0**-_ASTROPY_PRECISION_DEFAULT:
         seconds = 0.0
         minutes += 1
-    if minutes >= 60:
+    if minutes >= _MINUTES_PER_UNIT:
         minutes = 0
         integral_angle += 1
 
@@ -108,7 +112,7 @@ def coord_to_string(ra: u.Quantity[u.deg], dec: u.Quantity[u.deg]) -> HMSDMS:
     Returns:
         Space-separated HMSDMS coordinate string.
     """
-    ra_hours = float(ra.to_value(u.hourangle)) % 24.0
+    ra_hours = float(ra.to_value(u.hourangle)) % _HOURS_PER_ROTATION
     dec_deg = float(dec.to_value(u.deg))
     return f"{_angle_to_str(ra_hours)} {_angle_to_str(dec_deg, always_sign=True)}"
 
@@ -116,3 +120,38 @@ def coord_to_string(ra: u.Quantity[u.deg], dec: u.Quantity[u.deg]) -> HMSDMS:
 def skycoord_to_string(coord: SkyCoord) -> HMSDMS:
     """Converts a SkyCoord to an HMSDMS string."""
     return coord_to_string(coord.ra, coord.dec)  # type: ignore[reportArgumentType]
+
+
+def strings_to_skycoord(coords: Sequence[HMSDMS]) -> SkyCoord:
+    """Parses space-separated HMSDMS strings into a SkyCoord.
+
+    Matches `SkyCoord(coords, unit=("hourangle", "deg"))`, but avoids
+    the regex used in Astropy, making it much faster.
+
+    Args:
+        coords: Space-separated HMSDMS coordinate strings.
+
+    Returns:
+        SkyCoord containing all coordinates.
+    """
+    ras_hours = np.empty(len(coords), dtype=np.float64)
+    decs_deg = np.empty(len(coords), dtype=np.float64)
+
+    for i, coord in enumerate(coords):
+        ra_hours, ra_minutes, ra_seconds, dec_deg, dec_minutes, dec_seconds = (
+            coord.split(" ")
+        )
+        ras_hours[i] = (
+            float(ra_hours)
+            + float(ra_minutes) / _MINUTES_PER_UNIT
+            + float(ra_seconds) / _SECONDS_PER_UNIT
+        )
+        dec_sign = -1.0 if dec_deg.startswith("-") else 1.0
+        decs_deg[i] = dec_sign * (
+            abs(float(dec_deg))
+            + float(dec_minutes) / _MINUTES_PER_UNIT
+            + float(dec_seconds) / _SECONDS_PER_UNIT
+        )
+
+    return SkyCoord(ra=ras_hours * u.hourangle, dec=decs_deg * u.deg)
+

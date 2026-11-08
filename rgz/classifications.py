@@ -293,7 +293,7 @@ def process_classification(
             boxes.add(box)
 
         if anno["ir"] == "No Sources":
-            ir = "NOSOURCE"
+            ir = constants.NOSOURCE_LABEL
         else:
             if len(anno["ir"]) != 1:
                 # TODO(MatthewJA): Should we handle this differently?
@@ -365,6 +365,25 @@ def process(classifications_path: Path, subjects_path: Path, output_path: Path):
         json.dump(json_classifications, f, indent=_JSON_INDENT)
 
 
+def _get_coordinates_to_lookup(classifications_path: Path) -> list[rgz.HMSDMS]:
+    """Extracts sorted, unique coordinates to look up from a classifications JSON."""
+    # We load from the JSON directly so we don't have to keep them all in memory.
+    with open(classifications_path, encoding="utf-8") as f:
+        raw_classifications = json.load(f)
+
+    coordinates_to_lookup: set[rgz.HMSDMS] = set()
+    for _ in tqdm(
+        range(len(raw_classifications)), desc="Extracting IR coordinates..."
+    ):
+        classification = Classification.from_json(raw_classifications.pop())
+        for ir, _ in classification.coord_matches:
+            if ir != constants.NOSOURCE_LABEL:
+                coordinates_to_lookup.add(ir)
+
+    # Sort for determinism.
+    return sorted(coordinates_to_lookup)
+
+
 def host_lookup(
     classifications_path: Path,
     output_path: Path,
@@ -379,19 +398,10 @@ def host_lookup(
         output_path: Path to output JSON.
         radius: IR search radius.
     """
-    with open(classifications_path) as f:
-        classifications = [Classification.from_json(c) for c in json.load(f)]
+    # Collect coordinates before forking Pool workers
+    # so that the memory usage is minimised.
+    coordinates_to_lookup = _get_coordinates_to_lookup(classifications_path)
 
-    coordinates_to_lookup = set()
-    for c in tqdm(classifications, desc="Processing classifications..."):
-        for ir, _ in c.coord_matches:
-            if ir == "NOSOURCE":
-                continue
-
-            coordinates_to_lookup.add(ir)
-
-    # Sort for determinism.
-    coordinates_to_lookup = sorted(coordinates_to_lookup)
     # Run small batches so that queries take a reasonable amount of time.
     batch_size = 20000
     batches = []
@@ -407,31 +417,40 @@ def host_lookup(
     results = astropy.table.vstack(all_results)
     sc = SkyCoord(ra=results["ra"], dec=results["dec"])
 
-    # TODO: Batch these SkyCoord lookups - match_to_catalog_sky can work on
-    # multiple values at once.
-    matched_classifications = []
-    for i in tqdm(range(len(classifications)), desc="Reprocessing classifications..."):
-        c = CrossMatchedClassification.from_classification(classifications[i])
-        ir_matches = []
-        for ir, radio in c.coord_matches:
-            if ir == "NOSOURCE":
-                ir_matches.append((ir, radio))
-                continue
+    lookup_sc = rgz.strings_to_skycoord(coordinates_to_lookup)
+    idxs, dists, _ = lookup_sc.match_to_catalog_sky(sc)
+    designations = results["designation"]
+    ir_to_designation = {
+        ir: designations[idx] if dist <= radius else ir
+        for ir, idx, dist in zip(coordinates_to_lookup, idxs, dists)
+    }
 
-            ir_sc = SkyCoord(ir, unit=("hourangle", "deg"))
-            idx, dist, _ = ir_sc.match_to_catalog_sky(sc)
-            if dist > radius:
-                ir_matches.append((ir, radio))
-                continue
+    # Load and pop raw classifications in-place after Pool workers have exited.
+    # This keeps memory usage down.
+    with open(classifications_path, encoding="utf-8") as f:
+        raw_classifications = json.load(f)
 
-            designation = results["designation"][idx]
-            ir_matches.append((designation, radio))
-        c.ir_matches = ir_matches
-        matched_classifications.append(c)
+    raw_classifications.reverse()
+    json_classifications = []
+    for _ in tqdm(
+        range(len(raw_classifications)), desc="Reprocessing classifications..."
+    ):
+        classification = Classification.from_json(raw_classifications.pop())
+        matched_classification = (
+            CrossMatchedClassification.from_classification(classification)
+        )
+        matched_classification.ir_matches = [
+            (
+                ir if ir == constants.NOSOURCE_LABEL else ir_to_designation[ir],
+                radio,
+            )
+            for ir, radio in matched_classification.coord_matches
+        ]
+        json_classifications.append(matched_classification.to_json())
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(
-            [c.to_json() for c in matched_classifications],
+            json_classifications,
             f,
             indent=_JSON_INDENT,
         )
@@ -439,11 +458,11 @@ def host_lookup(
 
 def query_irsa(
     radius: u.Quantity[u.deg],
-    coordinates_to_lookup: list[tuple[float, float]],
+    coordinates_to_lookup: list[rgz.HMSDMS],
 ) -> astropy.table.Table:
     """Queries IRSA for the given coordinates."""
     logging.info("Sorting classifications into SkyCoords...")
-    sc = SkyCoord(sorted(coordinates_to_lookup), unit=("hourangle", "deg"))
+    sc = rgz.strings_to_skycoord(sorted(coordinates_to_lookup))
     logging.info("Building coordinate table...")
     coordinate_table = astropy.table.Table(
         {
@@ -473,8 +492,6 @@ def query_irsa(
     if q.query_status != "OK":
         raise NotImplementedError(f"Unimplemented query status: {q.query_status}")
 
-    r = astropy.table.unique(q.to_table())
-    r.write('/tmp/values.ecsv', overwrite=True)
     return astropy.table.unique(q.to_table())
 
 

@@ -356,14 +356,24 @@ def aggregate(
         method: Aggregation strategy to apply.
         max_subset_size: Maximum radio islands allowed in a subset for partition aggregation.
     """
-    with open(subjects_path) as f:
-        all_subjects = [subjects.Subject.from_json(j) for j in json.load(f)]
+    # Pop raw subjects in-place to avoid having two copies in memory.
+    with open(subjects_path, encoding="utf-8") as f:
+        raw_subjects = json.load(f)
+    raw_subjects.reverse()
+    all_subjects = []
+    while raw_subjects:
+        all_subjects.append(subjects.Subject.from_json(raw_subjects.pop()))
 
-    with open(classifications_path) as f:
-        all_classifications = [
-            classifications.CrossMatchedClassification.from_json(j)
-            for j in json.load(f)
-        ]
+    with open(classifications_path, encoding="utf-8") as f:
+        raw_classifications = json.load(f)
+    raw_classifications.reverse()
+    all_classifications = []
+    while raw_classifications:
+        all_classifications.append(
+            classifications.CrossMatchedClassification.from_json(
+                raw_classifications.pop()
+            )
+        )
 
     match method:
         case AggregationMethod.DR1:
@@ -373,6 +383,11 @@ def aggregate(
                 all_subjects, all_classifications, max_subset_size=max_subset_size
             )
 
-    jsons = [c.to_json() for c in sorted(consensuses)]
-    with open(out_path, "w") as f:
+    # Delete subjects and classifications to avoid having multiple copies in memory.
+    del all_subjects
+    del all_classifications
+    consensuses.sort()
+    jsons = [c.to_json() for c in consensuses]
+    del consensuses
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(jsons, f, indent=_JSON_INDENT)

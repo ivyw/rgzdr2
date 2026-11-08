@@ -19,6 +19,7 @@ import rgz.testutils
 logger = logging.getLogger(__name__)
 
 _MAX_RUNTIME_PER_PROCESS_CALL = datetime.timedelta(microseconds=125)
+_MAX_RUNTIME_PER_HOST_LOOKUP_CALL = datetime.timedelta(microseconds=100)
 
 
 class TestProcess(unittest.TestCase):
@@ -299,6 +300,36 @@ class TestHostLookup(unittest.TestCase):
         for got_, want_ in zip(got, want):
             # Improve error messages by checking each entry individually.
             rgz.testutils.assert_json_almost_equal(self, want_, got_)
+
+    def test_runtime(self):
+        """Performance test for host_lookup."""
+        source_path = (
+            self.test_data_path / rgz.testutils.CLASSIFICATIONS_PROCESSED_FILENAME
+        )
+        with open(source_path, encoding="utf-8") as f:
+            classifications = json.load(f) * 10
+
+        input_path = self.temp_dir_path / "classifications_10x.json"
+        with open(input_path, "w", encoding="utf-8") as f:
+            json.dump(classifications, f)
+        output_path = self.temp_dir_path / "host_lookup_runtime_out.json"
+
+        now = time.perf_counter()
+        rgz.classifications.host_lookup(input_path, output_path)
+        elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
+        elapsed_per_call = elapsed / len(classifications)
+        logger.info(
+            "host_lookup: %.2f us/call (%d classifications in %.3fs)",
+            elapsed_per_call / datetime.timedelta(microseconds=1),
+            len(classifications),
+            elapsed.total_seconds(),
+        )
+
+        self.assertLess(
+            elapsed_per_call,
+            _MAX_RUNTIME_PER_HOST_LOOKUP_CALL,
+            f"host_lookup took {elapsed_per_call} per classification (> {_MAX_RUNTIME_PER_HOST_LOOKUP_CALL})",
+        )
 
 
 if __name__ == "__main__":

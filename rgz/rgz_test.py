@@ -14,6 +14,7 @@ from rgz import units as u
 logger = logging.getLogger(__name__)
 
 _MAX_RUNTIME_PER_COORD_TO_STRING_CALL = datetime.timedelta(microseconds=25)
+_MAX_RUNTIME_PER_STRINGS_TO_SKYCOORD_COORD = datetime.timedelta(microseconds=5)
 
 
 class TestCoordToString(unittest.TestCase):
@@ -84,7 +85,79 @@ class TestCoordToString(unittest.TestCase):
         self.assertLess(
             elapsed_per_call,
             _MAX_RUNTIME_PER_COORD_TO_STRING_CALL,
-            f"coord_to_string took {elapsed_per_call} per call (> {_MAX_RUNTIME_PER_COORD_TO_STRING_CALL})",
+            f"coord_to_string took {elapsed_per_call} per call "
+            f"(> {_MAX_RUNTIME_PER_COORD_TO_STRING_CALL})",
+        )
+
+
+class TestStringsToSkycoord(unittest.TestCase):
+    """Tests for rgz.strings_to_skycoord."""
+
+    def test_fuzz_consistency_with_astropy(self):
+        """Matches SkyCoord(coords, unit=('hourangle', 'deg')) across random coordinates."""
+        rng = np.random.default_rng(42)
+        ras = rng.uniform(0.0, 360.0, 1000)
+        decs = rng.uniform(-90.0, 90.0, 1000)
+        coord_strs = list(
+            SkyCoord(ra=ras, dec=decs, unit=(u.deg, u.deg), frame="icrs").to_string(
+                "hmsdms", sep=" "
+            )
+        )
+
+        want = SkyCoord(coord_strs, unit=("hourangle", "deg"))
+        got = rgz.strings_to_skycoord(coord_strs)
+
+        got_ra, got_dec = rgz.get_deg(got)
+        want_ra, want_dec = rgz.get_deg(want)
+        np.testing.assert_allclose(got_ra, want_ra, rtol=0, atol=1e-12)
+        np.testing.assert_allclose(got_dec, want_dec, rtol=0, atol=1e-12)
+
+    def test_edge_cases(self):
+        """Matches SkyCoord(coords, unit=('hourangle', 'deg')) on edge cases."""
+        coord_strs = [
+            "00 00 00 +00 00 00",
+            "12 00 00 -00 00 00",
+            "00 00 00 -00 30 00",
+            "00 00 00 -00 00 00.5",
+            "23 59 59.99999999 +90 00 00",
+            "01 00 00 -90 00 00",
+        ]
+
+        want = SkyCoord(coord_strs, unit=("hourangle", "deg"))
+        got = rgz.strings_to_skycoord(coord_strs)
+
+        got_ra, got_dec = rgz.get_deg(got)
+        want_ra, want_dec = rgz.get_deg(want)
+        np.testing.assert_allclose(got_ra, want_ra, rtol=0, atol=1e-12)
+        np.testing.assert_allclose(got_dec, want_dec, rtol=0, atol=1e-12)
+
+    def test_runtime(self):
+        """Performance test for strings_to_skycoord."""
+        n_coords = 20000
+        rng = np.random.default_rng(42)
+        ras = rng.uniform(0.0, 360.0, n_coords)
+        decs = rng.uniform(-90.0, 90.0, n_coords)
+        coord_strs = [
+            rgz.coord_to_string(ra * u.deg, dec * u.deg)
+            for ra, dec in zip(ras, decs)
+        ]
+
+        now = time.perf_counter()
+        rgz.strings_to_skycoord(coord_strs)
+        elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
+        elapsed_per_coord = elapsed / n_coords
+        logger.info(
+            "strings_to_skycoord: %.2f us/coord (%d coords in %.3fs)",
+            elapsed_per_coord / datetime.timedelta(microseconds=1),
+            n_coords,
+            elapsed.total_seconds(),
+        )
+
+        self.assertLess(
+            elapsed_per_coord,
+            _MAX_RUNTIME_PER_STRINGS_TO_SKYCOORD_COORD,
+            f"strings_to_skycoord took {elapsed_per_coord} per coord "
+            f"(> {_MAX_RUNTIME_PER_STRINGS_TO_SKYCOORD_COORD})",
         )
 
 
