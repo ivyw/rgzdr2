@@ -8,9 +8,9 @@
       "FIRST_J100040.0+105612",
       "FIRST_J100040.0+105620"
     ],
-    "host_name": null,
+    "host_name": "J100039.98+105616.7",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.7027027027027027
   },
   {
     "zids": [
@@ -19,9 +19,9 @@
     "components": [
       "FIRST_J100308.6+105048"
     ],
-    "host_name": null,
+    "host_name": "J100308.64+105048.6",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.6
   },
   {
     "zids": [
@@ -30,9 +30,9 @@
     "components": [
       "FIRST_J100121.5+103749"
     ],
-    "host_name": null,
+    "host_name": "J100121.59+103749.7",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.8333333333333334
   },
   {
     "zids": [
@@ -43,9 +43,9 @@
       "FIRST_J100219.8+103749",
       "FIRST_J100220.3+103748"
     ],
-    "host_name": null,
+    "host_name": "NOSOURCE",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.4444444444444444
   },
   {
     "zids": [
@@ -56,9 +56,9 @@
       "FIRST_J100343.5+102737",
       "FIRST_J100345.7+102837"
     ],
-    "host_name": null,
+    "host_name": "NOSOURCE",
     "radio_score": 0.7187500000000001,
-    "ir_score": NaN
+    "ir_score": 0.6136363636363636
   },
   {
     "zids": [
@@ -69,9 +69,9 @@
     "components": [
       "FIRST_J100010.8+102212"
     ],
-    "host_name": null,
+    "host_name": "J100011.58+102200.1",
     "radio_score": 0.49022277901846517,
-    "ir_score": NaN
+    "ir_score": 0.35992939660243134
   },
   {
     "zids": [
@@ -83,9 +83,9 @@
       "FIRST_J100013.5+102201",
       "FIRST_J100015.5+102124"
     ],
-    "host_name": null,
+    "host_name": "NOSOURCE",
     "radio_score": 0.33770902554605375,
-    "ir_score": NaN
+    "ir_score": 0.49683308593345094
   },
   {
     "zids": [
@@ -99,9 +99,9 @@
       "FIRST_J100339.4+101936",
       "FIRST_J100340.3+101945"
     ],
-    "host_name": null,
+    "host_name": "J100339.43+101936.6",
     "radio_score": 0.5047302265189912,
-    "ir_score": NaN
+    "ir_score": 0.45406163473107997
   },
   {
     "zids": [
@@ -114,9 +114,9 @@
       "FIRST_J100342.0+101946",
       "FIRST_J100342.8+102033"
     ],
-    "host_name": null,
+    "host_name": "J100342.30+102002.7",
     "radio_score": 0.4914478521369125,
-    "ir_score": NaN
+    "ir_score": 0.6416470085949338
   },
   {
     "zids": [
@@ -129,9 +129,9 @@
       "FIRST_J100322.2+101700",
       "FIRST_J100322.4+101642"
     ],
-    "host_name": null,
+    "host_name": "J100322.12+101650.8",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.7647058823529411
   },
   {
     "zids": [
@@ -141,9 +141,9 @@
     "components": [
       "FIRST_J100027.0+100644"
     ],
-    "host_name": null,
+    "host_name": "J100026.98+100642.0",
     "radio_score": 0.8333333333333334,
-    "ir_score": NaN
+    "ir_score": 0.8418395520233396
   },
   {
     "zids": [
@@ -153,9 +153,9 @@
     "components": [
       "FIRST_J100030.2+100804"
     ],
-    "host_name": null,
+    "host_name": "J100030.22+100804.7",
     "radio_score": 0.8333333333333334,
-    "ir_score": NaN
+    "ir_score": 0.46549300259049015
   },
   {
     "zids": [
@@ -166,9 +166,9 @@
       "FIRST_J100108.7+100505",
       "FIRST_J100110.3+100459"
     ],
-    "host_name": null,
+    "host_name": "J100108.87+100503.4",
     "radio_score": 1.0,
-    "ir_score": NaN
+    "ir_score": 0.5
   },
   {
     "zids": [
@@ -179,8 +179,8 @@
       "FIRST_J100220.0+100221",
       "FIRST_J100221.2+100216"
     ],
-    "host_name": null,
+    "host_name": "J100220.88+100216.1",
     "radio_score": 0.8181818181818182,
-    "ir_score": NaN
+    "ir_score": 0.8
   }
 ]
