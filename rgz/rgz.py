@@ -57,6 +57,9 @@ def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
         2D WCS.
     """
     header = im[0].header  # type: ignore[reportAttributeAccessIssue]
+    # Normalise the RA.
+    assert header['CTYPE1'] == 'RA---SIN'
+    header['CRVAL1'] %= 360.0
     with warnings.catch_warnings(
         action="ignore", category=astropy.wcs.FITSFixedWarning
     ):
