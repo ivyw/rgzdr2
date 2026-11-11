@@ -57,7 +57,7 @@
       "FIRST_J100345.7+102837"
     ],
     "host_name": null,
-    "radio_score": 0.71875,
+    "radio_score": 0.7187500000000001,
     "ir_score": NaN
   },
   {
@@ -67,11 +67,10 @@
       "ARG00031t1"
     ],
     "components": [
-      "FIRST_J100010.8+102212",
-      "NOFIRST_J100012.32656682+102150.50778116"
+      "FIRST_J100010.8+102212"
     ],
     "host_name": null,
-    "radio_score": 0.23187936878446044,
+    "radio_score": 0.49022277901846517,
     "ir_score": NaN
   },
   {
@@ -82,22 +81,10 @@
     ],
     "components": [
       "FIRST_J100013.5+102201",
-      "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.32564387+102150.61687478"
+      "FIRST_J100015.5+102124"
     ],
     "host_name": null,
-    "radio_score": 0.17068146495133263,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
-      "ARG00031t1"
-    ],
-    "components": [
-      "NOFIRST_J100012.33672316+102149.63502874"
-    ],
-    "host_name": null,
-    "radio_score": 0.5715446876498603,
+    "radio_score": 0.33770902554605375,
     "ir_score": NaN
   },
   {
@@ -128,7 +115,7 @@
       "FIRST_J100342.8+102033"
     ],
     "host_name": null,
-    "radio_score": 0.49144785213691256,
+    "radio_score": 0.4914478521369125,
     "ir_score": NaN
   },
   {
@@ -148,28 +135,14 @@
   },
   {
     "zids": [
-      "ARG00032im"
-    ],
-    "components": [
-      "NOFIRST_J100025.58901372+100636.92047951",
-      "NOFIRST_J100026.43854966+100635.96180893"
-    ],
-    "host_name": null,
-    "radio_score": 0.48389434917875973,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
       "ARG00032im",
       "ARG00032lg"
     ],
     "components": [
-      "FIRST_J100027.0+100644",
-      "NOFIRST_J100025.55483058+100636.1979153",
-      "NOFIRST_J100026.40899111+100635.58013648"
+      "FIRST_J100027.0+100644"
     ],
     "host_name": null,
-    "radio_score": 0.47161777511444924,
+    "radio_score": 0.8333333333333334,
     "ir_score": NaN
   },
   {
@@ -181,7 +154,7 @@
       "FIRST_J100030.2+100804"
     ],
     "host_name": null,
-    "radio_score": 0.792946746853015,
+    "radio_score": 0.8333333333333334,
     "ir_score": NaN
   },
   {
@@ -199,28 +172,6 @@
   },
   {
     "zids": [
-      "ARG00032v2"
-    ],
-    "components": [
-      "NOFIRST_J100219.62985623+100153.39825728"
-    ],
-    "host_name": null,
-    "radio_score": 0.57184279442982,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
-      "ARG00032v2"
-    ],
-    "components": [
-      "NOFIRST_J100222.02906661+100228.18851882"
-    ],
-    "host_name": null,
-    "radio_score": 0.41005902951701917,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
       "ARG00032v2",
       "ARG00032va"
     ],
@@ -229,29 +180,7 @@
       "FIRST_J100221.2+100216"
     ],
     "host_name": null,
-    "radio_score": 0.2906585256443173,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
-      "ARG00032va"
-    ],
-    "components": [
-      "NOFIRST_J100219.64370013+100153.52108888"
-    ],
-    "host_name": null,
-    "radio_score": 0.8645637845290217,
-    "ir_score": NaN
-  },
-  {
-    "zids": [
-      "ARG00032va"
-    ],
-    "components": [
-      "NOFIRST_J100222.05214574+100228.24322776"
-    ],
-    "host_name": null,
-    "radio_score": 0.8074493842399132,
+    "radio_score": 0.8181818181818182,
     "ir_score": NaN
   }
 ]

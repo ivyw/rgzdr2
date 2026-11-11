@@ -10,6 +10,7 @@ from typing import Self
 
 import attr
 import disjoint_set
+from tqdm.auto import tqdm
 
 from rgz import classifications
 from rgz import first
@@ -251,7 +252,9 @@ def _partition_consensus(
     """
     component_to_island = map_components_to_islands(all_subjects)
     island_to_components = collections.defaultdict(set)
-    for component, island in component_to_island.items():
+    for component, island in tqdm(
+        component_to_island.items(), desc="Processing components..."
+    ):
         island_to_components[island].add(component)
 
     # Build cliques based on which radio islands were grouped together by
@@ -264,7 +267,9 @@ def _partition_consensus(
     component_to_zids = collections.defaultdict(set)
     representative_to_classification_indices = collections.defaultdict(set)
 
-    for i, classification in enumerate(all_classifications):
+    for i, classification in enumerate(
+        tqdm(all_classifications, desc="Constructing cliques...")
+    ):
         representatives: list[first.FIRSTID] = []
         for _, radio_source in classification.coord_matches:
             for component in radio_source:
@@ -280,7 +285,9 @@ def _partition_consensus(
 
     # For each clique, aggregate a consensus with the partition strategy.
     consensuses: list[PartitionConsensusSource] = []
-    for clique_representatives in cliques.itersets():
+    for clique_representatives in tqdm(
+        cliques.itersets(), desc="Processing cliques..."
+    ):
         if len(clique_representatives) > max_subset_size:
             raise ValueError(
                 f"Too many islands in clique: {len(clique_representatives)} > {max_subset_size}: "
@@ -292,9 +299,7 @@ def _partition_consensus(
             for representative in clique_representatives
             for i in representative_to_classification_indices[representative]
         }
-        subset_classifications = [
-            all_classifications[i] for i in subset_indices
-        ]
+        subset_classifications = [all_classifications[i] for i in subset_indices]
 
         # Map components to radio islands in each classification.
         island_classifications = []
@@ -349,6 +354,20 @@ def _partition_consensus(
     return consensuses
 
 
+def _filter_nofirsts[T](
+    matches: list[tuple[T, classifications.RadioSource]],
+) -> list[tuple[T, classifications.RadioSource]]:
+    """Filters out NOFIRST components and subsequently empty sources."""
+    filtered = []
+    for ir, radio_source in matches:
+        first_only = classifications.RadioSource(
+            c for c in radio_source if not c.startswith("NOFIRST_")
+        )
+        if first_only:
+            filtered.append((ir, first_only))
+    return filtered
+
+
 def aggregate(
     subjects_path: Path,
     classifications_path: Path,
@@ -378,11 +397,12 @@ def aggregate(
     raw_classifications.reverse()
     all_classifications = []
     while raw_classifications:
-        all_classifications.append(
-            classifications.CrossMatchedClassification.from_json(
-                raw_classifications.pop()
-            )
+        classification = classifications.CrossMatchedClassification.from_json(
+            raw_classifications.pop()
         )
+        classification.coord_matches = _filter_nofirsts(classification.coord_matches)
+        classification.ir_matches = _filter_nofirsts(classification.ir_matches)
+        all_classifications.append(classification)
 
     match method:
         case AggregationMethod.DR1:

@@ -129,15 +129,24 @@
   {
     "zid": "ARG00031r7",
     "components": [
-      "FIRST_J100010.8+102212",
-      "FIRST_J100013.5+102201",
-      "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.32656682+102150.50778116"
+      "FIRST_J100010.8+102212"
     ],
-    "host_name": "NOSOURCE",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 13,
-    "n_joint_agreement": 2,
+    "host_name": "J100011.58+102200.1",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 6,
+    "n_joint_agreement": 4,
+    "votes": 20
+  },
+  {
+    "zid": "ARG00031r7",
+    "components": [
+      "FIRST_J100013.5+102201",
+      "FIRST_J100015.5+102124"
+    ],
+    "host_name": "J100014.60+102144.7",
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 6,
+    "n_joint_agreement": 6,
     "votes": 20
   },
   {
@@ -145,12 +154,11 @@
     "components": [
       "FIRST_J100010.8+102212",
       "FIRST_J100013.5+102201",
-      "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.32564387+102150.61687478"
+      "FIRST_J100015.5+102124"
     ],
     "host_name": "NOSOURCE",
     "n_radio_agreement": 9,
-    "n_ir_agreement": 19,
+    "n_ir_agreement": 17,
     "n_joint_agreement": 4,
     "votes": 20
   },
@@ -159,13 +167,12 @@
     "components": [
       "FIRST_J100010.8+102212",
       "FIRST_J100013.5+102201",
-      "FIRST_J100015.5+102124",
-      "NOFIRST_J100012.33672316+102149.63502874"
+      "FIRST_J100015.5+102124"
     ],
     "host_name": "NOSOURCE",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 9,
-    "n_joint_agreement": 2,
+    "n_radio_agreement": 6,
+    "n_ir_agreement": 8,
+    "n_joint_agreement": 3,
     "votes": 20
   },
   {
@@ -299,9 +306,9 @@
       "FIRST_J100027.0+100644"
     ],
     "host_name": "J100026.98+100642.0",
-    "n_radio_agreement": 4,
+    "n_radio_agreement": 11,
     "n_ir_agreement": 12,
-    "n_joint_agreement": 4,
+    "n_joint_agreement": 9,
     "votes": 20
   },
   {
@@ -310,22 +317,20 @@
       "FIRST_J100030.2+100804"
     ],
     "host_name": "J100030.22+100804.7",
-    "n_radio_agreement": 4,
+    "n_radio_agreement": 11,
     "n_ir_agreement": 6,
-    "n_joint_agreement": 2,
+    "n_joint_agreement": 6,
     "votes": 20
   },
   {
     "zid": "ARG00032lg",
     "components": [
-      "FIRST_J100027.0+100644",
-      "NOFIRST_J100025.55483058+100636.1979153",
-      "NOFIRST_J100026.40899111+100635.58013648"
+      "FIRST_J100027.0+100644"
     ],
     "host_name": "J100026.98+100642.0",
-    "n_radio_agreement": 9,
+    "n_radio_agreement": 14,
     "n_ir_agreement": 15,
-    "n_joint_agreement": 9,
+    "n_joint_agreement": 14,
     "votes": 20
   },
   {
@@ -334,9 +339,9 @@
       "FIRST_J100030.2+100804"
     ],
     "host_name": "J100030.22+100804.7",
-    "n_radio_agreement": 9,
+    "n_radio_agreement": 14,
     "n_ir_agreement": 7,
-    "n_joint_agreement": 5,
+    "n_joint_agreement": 7,
     "votes": 20
   },
   {
@@ -378,13 +383,12 @@
     "zid": "ARG00032v2",
     "components": [
       "FIRST_J100220.0+100221",
-      "FIRST_J100221.2+100216",
-      "NOFIRST_J100222.02906661+100228.18851882"
+      "FIRST_J100221.2+100216"
     ],
     "host_name": "J100220.88+100216.1",
-    "n_radio_agreement": 4,
+    "n_radio_agreement": 13,
     "n_ir_agreement": 17,
-    "n_joint_agreement": 4,
+    "n_joint_agreement": 12,
     "votes": 20
   },
   {
@@ -394,31 +398,9 @@
       "FIRST_J100221.2+100216"
     ],
     "host_name": "J100220.88+100216.1",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 16,
-    "n_joint_agreement": 5,
-    "votes": 20
-  },
-  {
-    "zid": "ARG00032va",
-    "components": [
-      "NOFIRST_J100219.64370013+100153.52108888"
-    ],
-    "host_name": "J100219.86+100149.4",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 5,
-    "n_joint_agreement": 3,
-    "votes": 20
-  },
-  {
-    "zid": "ARG00032va",
-    "components": [
-      "NOFIRST_J100222.05214574+100228.24322776"
-    ],
-    "host_name": "NOSOURCE",
-    "n_radio_agreement": 5,
-    "n_ir_agreement": 10,
-    "n_joint_agreement": 4,
+    "n_radio_agreement": 14,
+    "n_ir_agreement": 15,
+    "n_joint_agreement": 12,
     "votes": 20
   },
   {
