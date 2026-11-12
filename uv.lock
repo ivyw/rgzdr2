@@ -557,6 +557,18 @@ wheels = [
 ]
 
 [[package]]
+name = "disjoint-set"
+version = "0.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3b/a3/6eed6a39991aaef974ae8d917aa9cc201c8f56844ab0f0dfeb319cd63f25/disjoint_set-0.9.0.tar.gz", hash = "sha256:f9640f906824d6c3bf5f92597616245112b953125d73f60490d49124ba731585", size = 3537, upload-time = "2026-02-21T15:05:42.288Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/c6/bd8bdd42d4b8b473890cba9cbd69f941c4b29d91a1e4cdcdb05ebb41da9f/disjoint_set-0.9.0-py3-none-any.whl", hash = "sha256:58378ee8d474355f07bca1c0633803e01259abd6e02cc3d49a9799aa203457ea", size = 4804, upload-time = "2026-02-21T15:05:43.183Z" },
+]
+
+[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2149,6 +2161,7 @@ dependencies = [
     { name = "attrs" },
     { name = "backoff" },
     { name = "black" },
+    { name = "disjoint-set" },
     { name = "frozendict" },
     { name = "ipympl" },
     { name = "matplotlib" },
@@ -2186,6 +2199,7 @@ requires-dist = [
     { name = "backoff" },
     { name = "black" },
     { name = "click", marker = "extra == 'cli'" },
+    { name = "disjoint-set" },
     { name = "frozendict", specifier = ">=2.4.7" },
     { name = "ipympl" },
     { name = "jupyter", marker = "extra == 'notebooks'" },

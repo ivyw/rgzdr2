@@ -17,6 +17,7 @@ dependencies = [
     "ipympl",
     "scipy",      # Needed for astropy.
     "frozendict>=2.4.7",
+    "disjoint-set"
 ]
 
 [dependency-groups]
