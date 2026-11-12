@@ -129,18 +129,14 @@ def fast_fits_open(fname: Path) -> fits.HDUList:
     raise ValueError(f"No END card found in FITS header: {fname}")
 
 
-def load_first_image(
-    sid: str,
-    cache: Path,
-    header_only: bool = True
-) -> fits.HDUList:
+def load_first_image(sid: str, cache: Path, header_only: bool = True) -> fits.HDUList:
     """Fetches FIRST image data for a subject.
-    
+
     Args:
         sid: Subject ID.
         cache: Path to FIRST cache.
         header_only: Whether to only read the header.
-    
+
     Returns:
         FITS HDUList.
     """

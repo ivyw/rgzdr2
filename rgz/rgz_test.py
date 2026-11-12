@@ -138,8 +138,7 @@ class TestStringsToSkycoord(unittest.TestCase):
         ras = rng.uniform(0.0, 360.0, n_coords)
         decs = rng.uniform(-90.0, 90.0, n_coords)
         coord_strs = [
-            rgz.coord_to_string(ra * u.deg, dec * u.deg)
-            for ra, dec in zip(ras, decs)
+            rgz.coord_to_string(ra * u.deg, dec * u.deg) for ra, dec in zip(ras, decs)
         ]
 
         now = time.perf_counter()

@@ -58,8 +58,8 @@ def get_wcs(im: fits.HDUList) -> astropy.wcs.WCS:
     """
     header = im[0].header  # type: ignore[reportAttributeAccessIssue]
     # Normalise the RA.
-    assert header['CTYPE1'] == 'RA---SIN'
-    header['CRVAL1'] %= 360.0
+    assert header["CTYPE1"] == "RA---SIN"
+    header["CRVAL1"] %= 360.0
     with warnings.catch_warnings(
         action="ignore", category=astropy.wcs.FITSFixedWarning
     ):
@@ -94,11 +94,9 @@ def _angle_to_str(angle: float, *, always_sign: bool = False) -> str:
         sign = ""
 
     seconds_width = _ASTROPY_PRECISION_DEFAULT + 3
-    seconds_str = (
-        f"{seconds:0{seconds_width}.{_ASTROPY_PRECISION_DEFAULT}f}"
-        .rstrip("0")
-        .rstrip(".")
-    )
+    seconds_str = f"{seconds:0{seconds_width}.{_ASTROPY_PRECISION_DEFAULT}f}".rstrip(
+        "0"
+    ).rstrip(".")
     return f"{sign}{integral_angle:02d} {minutes:02d} {seconds_str}"
 
 
@@ -157,4 +155,3 @@ def strings_to_skycoord(coords: Sequence[HMSDMS]) -> SkyCoord:
         )
 
     return SkyCoord(ra=ras_hours * u.hourangle, dec=decs_deg * u.deg)
-

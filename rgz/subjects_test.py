@@ -73,9 +73,7 @@ class TestProcess(unittest.TestCase):
 
         now = time.perf_counter()
         for raw_subject in raw_subjects:
-            rgz.subjects.process_subject(
-                raw_subject, _TEST_CACHE_DATA_PATH, first_tree
-            )
+            rgz.subjects.process_subject(raw_subject, _TEST_CACHE_DATA_PATH, first_tree)
         elapsed = datetime.timedelta(seconds=time.perf_counter() - now)
         elapsed_per_call = elapsed / len(raw_subjects)
         logger.info(

@@ -63,9 +63,7 @@ class Subject:
     def to_json(self) -> rgz.JSON:
         """Converts a Subject into a JSON-compatible dictionary."""
         wcs_str = (
-            self._wcs
-            if isinstance(self._wcs, str)
-            else self._wcs.to_header_string()
+            self._wcs if isinstance(self._wcs, str) else self._wcs.to_header_string()
         )
         return {
             "id": self.id,

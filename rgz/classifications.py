@@ -374,9 +374,7 @@ def _get_coordinates_to_lookup(classifications_path: Path) -> list[rgz.HMSDMS]:
         raw_classifications = json.load(f)
 
     coordinates_to_lookup: set[rgz.HMSDMS] = set()
-    for _ in tqdm(
-        range(len(raw_classifications)), desc="Extracting IR coordinates..."
-    ):
+    for _ in tqdm(range(len(raw_classifications)), desc="Extracting IR coordinates..."):
         classification = Classification.from_json(raw_classifications.pop())
         for ir, _ in classification.coord_matches:
             if ir != constants.NOSOURCE_LABEL:
@@ -438,8 +436,8 @@ def host_lookup(
         range(len(raw_classifications)), desc="Reprocessing classifications..."
     ):
         classification = Classification.from_json(raw_classifications.pop())
-        matched_classification = (
-            CrossMatchedClassification.from_classification(classification)
+        matched_classification = CrossMatchedClassification.from_classification(
+            classification
         )
         matched_classification.ir_matches = [
             (
