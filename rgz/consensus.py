@@ -95,7 +95,7 @@ class PartitionConsensusSource:
         components: FIRST components of the source.
         host_name: Name of the AllWISE host if it exists.
         radio_score: Partition probability of the radio partition.
-        ir_score: Agreement on the IR host. TODO.
+        ir_score: Maximum-likelihood probability of the consensus IR host.
     """
 
     zids: set[subjects.ZooniverseID] = attr.ib(order=sorted)
@@ -299,31 +299,27 @@ def _partition_consensus(
             for representative in clique_representatives
             for i in representative_to_classification_indices[representative]
         }
-        subset_classifications = [all_classifications[i] for i in subset_indices]
-
-        # Map components to radio islands in each classification.
-        island_classifications = []
-        for classification in subset_classifications:
-            island_coord_matches = []
-            for ir, radio_source in classification.coord_matches:
-                island_radio = classifications.RadioSource(
-                    component_to_island.get(component, component)
-                    for component in radio_source
+        # Convert each set of components into a single canonical representative
+        # for the corresponding radio island.
+        island_ir_matches = []
+        island_partitions = []
+        for i in subset_indices:
+            matches = []
+            partition = []
+            for ir_host, radio_source in all_classifications[i].ir_matches:
+                islands = frozenset(
+                    component_to_island.get(c, c) for c in radio_source
                 )
-                island_coord_matches.append((ir, island_radio))
-
-            island_classifications.append(
-                classifications.Classification(
-                    cid=classification.cid,
-                    zid=classification.zid,
-                    username=classification.username,
-                    notes=classification.notes,
-                    coord_matches=island_coord_matches,
-                )
-            )
+                matches.append((ir_host, islands))
+                partition.append(islands)
+            island_ir_matches.append(matches)
+            island_partitions.append(partition)
 
         aggregation_result = partition_aggregation.aggregate_subset(
-            island_classifications
+            island_partitions
+        )
+        host_consensuses = partition_aggregation.aggregate_hosts(
+            aggregation_result.aggregation, island_ir_matches
         )
 
         for block in aggregation_result.aggregation:
@@ -339,15 +335,14 @@ def _partition_consensus(
                 for component in block_components
                 for zid in component_to_zids[component]
             }
-            # TODO(MatthewJA): Populate `host_name` and `ir_score` from
-            # `classification.ir_matches` for each consensus radio block.
+            host_consensus = host_consensuses[block]
             consensuses.append(
                 PartitionConsensusSource(
                     zids=block_zids,
                     components=block_components,
-                    host_name=None,
+                    host_name=host_consensus.host_name,
                     radio_score=aggregation_result.scores.get(block, 0.0),
-                    ir_score=_NAN,
+                    ir_score=host_consensus.ir_score,
                 )
             )
 

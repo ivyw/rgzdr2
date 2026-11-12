@@ -9,21 +9,31 @@ import math
 import disjoint_set
 import numpy as np
 
-from rgz.classifications import Classification
+from rgz.classifications import ALLWISEID
 from rgz.first import FIRSTID
+
+type IslandID = FIRSTID
+type Block = frozenset[IslandID]
+type Partition = frozenset[Block]
 
 # A big number for situations where everyone agrees.
 VERY_BIG = 1e10
+# Convergence tolerance for expectation-maximisation.
+_EM_CONVERGENCE_TOL = 1e-9
+# Number of iterations for expectation-maximisation.
+_EM_MAX_ITERATIONS = 1000
 
 
-def get_all_first_ids(classifications: Sequence[Classification]) -> Collection[FIRSTID]:
-    """Gets all FIRST IDs touched by a set of classifications."""
-    all_names = set()
-    for c in classifications:
-        for _, radios in c.coord_matches:
-            for r in radios:
-                all_names.add(r)
-    return all_names
+def get_all_island_ids(
+    radio_partitions: Sequence[Collection[Block]],
+) -> set[IslandID]:
+    """Gets all island IDs touched by a sequence of radio partitions."""
+    return {
+        island_id
+        for partition in radio_partitions
+        for block in partition
+        for island_id in block
+    }
 
 
 def powerset[T](iterable: Iterable[T]) -> frozenset[frozenset[T]]:
@@ -58,33 +68,41 @@ def deterministic_powerset[T](iterable: Iterable[T]) -> list[frozenset[T]]:
 
 @dataclasses.dataclass
 class Aggregation:
-    aggregation: frozenset[frozenset[FIRSTID]]
-    scores: dict[frozenset[FIRSTID], float]
+    aggregation: Partition
+    scores: dict[Block, float]
     probability: float
 
 
+@dataclasses.dataclass(frozen=True)
+class HostConsensus:
+    """Consensus IR host galaxy and agreement score for a radio block."""
+
+    host_name: ALLWISEID | None
+    ir_score: float
+
+
 def aggregate_subset(
-    classifications: Sequence[Classification],
+    radio_partitions: Sequence[Collection[Block]],
 ) -> Aggregation:
-    """Aggregates a subset of classifications using dynamic programming.
+    """Aggregates a subset of radio partitions using dynamic programming.
 
     Args:
-        classifications: Subset of classifications.
+        radio_partitions: Annotated radio island blocks per classification.
 
     Returns:
         Consensus.
     """
-    # Convert FIRST IDs into indices.
-    all_names = sorted(get_all_first_ids(classifications))
+    # Convert island IDs into indices.
+    all_names = sorted(get_all_island_ids(radio_partitions))
     name_to_index = {name: i for i, name in enumerate(all_names)}
 
     n = len(all_names)
     n_observed_same = np.zeros((n, n))
     n_observed_total = np.zeros((n, n))
-    for c in classifications:
+    for partition in radio_partitions:
         ds = disjoint_set.DisjointSet()
-        for _, radios in c.coord_matches:
-            for r1, r2 in itertools.product(radios, radios):
+        for block in partition:
+            for r1, r2 in itertools.product(block, block):
                 ds.union(name_to_index[r1], name_to_index[r2])
 
         all_components = {i for component in ds.itersets() for i in component}
@@ -127,7 +145,7 @@ def aggregate_subset(
     #       Store the biggest
 
     @functools.cache
-    def log_weight_sum(subset: frozenset[FIRSTID]) -> float:
+    def log_weight_sum(subset: Block) -> float:
         """∑_{ij} log(w_{ij})"""
         total = 0.0
         for i, j in itertools.combinations(subset, 2):
@@ -138,16 +156,16 @@ def aggregate_subset(
     class PartitionProduct:
         max_log_product: float
         log_partition_function: float
-        best_partition: frozenset[frozenset[FIRSTID]]
+        best_partition: Partition
 
     @functools.cache
-    def compute_partition_product(s: frozenset[FIRSTID]) -> PartitionProduct:
+    def compute_partition_product(s: Block) -> PartitionProduct:
         if not s:
             return PartitionProduct(0.0, 0.0, frozenset())
 
         max_log_product = -math.inf
         log_z_terms: list[float] = []
-        maximiser = frozenset()
+        maximiser: Partition = frozenset()
         element = min(s)
         for subset in deterministic_powerset(s - {element}):
             subset = subset | {element}
@@ -174,7 +192,7 @@ def aggregate_subset(
     elements = frozenset(all_names)
     pp = compute_partition_product(elements)
 
-    block_probabilities = {}
+    block_probabilities: dict[Block, float] = {}
     for block in pp.best_partition:
         log_block_prob = (
             log_weight_sum(block)
@@ -188,3 +206,106 @@ def aggregate_subset(
         scores=block_probabilities,
         probability=math.exp(pp.max_log_product - pp.log_partition_function),
     )
+
+
+def aggregate_hosts(
+    partition: Partition,
+    ir_matches: Sequence[Sequence[tuple[ALLWISEID, Block]]],
+) -> dict[Block, HostConsensus]:
+    """Estimates consensus IR host galaxies for a fixed radio partition via EM.
+
+    Args:
+        partition: Consensus radio partition `t* = {b_1, ..., b_K}`.
+        ir_matches: Annotated `(ir_host, radio_block)` pairs per classification.
+
+    Returns:
+        Mapping from each consensus radio block `b_k` to its `HostConsensus`.
+    """
+    if not partition:
+        return {}
+
+    blocks = sorted(partition, key=sorted)
+    clique_islands = frozenset().union(*blocks)
+
+    annotations: list[tuple[ALLWISEID, Block, Block]] = []
+    for matches in ir_matches:
+        pairs = [
+            (ir_host, block & clique_islands)
+            for ir_host, block in matches
+        ]
+        pairs = [(ir_host, block) for ir_host, block in pairs if block]
+        if pairs:
+            visible_islands = frozenset().union(*(block for _, block in pairs))
+            for ir_host, block in pairs:
+                annotations.append((ir_host, block, visible_islands))
+
+    if not annotations:
+        return {
+            block: HostConsensus(host_name=None, ir_score=math.nan)
+            for block in blocks
+        }
+
+    hosts = sorted({ir_host for ir_host, _, _ in annotations})
+    host_to_index = {ir_host: idx for idx, ir_host in enumerate(hosts)}
+    host_indices = np.array(
+        [host_to_index[ir_host] for ir_host, _, _ in annotations]
+    )
+    host_mask = np.eye(len(hosts), dtype=np.float64)[host_indices].T
+
+    # Jaccard agreement w_k(b') = |b' ∩ b_k| / |b' ∪ (b_k ∩ S')|.
+    jaccard_weights = np.array(
+        [
+            [
+                len(annotated_block & consensus_block)
+                / len(annotated_block | (consensus_block & visible_islands))
+                if annotated_block & consensus_block
+                else 0.0
+                for consensus_block in blocks
+            ]
+            for _, annotated_block, visible_islands in annotations
+        ],
+        dtype=np.float64,
+    )
+
+    def m_step(responsibilities: np.ndarray) -> np.ndarray:
+        weighted_counts = host_mask @ responsibilities
+        column_totals = weighted_counts.sum(axis=0, keepdims=True)
+        return np.divide(
+            weighted_counts,
+            column_totals,
+            out=np.zeros_like(weighted_counts),
+            where=column_totals > 0,
+        )
+
+    host_probs = m_step(jaccard_weights)
+    for _ in range(_EM_MAX_ITERATIONS):
+        joint_probs = host_probs[host_indices] * jaccard_weights
+        row_totals = joint_probs.sum(axis=1, keepdims=True)
+        responsibilities = np.divide(
+            joint_probs,
+            row_totals,
+            out=np.zeros_like(joint_probs),
+            where=row_totals > 0,
+        )
+        next_host_probs = m_step(responsibilities)
+        if np.max(np.abs(next_host_probs - host_probs)) < _EM_CONVERGENCE_TOL:
+            host_probs = next_host_probs
+            break
+        host_probs = next_host_probs
+
+    consensus_by_block: dict[Block, HostConsensus] = {}
+    for block_idx, consensus_block in enumerate(blocks):
+        block_probs = host_probs[:, block_idx]
+        if block_probs.sum() == 0:
+            consensus_by_block[consensus_block] = HostConsensus(
+                host_name=None, ir_score=math.nan
+            )
+        else:
+            best_host_idx = int(np.argmax(block_probs))
+            consensus_by_block[consensus_block] = HostConsensus(
+                host_name=hosts[best_host_idx],
+                ir_score=float(block_probs[best_host_idx]),
+            )
+
+    return consensus_by_block
+
